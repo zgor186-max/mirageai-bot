@@ -478,12 +478,13 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             ctx.drawImage(img, sx, sy, sw, sh);
 
             // ── Gradient top (title zone) ──
-            const gTop = ctx.createLinearGradient(0, 0, 0, H * 0.50);
-            gTop.addColorStop(0, "rgba(0,0,0,0.88)");
-            gTop.addColorStop(0.65, "rgba(0,0,0,0.55)");
+            const gTop = ctx.createLinearGradient(0, 0, 0, H * 0.55);
+            gTop.addColorStop(0, "rgba(0,0,0,0.97)");
+            gTop.addColorStop(0.45, "rgba(0,0,0,0.80)");
+            gTop.addColorStop(0.75, "rgba(0,0,0,0.35)");
             gTop.addColorStop(1, "rgba(0,0,0,0)");
             ctx.fillStyle = gTop;
-            ctx.fillRect(0, 0, W, H * 0.50);
+            ctx.fillRect(0, 0, W, H * 0.55);
 
             // ── Gradient bottom (features zone) ──
             const gBot = ctx.createLinearGradient(0, H * 0.58, 0, H);
