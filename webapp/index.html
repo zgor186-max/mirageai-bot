@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mirage AI</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Шапка -->
+    <header class="header">
+        <div class="logo">Mirage<span>AI</span></div>
+        <div class="header-actions">
+            <button class="header-icon-btn" onclick="showProfile()" title="Профиль">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                </svg>
+            </button>
+            <button class="header-icon-btn" onclick="showLanguage()" title="Язык">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>
+                </svg>
+            </button>
+            <button class="buy-btn" onclick="showBuy()">
+                Купить
+                <span class="buy-btn-coins">
+                    <svg width="14" height="14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#f5a623"/><circle cx="12" cy="12" r="8" fill="#fbbf24"/><text x="12" y="16.5" text-anchor="middle" font-size="10" font-weight="bold" fill="#92400e">$</text></svg>
+                    <span id="coins-count">0</span>
+                </span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Главная -->
+    <div id="screen-home" class="screen active">
+        <!-- Баннер-слайдер -->
+        <div class="banner-slider">
+            <div class="banner-card">
+                <div class="banner-placeholder" style="background:linear-gradient(135deg,#1a1a3e,#3d1a78)">🎨</div>
+                <div class="banner-card-overlay"><div class="banner-card-text">Подпишись на канал</div></div>
+            </div>
+            <div class="banner-card">
+                <div class="banner-placeholder" style="background:linear-gradient(135deg,#1a3a1a,#1a7840)">🚀</div>
+                <div class="banner-card-overlay"><div class="banner-card-text">Новые стили каждый день</div></div>
+            </div>
+        </div>
+
+        <!-- Инструменты -->
+        <div class="tools-row">
+            <button class="tool-btn-large" onclick="selectTool('image')">
+                <div class="tool-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8">
+                        <rect x="3" y="3" width="18" height="18" rx="3"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <path d="M21 15l-5-5L5 21"/>
+                    </svg>
+                </div>
+                <span class="tool-label">Фото по промту</span>
+            </button>
+            <button class="tool-btn-large" onclick="selectTool('marketplace')">
+                <div class="tool-icon" style="background:linear-gradient(135deg,#7b2ff7,#0055ff);display:flex;flex-direction:column;align-items:center;justify-content:center;width:43px;height:43px;border-radius:12px;gap:1px;">
+                    <span style="font-size:8px;font-weight:900;color:#ff00ff;letter-spacing:0.5px;line-height:1;">WB</span>
+                    <span style="width:24px;height:1px;background:rgba(255,255,255,0.3);"></span>
+                    <span style="font-size:8px;font-weight:900;color:#ffffff;letter-spacing:0.5px;line-height:1;">OZON</span>
+                </div>
+                <span class="tool-label">Карточки WB и Ozon</span>
+            </button>
+        </div>
+
+        <!-- Тренды -->
+        <div class="trends-header">
+            <div class="trends-title">Тренды</div>
+            <div class="trends-subtitle">Создавай уникальные образы с помощью AI</div>
+        </div>
+        <div class="templates-grid" id="templates-grid"></div>
+    </div>
+
+    <!-- Загрузка фото -->
+    <div id="screen-upload" class="screen">
+        <button class="back-btn" onclick="showHome()">← Назад</button>
+        <div class="selected-template" id="selected-template-info"></div>
+        <div class="upload-area" id="upload-area">
+            <div class="upload-icon">📷</div>
+            <div class="upload-text">Нажми чтобы загрузить фото</div>
+            <div class="upload-hint">Лучше фото лица анфас</div>
+            <input type="file" id="photo-input" accept="image/*" style="display:none">
+        </div>
+        <div id="preview-container" style="display:none">
+            <img id="photo-preview" class="photo-preview" alt="Preview">
+            <button class="change-photo-btn" onclick="changePhoto()">Изменить фото</button>
+        </div>
+        <button class="generate-btn" id="generate-btn" onclick="generate()" disabled>
+            ⚡ Создать образ
+            <span class="generate-price" id="generate-price"></span>
+        </button>
+    </div>
+
+    <!-- Загрузка / генерация -->
+    <div id="screen-loading" class="screen">
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-title">Создаю твой образ...</div>
+            <div class="loading-subtitle">Это займёт 15-30 секунд</div>
+            <div class="loading-bar-wrap" style="margin-top:8px">
+                <div class="loading-bar-fill" id="loading-bar-fill"></div>
+            </div>
+            <div class="loading-percent-line" id="loading-percent">0%</div>
+            <div class="loading-steps">
+                <div class="step" id="step-1">🔍 Анализирую фото</div>
+                <div class="step" id="step-2">🎨 Применяю стиль</div>
+                <div class="step" id="step-3">✨ Финальная обработка</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Результат генерации -->
+    <div id="screen-result" class="screen">
+        <div class="result-container">
+            <div class="result-title">✨ Готово!</div>
+            <img id="result-image" class="result-image" alt="Result">
+            <div class="result-actions">
+                <button class="result-btn result-btn-share" onclick="shareResult()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                    Отправить в чат
+                </button>
+                <button class="result-btn result-btn-new" onclick="showHome()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Создать ещё
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Карточки WB и Ozon -->
+    <div id="screen-marketplace" class="screen">
+        <button class="back-btn" onclick="showHome()">← Назад</button>
+        <div class="page-header">Карточки WB и Ozon</div>
+
+        <!-- Табы -->
+        <div class="mp-tabs">
+            <button class="mp-tab active" id="tab-photo" onclick="mpSwitchTab('photo')">📷 Фото</button>
+            <button class="mp-tab" id="tab-card" onclick="mpSwitchTab('card')">🏷 Карточка</button>
+        </div>
+
+        <!-- Контент таба Фото -->
+        <div id="mp-tab-photo">
+
+        <div class="mp-section">
+            <div class="mp-section-num">01</div>
+            <div class="mp-section-title">Фото товара</div>
+        </div>
+        <div class="mp-upload-area" id="mp-upload-area" onclick="document.getElementById('mp-photo-input').click()">
+            <div class="mp-upload-icon">📦</div>
+            <div class="mp-upload-text">Нажми чтобы загрузить фото товара</div>
+            <div class="mp-upload-hint">До 4 фото с разных сторон</div>
+            <input type="file" id="mp-photo-input" accept="image/*" style="display:none" onchange="mpHandlePhoto(this)">
+        </div>
+        <div id="mp-preview-container" style="display:none;padding:0 16px;">
+            <img id="mp-photo-preview" style="width:100%;border-radius:14px;max-height:200px;object-fit:cover;">
+            <button class="change-photo-btn" onclick="document.getElementById('mp-photo-input').click()">Изменить фото</button>
+        </div>
+
+        <div class="mp-section" style="margin-top:20px;">
+            <div class="mp-section-num">02</div>
+            <div class="mp-section-title">Как показать товар?</div>
+        </div>
+        <div class="mp-styles">
+            <div class="mp-style-card selected" id="mp-style-model" onclick="mpSelectStyle('model', this)">
+                <div class="mp-style-icon">👗</div>
+                <div class="mp-style-name">На модели</div>
+                <div class="mp-style-desc">носимый контекст</div>
+            </div>
+            <div class="mp-style-card" id="mp-style-store" onclick="mpSelectStyle('store', this)">
+                <div class="mp-style-icon">🛍</div>
+                <div class="mp-style-name">Как в магазине</div>
+                <div class="mp-style-desc">на вешалке / подставке</div>
+            </div>
+            <div class="mp-style-card" id="mp-style-flat" onclick="mpSelectStyle('flat', this)">
+                <div class="mp-style-icon">📐</div>
+                <div class="mp-style-name">Раскладка сверху</div>
+                <div class="mp-style-desc">вид строго сверху</div>
+            </div>
+            <div class="mp-style-card" id="mp-style-studio" onclick="mpSelectStyle('studio', this)">
+                <div class="mp-style-icon">📸</div>
+                <div class="mp-style-name">Каталог (студийно)</div>
+                <div class="mp-style-desc">нейтральный фон</div>
+            </div>
+        </div>
+
+        <div class="mp-section" style="margin-top:20px;">
+            <div class="mp-section-num">03</div>
+            <div class="mp-section-title">Пожелания</div>
+        </div>
+        <div style="padding:0 16px;">
+            <textarea id="mp-wishes" class="mp-textarea" placeholder="Например: мягкий свет, минимализм, нейтральный фон..." maxlength="500"></textarea>
+        </div>
+
+        <div style="padding:16px;">
+            <button class="generate-btn" id="mp-generate-btn" onclick="mpGenerate()" disabled>
+                ⚡ Создать фото
+                <span class="generate-price">🪙 20</span>
+            </button>
+        </div>
+
+        </div><!-- конец mp-tab-photo -->
+
+        <!-- Контент таба Карточка -->
+        <div id="mp-tab-card" style="display:none">
+
+            <div class="mp-section">
+                <div class="mp-section-num">01</div>
+                <div class="mp-section-title">Фото товара</div>
+            </div>
+            <div class="mp-upload-area" id="mp-card-upload-area" onclick="document.getElementById('mp-card-photo-input').click()">
+                <div class="mp-upload-icon">🏷</div>
+                <div class="mp-upload-text">Нажми чтобы загрузить фото товара</div>
+                <div class="mp-upload-hint">Лучше на белом или прозрачном фоне</div>
+                <input type="file" id="mp-card-photo-input" accept="image/*" style="display:none" onchange="mpCardHandlePhoto(this)">
+            </div>
+            <div id="mp-card-preview-container" style="display:none;padding:0 16px;">
+                <img id="mp-card-photo-preview" style="width:100%;border-radius:14px;max-height:180px;object-fit:cover;">
+                <button class="change-photo-btn" onclick="document.getElementById('mp-card-photo-input').click()">Изменить фото</button>
+            </div>
+
+            <div class="mp-section" style="margin-top:12px;">
+                <div class="mp-section-num">02</div>
+                <div class="mp-section-title">Текст на карточке</div>
+                <button class="mp-ai-btn" onclick="mpCardAiIdea()">✦ AI идея</button>
+            </div>
+            <div style="padding:0 16px;display:flex;flex-direction:column;gap:10px;">
+                <input id="mp-card-name" class="mp-input" type="text" placeholder="Название товара (напр: Пижама в клетку)" maxlength="40">
+                <input id="mp-card-subtitle" class="mp-input" type="text" placeholder="Подзаголовок (напр: Комфорт и стиль для сна)" maxlength="50">
+                <input id="mp-card-badge" class="mp-input" type="text" placeholder="Значок (напр: 100% ХЛОПОК)" maxlength="20">
+                <input id="mp-card-feat1" class="mp-input" type="text" placeholder="Преимущество 1 (напр: Удобный крой)" maxlength="20">
+                <input id="mp-card-feat2" class="mp-input" type="text" placeholder="Преимущество 2 (напр: Мягкая ткань)" maxlength="20">
+                <input id="mp-card-feat3" class="mp-input" type="text" placeholder="Преимущество 3 (напр: Стильный дизайн)" maxlength="20">
+            </div>
+
+            <div style="padding:16px;">
+                <button class="generate-btn" id="mp-card-generate-btn" onclick="mpCardGenerate()" disabled>
+                    ⚡ Создать карточку
+                    <span class="generate-price">🪙 20</span>
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Нижняя навигация -->
+    <nav class="bottom-nav">
+        <button class="nav-btn active" onclick="showHome()" id="nav-home">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-label">Главная</span>
+        </button>
+        <button class="nav-btn" onclick="showGallery()" id="nav-gallery">
+            <span class="nav-icon">🖼</span>
+            <span class="nav-label">Галерея</span>
+        </button>
+        <button class="nav-btn-center" onclick="showHome()">
+            <div class="nav-center-circle">+</div>
+            <span class="nav-center-label">Создать</span>
+        </button>
+        <button class="nav-btn" onclick="showHistory()" id="nav-history">
+            <span class="nav-icon">🕐</span>
+            <span class="nav-label">История</span>
+        </button>
+        <button class="nav-btn" onclick="showBuy()" id="nav-buy">
+            <span class="nav-icon">💬</span>
+            <span class="nav-label">Монеты</span>
+        </button>
+    </nav>
+
+    <!-- Модальное окно языка -->
+    <div id="lang-modal" class="modal-overlay" style="display:none" onclick="closeLangModal(event)">
+        <div class="modal-sheet">
+            <div class="modal-title">Язык интерфейса</div>
+            <button class="lang-option active" onclick="setLang('ru')">🇷🇺 &nbsp; Русский</button>
+            <button class="lang-option" onclick="setLang('en')">🇬🇧 &nbsp; English</button>
+            <button class="lang-option" onclick="setLang('uz')">🇺🇿 &nbsp; O'zbekcha</button>
+            <button class="modal-close" onclick="closeLangModal()">Отмена</button>
+        </div>
+    </div>
+
+    <script src="js/templates.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
