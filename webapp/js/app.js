@@ -602,32 +602,33 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.fillText(text.substring(0, 52), PAD, y);
             }
 
+            // Фото — герой сверху (60%), весь текст снизу
+            const topH = 0;
+            const botY = Math.floor(H * 0.60);
+
             // ════════════════════════════════════════
-            // 1. ОДЕЖДА / ОБУВЬ — светлый минимализм
+            // 1. ОДЕЖДА / ОБУВЬ — тёплый минимализм
             // ════════════════════════════════════════
             if (scheme === "warm") {
-                const topBg = isLight ? "#fafafa" : "#1a1208";
                 const botBg = isLight ? "#ffffff" : "#120e06";
                 const accentClr = "#d4a017";
                 const titleClr = isLight ? "#1a1a1a" : "#fff8e8";
-                const subClr = isLight ? "#666" : "#c8a96e";
-                const topH = Math.floor(H * 0.32), botY = Math.floor(H * 0.77);
+                const subClr = isLight ? "#555" : "#c8a96e";
 
-                ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
                 drawPhoto(topH, botY);
-                drawFade(topH, 60, topBg, "rgba(0,0,0,0)");
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
-                drawFade(botY - 60, 60, "rgba(0,0,0,0)", botBg);
+                drawFade(botY - 80, 80, "rgba(0,0,0,0)", botBg);
 
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 52, accentClr, "#1a1000");
-                drawTitle((name || "").toUpperCase().split(/\s+/), 54, topH - 10, titleClr);
-                if (subtitle) drawSubtitle(subtitle, botY + 46, subClr);
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, accentClr, "#1a1000");
+                const tY1 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 58, botY + 230, titleClr);
+                if (subtitle) drawSubtitle(subtitle, tY1 + 14, subClr);
 
                 if (feats.length) {
                     const pillH = 73, gap = 12;
+                    const chipsY = tY1 + (subtitle ? 52 : 30);
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
-                        const fx = PAD + i * (colW + gap), fy = botY + 62;
+                        const fx = PAD + i * (colW + gap), fy = chipsY;
                         rr(fx, fy, colW, pillH, 36, isLight ? "#1a1a1a" : "#2a2010", accentClr, 2);
                         ctx.beginPath(); ctx.arc(fx + 26, fy + pillH/2, 11, 0, Math.PI*2);
                         ctx.fillStyle = accentClr; ctx.fill();
@@ -645,29 +646,26 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             // 2. ПРЕМИУМ / АКСЕССУАРЫ — тёмный элегантный
             // ════════════════════════════════════════
             } else if (scheme === "dark") {
-                const topBg = isLight ? "#f0ede8" : "#0a0a0a";
                 const botBg = isLight ? "#e8e4de" : "#050505";
                 const gold = "#c9a84c";
                 const titleClr = isLight ? "#111" : "#fff";
-                const topH = Math.floor(H * 0.30), botY = Math.floor(H * 0.75);
 
-                ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
                 drawPhoto(topH, botY);
-                drawFade(topH, 60, topBg, "rgba(0,0,0,0)");
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
-                drawFade(botY - 60, 60, "rgba(0,0,0,0)", botBg);
+                drawFade(botY - 80, 80, "rgba(0,0,0,0)", botBg);
 
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 52, gold, "#000");
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, gold, "#000");
                 ctx.fillStyle = gold; ctx.font = `22px Arial`;
-                ctx.fillText("◆", PAD, 50);
-                drawTitle((name || "").toUpperCase().split(/\s+/), 56, topH - 10, titleClr, W - PAD*2 - 20);
-                if (subtitle) drawSubtitle(subtitle, botY + 38, isLight ? "#555" : "#a08060");
+                ctx.fillText("◆", PAD, botY + 44);
+                const tY2 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 58, botY + 230, titleClr, W - PAD*2 - 20);
+                if (subtitle) drawSubtitle(subtitle, tY2 + 14, isLight ? "#555" : "#a08060");
 
                 if (feats.length) {
                     const pillH = 70, gap = 14;
+                    const chipsY = tY2 + (subtitle ? 52 : 30);
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
-                        const fx = PAD + i * (colW + gap), fy = botY + 48;
+                        const fx = PAD + i * (colW + gap), fy = chipsY;
                         rr(fx, fy, colW, pillH, 6, "transparent", gold, 1.5);
                         ctx.fillStyle = gold; ctx.font = `bold 22px Arial`;
                         ctx.fillText("◆", fx + 14, fy + pillH/2 + 8);
@@ -683,29 +681,26 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             // 3. ЭЛЕКТРОНИКА / ГАДЖЕТЫ — тёмный техно
             // ════════════════════════════════════════
             } else if (scheme === "tech") {
-                const topBg = isLight ? "#e8f4ff" : "#050d1a";
                 const botBg = isLight ? "#ddeeff" : "#030a14";
                 const cyan = "#00c8ff";
                 const titleClr = isLight ? "#001830" : "#ffffff";
-                const topH = Math.floor(H * 0.28), botY = Math.floor(H * 0.74);
 
-                ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
                 drawPhoto(topH, botY);
-                drawFade(topH, 55, topBg, "rgba(0,0,0,0)");
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
-                drawFade(botY - 55, 55, "rgba(0,0,0,0)", botBg);
+                drawFade(botY - 80, 80, "rgba(0,0,0,0)", botBg);
 
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 52, cyan, "#000");
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, cyan, "#000");
                 ctx.strokeStyle = cyan; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.moveTo(PAD, 20); ctx.lineTo(PAD, 10); ctx.lineTo(PAD+14, 10); ctx.stroke();
-                drawTitle((name || "").toUpperCase().split(/\s+/), 54, topH - 10, titleClr);
-                if (subtitle) drawSubtitle(subtitle, botY + 42, isLight ? "#004060" : "#4ab8d8");
+                ctx.beginPath(); ctx.moveTo(PAD, botY + 20); ctx.lineTo(PAD, botY + 10); ctx.lineTo(PAD+14, botY + 10); ctx.stroke();
+                const tY3 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 54, botY + 230, titleClr);
+                if (subtitle) drawSubtitle(subtitle, tY3 + 14, isLight ? "#004060" : "#4ab8d8");
 
                 if (feats.length) {
                     const pillH = 73, gap = 10;
+                    const chipsY = tY3 + (subtitle ? 52 : 30);
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
-                        const fx = PAD + i * (colW + gap), fy = botY + 58;
+                        const fx = PAD + i * (colW + gap), fy = chipsY;
                         rr(fx, fy, colW, pillH, 8, isLight ? "rgba(0,80,120,0.12)" : "rgba(0,200,255,0.08)", cyan, 1.5);
                         ctx.fillStyle = cyan;
                         ctx.beginPath(); ctx.moveTo(fx+14, fy+pillH/2-9); ctx.lineTo(fx+14, fy+pillH/2+9); ctx.lineTo(fx+28, fy+pillH/2); ctx.fill();
@@ -721,26 +716,23 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             // 4. ИНСТРУМЕНТЫ / СТРОЙКА — мощный промышленный
             // ════════════════════════════════════════
             } else if (scheme === "workshop") {
-                const topBg = isLight ? "#1c1c1c" : "#111111";
                 const botBg = isLight ? "#1c1c1c" : "#0d0d0d";
                 const yellow = "#ffc200";
-                const topH = Math.floor(H * 0.30), botY = Math.floor(H * 0.76);
 
-                ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
                 drawPhoto(topH, botY);
-                drawFade(topH, 50, topBg, "rgba(0,0,0,0)");
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
-                drawFade(botY - 50, 50, "rgba(0,0,0,0)", botBg);
+                drawFade(botY - 80, 80, "rgba(0,0,0,0)", botBg);
 
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 52, yellow, "#000");
-                drawTitle((name || "").toUpperCase().split(/\s+/), 54, topH - 10, "#ffffff");
-                if (subtitle) drawSubtitle(subtitle, botY + 44, "#aaa");
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, yellow, "#000");
+                const tY4 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 58, botY + 230, "#ffffff");
+                if (subtitle) drawSubtitle(subtitle, tY4 + 14, "#aaa");
 
                 if (feats.length) {
                     const pillH = 76, gap = 10;
+                    const chipsY = tY4 + (subtitle ? 52 : 30);
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
-                        const fx = PAD + i * (colW + gap), fy = botY + 58;
+                        const fx = PAD + i * (colW + gap), fy = chipsY;
                         rr(fx, fy, colW, pillH, 6, "rgba(255,194,0,0.12)", yellow, 2);
                         rr(fx, fy, 6, pillH, [6,0,0,6], yellow);
                         ctx.fillStyle = "#fff"; ctx.font = `600 22px Arial`;
@@ -755,28 +747,25 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             // 5. КОСМЕТИКА / ЕДА / ПРИРОДА — мягкий органик
             // ════════════════════════════════════════
             } else {
-                const topBg = isLight ? "#f0f7f0" : "#0d1a0d";
                 const botBg = isLight ? "#e8f4e8" : "#081008";
                 const green = "#4caf50";
                 const titleClr = isLight ? "#1a2e1a" : "#e8ffe8";
-                const topH = Math.floor(H * 0.30), botY = Math.floor(H * 0.76);
 
-                ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
                 drawPhoto(topH, botY);
-                drawFade(topH, 50, topBg, "rgba(0,0,0,0)");
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
-                drawFade(botY - 50, 50, "rgba(0,0,0,0)", botBg);
+                drawFade(botY - 80, 80, "rgba(0,0,0,0)", botBg);
 
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 52, green, "#fff");
-                ctx.font = "24px Arial"; ctx.fillText("🌿", PAD, 48);
-                drawTitle((name || "").toUpperCase().split(/\s+/), 56, topH - 10, titleClr, W - PAD*2 - 30);
-                if (subtitle) drawSubtitle(subtitle, botY + 40, isLight ? "#3a5e3a" : "#7fc87f");
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, green, "#fff");
+                ctx.font = "24px Arial"; ctx.fillText("🌿", PAD, botY + 46);
+                const tY5 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 58, botY + 230, titleClr, W - PAD*2 - 30);
+                if (subtitle) drawSubtitle(subtitle, tY5 + 14, isLight ? "#3a5e3a" : "#7fc87f");
 
                 if (feats.length) {
                     const pillH = 73, gap = 12;
+                    const chipsY = tY5 + (subtitle ? 52 : 30);
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
-                        const fx = PAD + i * (colW + gap), fy = botY + 58;
+                        const fx = PAD + i * (colW + gap), fy = chipsY;
                         rr(fx, fy, colW, pillH, 36, isLight ? "rgba(76,175,80,0.15)" : "rgba(76,175,80,0.2)", green, 2);
                         ctx.beginPath(); ctx.arc(fx+26, fy+pillH/2, 13, 0, Math.PI*2);
                         ctx.fillStyle = green; ctx.fill();
