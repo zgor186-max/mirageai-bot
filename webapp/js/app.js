@@ -502,16 +502,16 @@ async function mpCardGenerate() {
     const feat3 = document.getElementById("mp-card-feat3").value.trim();
 
     const bgStylesMap = {
-        warm:     { dark: "cozy dimly lit bedroom with warm amber lamp light, dark wooden furniture, soft shadows", light: "clean neutral beige studio backdrop with very soft side lighting, no harsh reflections" },
-        dark:     { dark: "dramatic pure black studio background with subtle spotlight on product", light: "clean light grey studio background with soft professional lighting" },
-        tech:     { dark: "dark carbon fiber surface with subtle blue LED accent lighting from sides", light: "clean white desk surface with soft natural light from a window" },
-        workshop: { dark: "dark industrial concrete surface with focused spotlight from above", light: "light grey concrete surface with soft diffused daylight" },
-        nature:   { dark: "dark green forest floor with soft dappled evening light", light: "clean white marble surface with fresh green leaves as accent" },
+        warm:     { dark: "cozy living room interior, warm wooden floor, soft sofa and cushions visible in background, warm amber lamp light glowing, realistic home atmosphere", light: "bright Scandinavian apartment interior, white walls, light wood floor, large window with natural daylight, minimalist home decor" },
+        dark:     { dark: "luxury dark boutique interior, black marble surface, soft dramatic spotlights, elegant dark shelving in background, premium store atmosphere", light: "high-end bright showroom interior, light grey polished floor, clean white walls, professional retail lighting" },
+        tech:     { dark: "modern dark home office setup, desk with RGB lighting glow, monitor screens in background, dark tech workspace atmosphere", light: "clean modern workspace, white desk, large window, MacBook and tech accessories visible in background, bright natural light" },
+        workshop: { dark: "industrial garage workshop interior, concrete floor, tools hanging on wall in background, focused overhead spotlight on product", light: "bright professional workshop, light concrete floor, organized tool storage visible in background, daylight through windows" },
+        nature:   { dark: "cozy kitchen counter, fresh herbs and vegetables in background, warm evening light, natural wood surfaces", light: "bright kitchen with white marble countertop, fresh plants and fruits in background, natural sunlight streaming in" },
     };
     const schemeStyles = bgStylesMap[mpCardColorScheme] || bgStylesMap.warm;
     const bgDesc = mpCardBgStyle === "light" ? schemeStyles.light : schemeStyles.dark;
 
-    const prompt = `Professional product photography: place this exact product on a ${bgDesc}. The product must be the clear focal point, sharp and well-defined. Background must NOT overpower or blend with the product. NO text, NO letters, NO logos, NO watermarks anywhere. Studio quality marketplace photo.`;
+    const prompt = `Professional product photography: place this exact product in a ${bgDesc}. The background must be a REAL realistic interior scene, NOT a plain solid color or gradient. The product is the main subject, placed naturally in the scene. Background should be visible and recognizable as a real place. NO text, NO letters, NO watermarks. Photorealistic, high quality marketplace photo.`;
 
     switchScreen("loading");
     animateSteps();
@@ -644,7 +644,7 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
             // Фото — герой сверху (60%), весь текст снизу
             const topH = 0;
-            const botY = Math.floor(H * 0.68);
+            const botY = Math.floor(H * 0.60);
 
             // ════════════════════════════════════════
             // 1. ОДЕЖДА / ОБУВЬ — тёплый минимализм
@@ -1127,4 +1127,3 @@ function finishProgress() {
 function buyCoins(amount, price) {
     tg.showAlert(`Оплата через Telegram Stars появится скоро!\nА пока напиши администратору.`);
 }
-
