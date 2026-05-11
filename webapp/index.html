@@ -238,7 +238,12 @@
             <div class="mp-section" style="margin-top:12px;">
                 <div class="mp-section-num">02</div>
                 <div class="mp-section-title">Текст на карточке</div>
-                <button class="mp-ai-btn" onclick="mpCardAiIdea()">✦ AI идея</button>
+                <div class="mp-ai-toggle-wrap" onclick="mpToggleAiIdea()">
+                    <div class="mp-toggle" id="mp-ai-toggle">
+                        <div class="mp-toggle-knob"></div>
+                    </div>
+                    <span class="mp-ai-label" id="mp-ai-label">AI Идея</span>
+                </div>
             </div>
             <div style="padding:0 16px;display:flex;flex-direction:column;gap:10px;">
                 <input id="mp-card-name" class="mp-input" type="text" placeholder="Название товара (напр: Пижама в клетку)" maxlength="40">
