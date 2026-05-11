@@ -9,24 +9,35 @@ let currentResultUrl = null;
 let currentLang = "ru";
 
 document.addEventListener("DOMContentLoaded", () => {
+    clearStorageIfFull();
     loadUserData();
     renderTemplates();
     setupUpload();
 });
 
 function saveGallery(gallery) {
-    let items = gallery.slice(0, 20);
+    // Храним только последние 8 карточек
+    let items = gallery.slice(0, 8);
     while (items.length > 0) {
         try {
             localStorage.setItem("gallery", JSON.stringify(items));
             return;
         } catch (e) {
-            // Квота переполнена — удаляем старые элементы
             items = items.slice(0, items.length - 1);
         }
     }
-    // Если совсем не влезает — очищаем галерею
     try { localStorage.removeItem("gallery"); } catch(e) {}
+}
+
+function clearStorageIfFull() {
+    try {
+        const test = "x".repeat(1024);
+        localStorage.setItem("_test", test);
+        localStorage.removeItem("_test");
+    } catch(e) {
+        // Места нет — очищаем галерею
+        try { localStorage.removeItem("gallery"); } catch(e2) {}
+    }
 }
 
 function loadUserData() {
