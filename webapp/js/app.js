@@ -102,16 +102,43 @@ function viewGalleryItem(url) {
     switchScreen("result");
 }
 
-function sendToChat() {
+async function sendToChat() {
     if (!currentResultUrl) return;
-    const data = {
-        action: "result",
-        template_id: selectedTemplate ? selectedTemplate.id : 0,
-        template_name: selectedTemplate ? selectedTemplate.name : "",
-        result_url: currentResultUrl,
-        already_paid: true
-    };
-    tg.sendData(JSON.stringify(data));
+
+    const chatId = tg.initDataUnsafe?.user?.id;
+    if (!chatId) { tg.showAlert("Не удалось определить пользователя"); return; }
+
+    const btn = document.querySelector(".result-btn-share");
+    const origText = btn.innerHTML;
+    btn.innerHTML = "⏳ Отправляю...";
+    btn.disabled = true;
+
+    try {
+        const blob = await fetch(currentResultUrl).then(r => r.blob());
+        const formData = new FormData();
+        formData.append("chat_id", chatId);
+        formData.append("photo", blob, "MirageAI.jpg");
+        formData.append("caption", "✅ Карточка товара готова! — *MirageAI*");
+        formData.append("parse_mode", "Markdown");
+
+        const BOT_TOKEN = "8783691026:AAEzeRqVkCcXlwgqc0bhjZ4N-fOGcmoQ_nI";
+        const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+            method: "POST",
+            body: formData
+        });
+        const result = await resp.json();
+
+        if (result.ok) {
+            tg.showAlert("✅ Фото отправлено в чат!");
+        } else {
+            tg.showAlert("❌ Ошибка: " + (result.description || "Попробуй ещё раз"));
+        }
+    } catch (e) {
+        tg.showAlert("❌ Ошибка отправки. Попробуй ещё раз.");
+    } finally {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+    }
 }
 
 function downloadResult() {
@@ -410,6 +437,23 @@ async function mpCardAnalyze(base64) {
             el.disabled = false;
         });
         fields.forEach(id => { document.getElementById(id).disabled = false; });
+    }
+}
+
+let mpAiToggleActive = false;
+
+function mpToggleAiIdea() {
+    if (!mpCardPhotoBase64) {
+        tg.showAlert("Сначала загрузи фото товара!");
+        return;
+    }
+    mpAiToggleActive = !mpAiToggleActive;
+    const toggle = document.getElementById("mp-ai-toggle");
+    const label = document.getElementById("mp-ai-label");
+    toggle.classList.toggle("active", mpAiToggleActive);
+    label.classList.toggle("active", mpAiToggleActive);
+    if (mpAiToggleActive) {
+        mpCardAnalyze(mpCardPhotoBase64);
     }
 }
 
