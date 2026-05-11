@@ -600,6 +600,14 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 g.addColorStop(0, fromColor); g.addColorStop(1, toColor);
                 ctx.fillStyle = g; ctx.fillRect(0, y, W, h);
             }
+            // Добавляет видимый сепаратор между фото и текстовой панелью
+            function drawSeparator(y, accentColor) {
+                if (isLight) {
+                    // На светлом фоне — тонкая цветная линия (ширина 3px)
+                    ctx.fillStyle = accentColor;
+                    ctx.fillRect(0, y, W, 3);
+                }
+            }
             function drawBadge(text, x, y, bg, textColor) {
                 const maxBadgeW = W / 2 - PAD; // бейдж не шире половины карточки
                 let sz = 18;
@@ -655,7 +663,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
                 drawPhoto(topH, botY);
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
-                drawFade(botY - 80, 80, "rgba(0,0,0,0)", botBg);
+                drawFade(botY - 80, 80, isLight ? "rgba(0,0,0,0.22)" : "rgba(0,0,0,0)", botBg);
+                drawSeparator(botY, accentClr);
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, accentClr, "#1a1000");
                 const tY1 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 70, botY + 220, titleClr);
@@ -695,7 +704,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
                 drawPhoto(topH, botY);
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
-                drawFade(botY - 80, 80, "rgba(0,0,0,0)", botBg);
+                drawFade(botY - 80, 80, isLight ? "rgba(0,0,0,0.22)" : "rgba(0,0,0,0)", botBg);
+                drawSeparator(botY, gold);
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, gold, "#000");
                 ctx.fillStyle = gold; ctx.font = `22px Arial`;
@@ -735,7 +745,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
                 drawPhoto(topH, botY);
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
-                drawFade(botY - 80, 80, "rgba(0,0,0,0)", botBg);
+                drawFade(botY - 80, 80, isLight ? "rgba(0,0,0,0.22)" : "rgba(0,0,0,0)", botBg);
+                drawSeparator(botY, cyan);
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, cyan, "#000");
                 ctx.strokeStyle = cyan; ctx.lineWidth = 2;
@@ -774,7 +785,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
                 drawPhoto(topH, botY);
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
-                drawFade(botY - 80, 80, "rgba(0,0,0,0)", botBg);
+                drawFade(botY - 80, 80, isLight ? "rgba(0,0,0,0.22)" : "rgba(0,0,0,0)", botBg);
+                drawSeparator(botY, yellow);
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, yellow, "#000");
                 const tY4 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 70, botY + 220, "#ffffff");
@@ -811,7 +823,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
                 drawPhoto(topH, botY);
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
-                drawFade(botY - 80, 80, "rgba(0,0,0,0)", botBg);
+                drawFade(botY - 80, 80, isLight ? "rgba(0,0,0,0.22)" : "rgba(0,0,0,0)", botBg);
+                drawSeparator(botY, green);
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, green, "#fff");
                 ctx.font = "24px Arial"; ctx.fillText("🌿", PAD, botY + 52);
@@ -1125,4 +1138,3 @@ function finishProgress() {
 function buyCoins(amount, price) {
     tg.showAlert(`Оплата через Telegram Stars появится скоро!\nА пока напиши администратору.`);
 }
-
