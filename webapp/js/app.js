@@ -393,7 +393,7 @@ async function mpCardGenerate() {
     try {
         const POLZA_KEY = "pza_Y_e6drIevLO8ptUDrT2T5srYMGIrIEgP";
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 90000);
+        const timeout = setTimeout(() => controller.abort(), 180000);
         const resp = await fetch("https://polza.ai/api/v1/media", {
             signal: controller.signal,
             method: "POST",
@@ -477,14 +477,17 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             const sx = (W - sw) / 2, sy = (H - sh) / 2;
             ctx.drawImage(img, sx, sy, sw, sh);
 
-            // ── Gradient top (title zone) ──
-            const gTop = ctx.createLinearGradient(0, 0, 0, H * 0.55);
-            gTop.addColorStop(0, "rgba(0,0,0,0.97)");
-            gTop.addColorStop(0.45, "rgba(0,0,0,0.80)");
-            gTop.addColorStop(0.75, "rgba(0,0,0,0.35)");
+            // ── Solid black panel at top (скрывает текст ИИ) ──
+            ctx.fillStyle = "rgba(0,0,0,1)";
+            ctx.fillRect(0, 0, W, 160);
+
+            // ── Gradient top (fade из чёрного в прозрачный) ──
+            const gTop = ctx.createLinearGradient(0, 130, 0, H * 0.52);
+            gTop.addColorStop(0, "rgba(0,0,0,1)");
+            gTop.addColorStop(0.4, "rgba(0,0,0,0.6)");
             gTop.addColorStop(1, "rgba(0,0,0,0)");
             ctx.fillStyle = gTop;
-            ctx.fillRect(0, 0, W, H * 0.55);
+            ctx.fillRect(0, 130, W, H * 0.52 - 130);
 
             // ── Gradient bottom (features zone) ──
             const gBot = ctx.createLinearGradient(0, H * 0.58, 0, H);
@@ -618,7 +621,7 @@ async function mpGenerate() {
     try {
         const POLZA_KEY = "pza_Y_e6drIevLO8ptUDrT2T5srYMGIrIEgP";
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 90000);
+        const timeout = setTimeout(() => controller.abort(), 180000);
         const resp = await fetch("https://polza.ai/api/v1/media", {
             signal: controller.signal,
             method: "POST",
@@ -745,7 +748,7 @@ async function fetchImageAsBase64(url) {
 async function callPolzaAPI(templateBase64, userBase64) {
     const POLZA_KEY = "pza_Y_e6drIevLO8ptUDrT2T5srYMGIrIEgP";
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90000);
+    const timeout = setTimeout(() => controller.abort(), 180000);
     const resp = await fetch("https://polza.ai/api/v1/media", {
         signal: controller.signal,
         method: "POST",
