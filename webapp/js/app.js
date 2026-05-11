@@ -601,9 +601,20 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 return ty;
             }
             function drawSubtitle(text, y, color, size) {
-                ctx.font = `600 ${size || 23}px 'Nunito', Arial`;
+                const sz = size || 21;
+                const lineH = Math.round(sz * 1.5);
+                ctx.font = `600 ${sz}px 'Nunito', Arial`;
                 ctx.fillStyle = color;
-                ctx.fillText(text.substring(0, 80), PAD, y);
+                const parts = text.split("•").map(p => p.trim()).filter(Boolean);
+                if (parts.length > 1) {
+                    parts.forEach((part, i) => {
+                        ctx.fillText("• " + part, PAD, y + i * lineH);
+                    });
+                    return y + (parts.length - 1) * lineH;
+                } else {
+                    ctx.fillText(text.substring(0, 80), PAD, y);
+                    return y;
+                }
             }
 
             // Фото — герой сверху (60%), весь текст снизу
@@ -625,11 +636,11 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, accentClr, "#1a1000");
                 const tY1 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 58, botY + 230, titleClr);
-                if (subtitle) drawSubtitle(subtitle, tY1 + 14, subClr);
+                const sY1 = subtitle ? drawSubtitle(subtitle, tY1 + 14, subClr) : tY1;
 
                 if (feats.length) {
                     const pillH = 73, gap = 12;
-                    const chipsY = tY1 + (subtitle ? 52 : 30);
+                    const chipsY = sY1 + 30;
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
                         const fx = PAD + i * (colW + gap), fy = chipsY;
@@ -667,11 +678,11 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.fillStyle = gold; ctx.font = `22px Arial`;
                 ctx.fillText("◆", PAD, botY + 44);
                 const tY2 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 58, botY + 230, titleClr, W - PAD*2 - 20);
-                if (subtitle) drawSubtitle(subtitle, tY2 + 14, isLight ? "#555" : "#a08060");
+                const sY2 = subtitle ? drawSubtitle(subtitle, tY2 + 14, isLight ? "#555" : "#a08060") : tY2;
 
                 if (feats.length) {
                     const pillH = 70, gap = 14;
-                    const chipsY = tY2 + (subtitle ? 52 : 30);
+                    const chipsY = sY2 + 30;
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
                         const fx = PAD + i * (colW + gap), fy = chipsY;
@@ -707,11 +718,11 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.strokeStyle = cyan; ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.moveTo(PAD, botY + 20); ctx.lineTo(PAD, botY + 10); ctx.lineTo(PAD+14, botY + 10); ctx.stroke();
                 const tY3 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 54, botY + 230, titleClr);
-                if (subtitle) drawSubtitle(subtitle, tY3 + 14, isLight ? "#004060" : "#4ab8d8");
+                const sY3 = subtitle ? drawSubtitle(subtitle, tY3 + 14, isLight ? "#004060" : "#4ab8d8") : tY3;
 
                 if (feats.length) {
                     const pillH = 73, gap = 10;
-                    const chipsY = tY3 + (subtitle ? 52 : 30);
+                    const chipsY = sY3 + 30;
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
                         const fx = PAD + i * (colW + gap), fy = chipsY;
@@ -744,11 +755,11 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, yellow, "#000");
                 const tY4 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 58, botY + 230, "#ffffff");
-                if (subtitle) drawSubtitle(subtitle, tY4 + 14, "#aaa");
+                const sY4 = subtitle ? drawSubtitle(subtitle, tY4 + 14, "#aaa") : tY4;
 
                 if (feats.length) {
                     const pillH = 76, gap = 10;
-                    const chipsY = tY4 + (subtitle ? 52 : 30);
+                    const chipsY = sY4 + 30;
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
                         const fx = PAD + i * (colW + gap), fy = chipsY;
@@ -782,11 +793,11 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, green, "#fff");
                 ctx.font = "24px Arial"; ctx.fillText("🌿", PAD, botY + 46);
                 const tY5 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 58, botY + 230, titleClr, W - PAD*2 - 30);
-                if (subtitle) drawSubtitle(subtitle, tY5 + 14, isLight ? "#3a5e3a" : "#7fc87f");
+                const sY5 = subtitle ? drawSubtitle(subtitle, tY5 + 14, isLight ? "#3a5e3a" : "#7fc87f") : tY5;
 
                 if (feats.length) {
                     const pillH = 73, gap = 12;
-                    const chipsY = tY5 + (subtitle ? 52 : 30);
+                    const chipsY = sY5 + 30;
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
                         const fx = PAD + i * (colW + gap), fy = chipsY;
