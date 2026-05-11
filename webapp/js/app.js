@@ -435,26 +435,16 @@ async function mpCardGenerate() {
     const feat3 = document.getElementById("mp-card-feat3").value.trim();
 
     const bgStylesMap = {
-        warm:     { dark: "elegant warm bedroom with soft golden lighting and cozy shadows", light: "bright cozy living room with warm natural sunlight and cream tones" },
-        dark:     { dark: "dramatic dark studio with moody cinematic lighting and subtle fog", light: "bright minimalist white studio with soft diffused light" },
-        tech:     { dark: "modern tech environment with blue neon lighting and dark background", light: "clean bright white tech desk setup with natural daylight" },
-        workshop: { dark: "professional workshop with dramatic industrial dark lighting", light: "bright professional workshop with white walls and daylight" },
-        nature:   { dark: "lush dark forest with dramatic evening green light", light: "bright fresh outdoor nature setting with soft morning sunlight" },
-    };
-    const gradientDescMap = {
-        warm: "elegant room with golden hour sunset light transitioning from warm shadow to bright",
-        dark: "dramatic studio with cinematic gradient from deep shadow to soft highlight",
-        tech: "modern tech space with gradient from deep blue dark to bright neon lit area",
-        workshop: "workshop space with gradient from dark dramatic shadow to bright working light",
-        nature: "nature setting with gradient from shaded green forest to bright sunny meadow",
+        warm:     { dark: "cozy dimly lit bedroom with warm amber lamp light, dark wooden furniture, soft shadows", light: "clean neutral beige studio backdrop with very soft side lighting, no harsh reflections" },
+        dark:     { dark: "dramatic pure black studio background with subtle spotlight on product", light: "clean light grey studio background with soft professional lighting" },
+        tech:     { dark: "dark carbon fiber surface with subtle blue LED accent lighting from sides", light: "clean white desk surface with soft natural light from a window" },
+        workshop: { dark: "dark industrial concrete surface with focused spotlight from above", light: "light grey concrete surface with soft diffused daylight" },
+        nature:   { dark: "dark green forest floor with soft dappled evening light", light: "clean white marble surface with fresh green leaves as accent" },
     };
     const schemeStyles = bgStylesMap[mpCardColorScheme] || bgStylesMap.warm;
-    let bgDesc;
-    if (mpCardBgStyle === "light") bgDesc = schemeStyles.light;
-    else if (mpCardBgStyle === "gradient") bgDesc = gradientDescMap[mpCardColorScheme] || gradientDescMap.warm;
-    else bgDesc = schemeStyles.dark;
+    const bgDesc = mpCardBgStyle === "light" ? schemeStyles.light : schemeStyles.dark;
 
-    const prompt = `Change only the background of this product photo to: ${bgDesc}. The product itself must remain exactly as shown - same shape, colors, materials. STRICT RULES: NO text, NO letters, NO words, NO brand names, NO logos, NO watermarks anywhere in the image. Clean professional product photo for marketplace.`;
+    const prompt = `Professional product photography: place this exact product on a ${bgDesc}. The product must be the clear focal point, sharp and well-defined. Background must NOT overpower or blend with the product. NO text, NO letters, NO logos, NO watermarks anywhere. Studio quality marketplace photo.`;
 
     switchScreen("loading");
     animateSteps();
@@ -512,15 +502,14 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.onload = async () => {
-            // Загружаем шрифты перед рисованием
             await document.fonts.load("700 60px 'Oswald'");
-            await document.fonts.load("400 60px 'Bebas Neue'");
-            const W = 800, H = 1060;
+            const W = 800, H = 1100;
             const canvas = document.createElement("canvas");
             canvas.width = W; canvas.height = H;
             const ctx = canvas.getContext("2d");
             const C = COLOR_SCHEMES[mpCardColorScheme] || COLOR_SCHEMES.warm;
             const PAD = 28;
+            const isLight = (mpCardBgStyle || "dark") === "light";
 
             function rr(x, y, w, h, r, fill, stroke, strokeW) {
                 ctx.beginPath();
@@ -529,153 +518,127 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = strokeW || 2; ctx.stroke(); }
             }
 
-            function shadow(blur, color) {
-                ctx.shadowBlur = blur || 0;
-                ctx.shadowColor = color || "transparent";
-                ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
-            }
-
             function autoSize(text, maxW, max, min) {
                 let sz = max;
-                ctx.font = `700 ${sz}px 'Oswald', 'Arial Black', Arial`;
+                ctx.font = `700 ${sz}px 'Oswald', Arial`;
                 while (sz > min && ctx.measureText(text).width > maxW) sz -= 1;
                 return sz;
             }
 
-            const bgMode = mpCardBgStyle || "dark";
-            const isLight = bgMode === "light";
-            const solidColor = isLight ? "#ffffff" : "#000000";
-            const topRgb = isLight ? "255,255,255" : "0,0,0";
+            // ── Цвета для светлого/тёмного режима ──
+            const topBg    = isLight ? "#f5f5f5" : "#111111";
+            const botBg    = isLight ? "#ffffff" : "#0d0d0d";
+            const titleClr = isLight ? "#111111" : "#ffffff";
+            const subClr   = isLight ? "#555555" : "rgba(255,255,255,0.7)";
 
-            // ── Сплошной фон для всего холста ──
-            ctx.fillStyle = solidColor;
-            ctx.fillRect(0, 0, W, H);
+            // ── ЗОНА 1: Верхний блок (0 - H*0.30) — чистый фон + заголовок ──
+            const topH = Math.floor(H * 0.30);
+            ctx.fillStyle = topBg;
+            ctx.fillRect(0, 0, W, topH);
 
-            // ── Фото начинается с 35% высоты (обрезаем верх где ИИ пишет текст) ──
-            // Берём изображение, пропуская верхние 35% где обычно размещается текст ИИ
-            const cropFrac = 0.35;
-            const srcY = Math.floor(img.height * cropFrac);
-            const srcH2 = img.height - srcY;
-            const destY = Math.floor(H * 0.35);
-            const destH2 = H - destY;
-            ctx.drawImage(img, 0, srcY, img.width, srcH2, 0, destY, W, destH2);
-
-            // ── Плавный переход от сплошного цвета к фото ──
-            const gTop = ctx.createLinearGradient(0, destY - 20, 0, destY + H * 0.15);
-            gTop.addColorStop(0,   `rgba(${topRgb},1)`);
-            gTop.addColorStop(0.5, `rgba(${topRgb},0.5)`);
-            gTop.addColorStop(1,   `rgba(${topRgb},0)`);
-            ctx.fillStyle = gTop;
-            ctx.fillRect(0, destY - 20, W, H * 0.15 + 20);
-
-            // ── Gradient bottom (features zone) ──
-            const botRgb = isLight ? "240,240,240" : "0,0,0";
-            const gBot = ctx.createLinearGradient(0, H * 0.58, 0, H);
-            gBot.addColorStop(0, `rgba(${botRgb},0)`);
-            gBot.addColorStop(0.4, `rgba(${botRgb},0.75)`);
-            gBot.addColorStop(1, `rgba(${botRgb},0.97)`);
-            ctx.fillStyle = gBot;
-            ctx.fillRect(0, H * 0.58, W, H * 0.42);
-
-            // ── BADGE top-right pill ──
+            // BADGE — пилюля сверху справа
             if (badge) {
                 const badgeText = badge.toUpperCase();
-                ctx.font = `bold 20px Arial`;
-                const bW = Math.max(ctx.measureText(badgeText).width + 32, 80);
-                const bH = 38;
-                const bX = W - bW - PAD, bY = PAD;
-                rr(bX, bY, bW, bH, bH / 2, C.badge);
-                shadow(8, "rgba(0,0,0,0.5)");
-                ctx.fillStyle = mpCardColorScheme === "warm" ? "#1a1000" : "#000000";
                 ctx.font = `bold 19px Arial`;
+                const bW = Math.max(ctx.measureText(badgeText).width + 30, 80);
+                const bH = 36;
+                const bX = W - bW - PAD, bY = PAD - 4;
+                rr(bX, bY, bW, bH, bH / 2, C.badge);
+                ctx.fillStyle = "#000000";
                 ctx.textAlign = "center";
-                ctx.fillText(badgeText, bX + bW / 2, bY + 25);
+                ctx.fillText(badgeText, bX + bW / 2, bY + 24);
                 ctx.textAlign = "left";
-                shadow(0);
             }
 
-            // ── TITLE — each word fills full width ──
-            const titleColor = isLight ? "#111111" : C.title;
-            const titleShadowColor = isLight ? "rgba(200,200,200,0.5)" : "rgba(0,0,0,0.95)";
+            // ЗАГОЛОВОК — каждое слово на всю ширину
             const titleWords = (name || "").toUpperCase().split(/\s+/).filter(Boolean);
-            let ty = 72;
+            let ty = 70;
             for (const word of titleWords) {
-                const sz = autoSize(word, W - PAD * 2, 108, 26);
-                shadow(16, titleShadowColor);
-                ctx.font = `700 ${sz}px 'Oswald', 'Arial Black', Arial`;
-                ctx.fillStyle = titleColor;
+                const sz = autoSize(word, W - PAD * 2, 120, 28);
+                ctx.font = `700 ${sz}px 'Oswald', Arial`;
+                ctx.fillStyle = titleClr;
                 ctx.fillText(word, PAD, ty);
-                shadow(0);
-                ty += Math.round(sz * 1.08);
-                if (ty > H * 0.46) break;
+                ty += Math.round(sz * 1.05);
+                if (ty > topH - 10) break;
             }
 
-            // ── SUBTITLE below title ──
-            if (subtitle && ty < H * 0.50) {
-                ctx.font = `500 22px Arial`;
-                ctx.fillStyle = isLight ? "rgba(50,50,50,0.85)" : "rgba(255,255,255,0.78)";
-                shadow(8, isLight ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.9)");
-                let line = "", sy2 = ty + 6;
-                for (const w of subtitle.split(" ")) {
-                    const t = line + w + " ";
-                    if (ctx.measureText(t).width > W - PAD * 2 && line) {
-                        ctx.fillText(line.trim(), PAD, sy2); sy2 += 28; line = w + " ";
-                    } else line = t;
-                    if (sy2 > H * 0.52) break;
-                }
-                if (line && sy2 <= H * 0.52) ctx.fillText(line.trim(), PAD, sy2);
-                shadow(0);
+            // ── ЗОНА 2: Фото (topH - H*0.78) — только средняя часть AI-картинки ──
+            const imgZoneY = topH;
+            const imgZoneH = Math.floor(H * 0.78) - imgZoneY;
+
+            // Берём только СЕРЕДИНУ картинки (пропускаем верх 30% и низ 10%)
+            const srcTop  = Math.floor(img.height * 0.30);
+            const srcBot  = Math.floor(img.height * 0.90);
+            const srcH2   = srcBot - srcTop;
+            ctx.drawImage(img, 0, srcTop, img.width, srcH2, 0, imgZoneY, W, imgZoneH);
+
+            // Тонкий переход сверху фото
+            const gPhotoTop = ctx.createLinearGradient(0, imgZoneY, 0, imgZoneY + 40);
+            gPhotoTop.addColorStop(0, topBg);
+            gPhotoTop.addColorStop(1, "rgba(0,0,0,0)");
+            ctx.fillStyle = gPhotoTop;
+            ctx.fillRect(0, imgZoneY, W, 40);
+
+            // ── ЗОНА 3: Нижний блок (H*0.78 - H) — чистый фон + преимущества ──
+            const botY = Math.floor(H * 0.78);
+            ctx.fillStyle = botBg;
+            ctx.fillRect(0, botY, W, H - botY);
+
+            // Тонкий переход снизу фото
+            const gPhotoBot = ctx.createLinearGradient(0, botY - 40, 0, botY);
+            gPhotoBot.addColorStop(0, "rgba(0,0,0,0)");
+            gPhotoBot.addColorStop(1, botBg);
+            ctx.fillStyle = gPhotoBot;
+            ctx.fillRect(0, botY - 40, W, 40);
+
+            // ПОДЗАГОЛОВОК
+            if (subtitle) {
+                ctx.font = `400 22px Arial`;
+                ctx.fillStyle = subClr;
+                ctx.fillText(subtitle.substring(0, 55), PAD, botY + 32);
             }
 
-            // ── FEATURES — bottom pills with checkmark ──
+            // ПРЕИМУЩЕСТВА — 3 пилюли в ряд
             const feats = [feat1, feat2, feat3].filter(Boolean);
             if (feats.length) {
-                const pillH = 52;
-                const gap = 12;
-                const totalH = feats.length * pillH + (feats.length - 1) * gap;
-                let fy = H - PAD - totalH;
+                const featY = botY + 55;
+                const colW = (W - PAD * 2 - 16 * (feats.length - 1)) / feats.length;
+                feats.forEach((f, i) => {
+                    const fx = PAD + i * (colW + 16);
+                    const pillH = 54;
+                    const pillBg = isLight ? "#111111" : "rgba(255,255,255,0.10)";
+                    const pillBorder = isLight ? "#111111" : C.featStroke;
+                    rr(fx, featY, colW, pillH, 14, pillBg, pillBorder, 1.5);
 
-                feats.forEach((f) => {
-                    const text = f;
-                    ctx.font = `600 20px Arial`;
-                    const textW = ctx.measureText(text).width;
-                    const checkSize = 28;
-                    const pillW = Math.min(checkSize + 12 + textW + PAD * 1.5, W - PAD * 2);
-                    const pillX = PAD;
-
-                    // pill background
-                    const pillBg = isLight ? "rgba(30,30,30,0.82)" : "rgba(255,255,255,0.13)";
-                    const pillStroke = isLight ? "rgba(30,30,30,0.5)" : C.featStroke;
-                    rr(pillX, fy, pillW, pillH, pillH / 2, pillBg, pillStroke, 1.5);
-
-                    // checkmark circle
-                    const cx2 = pillX + pillH / 2;
-                    const cy2 = fy + pillH / 2;
+                    // Галочка
+                    const cx2 = fx + 20;
+                    const cy2 = featY + pillH / 2;
                     ctx.beginPath();
-                    ctx.arc(cx2, cy2, 11, 0, Math.PI * 2);
+                    ctx.arc(cx2, cy2, 9, 0, Math.PI * 2);
                     ctx.fillStyle = C.badge;
                     ctx.fill();
-
-                    // checkmark ✓
-                    ctx.strokeStyle = mpCardColorScheme === "warm" ? "#1a1000" : "#000";
-                    ctx.lineWidth = 2.5;
+                    ctx.strokeStyle = "#000";
+                    ctx.lineWidth = 2;
                     ctx.lineCap = "round";
                     ctx.lineJoin = "round";
                     ctx.beginPath();
-                    ctx.moveTo(cx2 - 5, cy2);
-                    ctx.lineTo(cx2 - 1, cy2 + 5);
-                    ctx.lineTo(cx2 + 6, cy2 - 5);
+                    ctx.moveTo(cx2 - 4, cy2);
+                    ctx.lineTo(cx2 - 1, cy2 + 4);
+                    ctx.lineTo(cx2 + 5, cy2 - 4);
                     ctx.stroke();
 
-                    // text
-                    shadow(0);
+                    // Текст
                     ctx.fillStyle = isLight ? "#ffffff" : C.featText;
-                    ctx.font = `600 20px Arial`;
+                    ctx.font = `600 17px Arial`;
                     ctx.textAlign = "left";
-                    ctx.fillText(text, pillX + pillH / 2 + 16, fy + pillH / 2 + 7);
-                    shadow(0);
-
-                    fy += pillH + gap;
+                    // Перенос если длинный текст
+                    const words = f.split(" ");
+                    if (words.length > 1 && ctx.measureText(f).width > colW - 40) {
+                        ctx.fillText(words[0], fx + 36, featY + 22);
+                        ctx.fillText(words.slice(1).join(" "), fx + 36, featY + 40);
+                    } else {
+                        ctx.fillText(f, fx + 36, featY + pillH / 2 + 6);
+                    }
                 });
             }
 
