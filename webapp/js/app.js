@@ -619,7 +619,7 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
             // Фото — герой сверху (60%), весь текст снизу
             const topH = 0;
-            const botY = Math.floor(H * 0.60);
+            const botY = Math.floor(H * 0.65);
 
             // ════════════════════════════════════════
             // 1. ОДЕЖДА / ОБУВЬ — тёплый минимализм
