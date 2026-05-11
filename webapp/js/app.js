@@ -266,6 +266,13 @@ function mpSelectStyle(style, el) {
 
 let mpCardPhotoBase64 = null;
 let mpCardColorScheme = "warm";
+let mpCardBgStyle = "dark"; // dark | light | gradient
+
+function mpSelectBg(style, el) {
+    mpCardBgStyle = style;
+    document.querySelectorAll(".mp-bg-btn").forEach(b => b.classList.remove("active"));
+    el.classList.add("active");
+}
 
 function mpCardHandlePhoto(input) {
     const file = input.files[0];
@@ -377,15 +384,27 @@ async function mpCardGenerate() {
     const feat2 = document.getElementById("mp-card-feat2").value.trim();
     const feat3 = document.getElementById("mp-card-feat3").value.trim();
 
-    const bgStyles = {
-        warm:     "elegant warm bedroom interior with soft golden lighting, cozy atmosphere",
-        dark:     "dramatic dark studio with moody cinematic lighting and subtle fog",
-        tech:     "modern tech environment with blue neon lighting and dark background",
-        workshop: "professional workshop or garage with dramatic industrial lighting",
-        nature:   "fresh natural outdoor setting with soft green light and clean air",
+    const bgStylesMap = {
+        warm:     { dark: "elegant warm bedroom with soft golden lighting and cozy shadows", light: "bright cozy living room with warm natural sunlight and cream tones" },
+        dark:     { dark: "dramatic dark studio with moody cinematic lighting and subtle fog", light: "bright minimalist white studio with soft diffused light" },
+        tech:     { dark: "modern tech environment with blue neon lighting and dark background", light: "clean bright white tech desk setup with natural daylight" },
+        workshop: { dark: "professional workshop with dramatic industrial dark lighting", light: "bright professional workshop with white walls and daylight" },
+        nature:   { dark: "lush dark forest with dramatic evening green light", light: "bright fresh outdoor nature setting with soft morning sunlight" },
     };
-    const bgDesc = bgStyles[mpCardColorScheme] || bgStyles.warm;
-    const prompt = `Place this product in a ${bgDesc}. Keep the product exactly as it is shown - same shape, colors, and details. Just add a stunning realistic background. Professional marketplace product photo quality. IMPORTANT: Do not add ANY text, words, letters, logos, watermarks, or brand names anywhere in the image.`;
+    const gradientDescMap = {
+        warm: "elegant room with golden hour sunset light transitioning from warm shadow to bright",
+        dark: "dramatic studio with cinematic gradient from deep shadow to soft highlight",
+        tech: "modern tech space with gradient from deep blue dark to bright neon lit area",
+        workshop: "workshop space with gradient from dark dramatic shadow to bright working light",
+        nature: "nature setting with gradient from shaded green forest to bright sunny meadow",
+    };
+    const schemeStyles = bgStylesMap[mpCardColorScheme] || bgStylesMap.warm;
+    let bgDesc;
+    if (mpCardBgStyle === "light") bgDesc = schemeStyles.light;
+    else if (mpCardBgStyle === "gradient") bgDesc = gradientDescMap[mpCardColorScheme] || gradientDescMap.warm;
+    else bgDesc = schemeStyles.dark;
+
+    const prompt = `Place this product in a ${bgDesc}. Keep the product exactly as it is shown - same shape, colors, and details. Just change the background. Professional marketplace product photo quality. IMPORTANT: Do not add ANY text, words, letters, logos, watermarks, or brand names anywhere in the image.`;
 
     switchScreen("loading");
     animateSteps();
@@ -477,17 +496,17 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             const sx = (W - sw) / 2, sy = (H - sh) / 2;
             ctx.drawImage(img, sx, sy, sw, sh);
 
-            // ── Solid black panel at top (скрывает текст ИИ) ──
-            ctx.fillStyle = "rgba(0,0,0,1)";
-            ctx.fillRect(0, 0, W, 220);
-
-            // ── Gradient top (fade из чёрного в прозрачный) ──
-            const gTop = ctx.createLinearGradient(0, 180, 0, H * 0.55);
-            gTop.addColorStop(0, "rgba(0,0,0,1)");
-            gTop.addColorStop(0.4, "rgba(0,0,0,0.6)");
-            gTop.addColorStop(1, "rgba(0,0,0,0)");
+            // ── Gradient top (зависит от выбранного стиля фона) ──
+            const bgMode = mpCardBgStyle || "dark";
+            const topColor = bgMode === "light" ? "255,255,255" : "0,0,0";
+            const gTop = ctx.createLinearGradient(0, 0, 0, H * 0.58);
+            gTop.addColorStop(0,    `rgba(${topColor},0.97)`);
+            gTop.addColorStop(0.20, `rgba(${topColor},0.90)`);
+            gTop.addColorStop(0.42, `rgba(${topColor},0.65)`);
+            gTop.addColorStop(0.65, `rgba(${topColor},0.25)`);
+            gTop.addColorStop(1,    `rgba(${topColor},0)`);
             ctx.fillStyle = gTop;
-            ctx.fillRect(0, 180, W, H * 0.55 - 180);
+            ctx.fillRect(0, 0, W, H * 0.58);
 
             // ── Gradient bottom (features zone) ──
             const gBot = ctx.createLinearGradient(0, H * 0.58, 0, H);
@@ -515,13 +534,15 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             }
 
             // ── TITLE — each word fills full width ──
+            const titleColor = bgMode === "light" ? "#111111" : C.title;
+            const titleShadowColor = bgMode === "light" ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.95)";
             const titleWords = (name || "").toUpperCase().split(/\s+/).filter(Boolean);
             let ty = 72;
             for (const word of titleWords) {
                 const sz = autoSize(word, W - PAD * 2, 108, 26);
-                shadow(16, "rgba(0,0,0,0.95)");
+                shadow(16, titleShadowColor);
                 ctx.font = `900 ${sz}px 'Arial Black', Arial`;
-                ctx.fillStyle = C.title;
+                ctx.fillStyle = titleColor;
                 ctx.fillText(word, PAD, ty);
                 shadow(0);
                 ty += Math.round(sz * 1.08);

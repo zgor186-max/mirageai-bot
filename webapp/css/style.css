@@ -927,6 +927,33 @@ body {
 .mp-input:focus { border-color: var(--accent2); }
 .mp-input::placeholder { color: var(--text2); }
 
+.mp-bg-toggle {
+    display: flex;
+    gap: 8px;
+}
+.mp-bg-btn {
+    flex: 1;
+    padding: 10px 6px;
+    border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: var(--text2);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+.mp-bg-btn.active {
+    border-color: var(--accent2);
+    background: rgba(124,58,237,0.2);
+    color: var(--text);
+}
+
 .mp-ai-btn {
     margin-left: auto;
     background: linear-gradient(135deg, #5c35d9, #a78bfa);
