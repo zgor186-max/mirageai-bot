@@ -385,7 +385,7 @@ async function mpCardGenerate() {
         nature:   "fresh natural outdoor setting with soft green light and clean air",
     };
     const bgDesc = bgStyles[mpCardColorScheme] || bgStyles.warm;
-    const prompt = `Place this product in a ${bgDesc}. Keep the product exactly as it is shown - same shape, colors, and details. Just add a stunning realistic background. Professional marketplace product photo quality. Do not add any text or watermarks.`;
+    const prompt = `Place this product in a ${bgDesc}. Keep the product exactly as it is shown - same shape, colors, and details. Just add a stunning realistic background. Professional marketplace product photo quality. IMPORTANT: Do not add ANY text, words, letters, logos, watermarks, or brand names anywhere in the image.`;
 
     switchScreen("loading");
     animateSteps();
@@ -479,15 +479,15 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
             // ── Solid black panel at top (скрывает текст ИИ) ──
             ctx.fillStyle = "rgba(0,0,0,1)";
-            ctx.fillRect(0, 0, W, 160);
+            ctx.fillRect(0, 0, W, 220);
 
             // ── Gradient top (fade из чёрного в прозрачный) ──
-            const gTop = ctx.createLinearGradient(0, 130, 0, H * 0.52);
+            const gTop = ctx.createLinearGradient(0, 180, 0, H * 0.55);
             gTop.addColorStop(0, "rgba(0,0,0,1)");
             gTop.addColorStop(0.4, "rgba(0,0,0,0.6)");
             gTop.addColorStop(1, "rgba(0,0,0,0)");
             ctx.fillStyle = gTop;
-            ctx.fillRect(0, 130, W, H * 0.52 - 130);
+            ctx.fillRect(0, 180, W, H * 0.55 - 180);
 
             // ── Gradient bottom (features zone) ──
             const gBot = ctx.createLinearGradient(0, H * 0.58, 0, H);
