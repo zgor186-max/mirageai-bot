@@ -628,19 +628,15 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             }
             function drawSubtitle(text, y, color, size) {
                 const sz = size || 21;
-                const lineH = Math.round(sz * 1.5);
-                ctx.font = `600 ${sz}px 'Nunito', Arial`;
+                const maxW = W - PAD * 2;
+                // Авторазмер чтобы не вылезало за ширину
+                let fsz = sz;
+                ctx.font = `600 ${fsz}px 'Nunito', Arial`;
+                while (fsz > 13 && ctx.measureText(text).width > maxW) fsz--;
+                ctx.font = `600 ${fsz}px 'Nunito', Arial`;
                 ctx.fillStyle = color;
-                const parts = text.split("•").map(p => p.trim()).filter(Boolean);
-                if (parts.length > 1) {
-                    parts.forEach((part, i) => {
-                        ctx.fillText("• " + part, PAD, y + i * lineH);
-                    });
-                    return y + (parts.length - 1) * lineH;
-                } else {
-                    ctx.fillText(text.substring(0, 80), PAD, y);
-                    return y;
-                }
+                ctx.fillText(text.substring(0, 90), PAD, y);
+                return y;
             }
 
             // Фото — герой сверху (60%), весь текст снизу
@@ -661,7 +657,7 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 drawFade(botY - 80, 80, "rgba(0,0,0,0)", botBg);
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, accentClr, "#1a1000");
-                const tY1 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 22, botY + 200, titleClr);
+                const tY1 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 70, botY + 220, titleClr);
                 const sY1 = subtitle ? drawSubtitle(subtitle, tY1 + 14, subClr) : tY1;
 
                 if (feats.length) {
@@ -702,8 +698,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, gold, "#000");
                 ctx.fillStyle = gold; ctx.font = `22px Arial`;
-                ctx.fillText("◆", PAD, botY + 14);
-                const tY2 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 22, botY + 200, titleClr, W - PAD*2 - 20);
+                ctx.fillText("◆", PAD, botY + 52);
+                const tY2 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 70, botY + 220, titleClr, W - PAD*2 - 20);
                 const sY2 = subtitle ? drawSubtitle(subtitle, tY2 + 14, isLight ? "#555" : "#a08060") : tY2;
 
                 if (feats.length) {
@@ -742,8 +738,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, cyan, "#000");
                 ctx.strokeStyle = cyan; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.moveTo(PAD, botY + 12); ctx.lineTo(PAD, botY + 4); ctx.lineTo(PAD+14, botY + 4); ctx.stroke();
-                const tY3 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 22, botY + 200, titleClr);
+                ctx.beginPath(); ctx.moveTo(PAD, botY + 20); ctx.lineTo(PAD, botY + 10); ctx.lineTo(PAD+14, botY + 10); ctx.stroke();
+                const tY3 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 70, botY + 220, titleClr);
                 const sY3 = subtitle ? drawSubtitle(subtitle, tY3 + 14, isLight ? "#004060" : "#4ab8d8") : tY3;
 
                 if (feats.length) {
@@ -780,7 +776,7 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 drawFade(botY - 80, 80, "rgba(0,0,0,0)", botBg);
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, yellow, "#000");
-                const tY4 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 22, botY + 200, "#ffffff");
+                const tY4 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 70, botY + 220, "#ffffff");
                 const sY4 = subtitle ? drawSubtitle(subtitle, tY4 + 14, "#aaa") : tY4;
 
                 if (feats.length) {
@@ -817,8 +813,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 drawFade(botY - 80, 80, "rgba(0,0,0,0)", botBg);
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, green, "#fff");
-                ctx.font = "24px Arial"; ctx.fillText("🌿", PAD, botY + 16);
-                const tY5 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 22, botY + 200, titleClr, W - PAD*2 - 30);
+                ctx.font = "24px Arial"; ctx.fillText("🌿", PAD, botY + 52);
+                const tY5 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 70, botY + 220, titleClr, W - PAD*2 - 30);
                 const sY5 = subtitle ? drawSubtitle(subtitle, tY5 + 14, isLight ? "#3a5e3a" : "#7fc87f") : tY5;
 
                 if (feats.length) {
