@@ -14,6 +14,21 @@ document.addEventListener("DOMContentLoaded", () => {
     setupUpload();
 });
 
+function saveGallery(gallery) {
+    let items = gallery.slice(0, 20);
+    while (items.length > 0) {
+        try {
+            localStorage.setItem("gallery", JSON.stringify(items));
+            return;
+        } catch (e) {
+            // Квота переполнена — удаляем старые элементы
+            items = items.slice(0, items.length - 1);
+        }
+    }
+    // Если совсем не влезает — очищаем галерею
+    try { localStorage.removeItem("gallery"); } catch(e) {}
+}
+
 function loadUserData() {
     const saved = localStorage.getItem("coins");
     userCoins = saved ? parseInt(saved) : 100;
@@ -517,7 +532,7 @@ async function mpCardGenerate() {
 
         const gallery = JSON.parse(localStorage.getItem("gallery") || "[]");
         gallery.unshift({ id: Date.now(), emoji: "🏷", name: name || "Карточка товара", url: finalBase64, date: new Date().toLocaleDateString("ru") });
-        localStorage.setItem("gallery", JSON.stringify(gallery.slice(0, 50)));
+        saveGallery(gallery);
 
         finishProgress();
         await new Promise(r => setTimeout(r, 500));
@@ -874,7 +889,7 @@ async function mpGenerate() {
 
         const gallery = JSON.parse(localStorage.getItem("gallery") || "[]");
         gallery.unshift({ id: Date.now(), emoji: "📦", name: "Карточка товара", url: resultUrl, date: new Date().toLocaleDateString("ru") });
-        localStorage.setItem("gallery", JSON.stringify(gallery.slice(0, 50)));
+        saveGallery(gallery);
 
         finishProgress();
         await new Promise(r => setTimeout(r, 500));
