@@ -545,12 +545,13 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             function drawTitle(words, startY, maxY, color, maxW) {
                 let ty = startY;
                 for (const word of words) {
-                    const sz = autoSize(word, maxW || W - PAD * 2, 118, 26);
+                    const sz = autoSize(word, maxW || W - PAD * 2, 96, 22);
+                    const lineH = Math.round(sz * 1.1);
+                    if (ty > maxY) break;          // не рисуем если вышли за зону
                     ctx.font = `700 ${sz}px 'Oswald', Arial`;
                     ctx.fillStyle = color;
                     ctx.fillText(word, PAD, ty);
-                    ty += Math.round(sz * 1.05);
-                    if (ty > maxY) break;
+                    ty += lineH;
                 }
                 return ty;
             }
@@ -572,12 +573,9 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 const topH = Math.floor(H * 0.32), botY = Math.floor(H * 0.77);
 
                 ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
-                // Акцентная линия — сверху карточки, не трогает текст
-                ctx.fillStyle = accentClr; ctx.fillRect(0, 0, W, 5);
                 drawPhoto(topH, botY);
                 drawFade(topH, 60, topBg, "rgba(0,0,0,0)");
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
-                ctx.fillStyle = accentClr; ctx.fillRect(0, botY, W, 3);
                 drawFade(botY - 60, 60, "rgba(0,0,0,0)", botBg);
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD + 8, accentClr, "#1a1000");
@@ -585,20 +583,20 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 if (subtitle) drawSubtitle(subtitle, botY + 46, subClr);
 
                 if (feats.length) {
-                    const pillH = 52, gap = 12;
+                    const pillH = 73, gap = 12;
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
-                        const fx = PAD + i * (colW + gap), fy = botY + 70;
-                        rr(fx, fy, colW, pillH, 26, isLight ? "#1a1a1a" : "#2a2010", accentClr, 1.5);
-                        ctx.beginPath(); ctx.arc(fx + 20, fy + pillH/2, 8, 0, Math.PI*2);
+                        const fx = PAD + i * (colW + gap), fy = botY + 62;
+                        rr(fx, fy, colW, pillH, 36, isLight ? "#1a1a1a" : "#2a2010", accentClr, 2);
+                        ctx.beginPath(); ctx.arc(fx + 26, fy + pillH/2, 11, 0, Math.PI*2);
                         ctx.fillStyle = accentClr; ctx.fill();
-                        ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.lineCap = "round";
-                        ctx.beginPath(); ctx.moveTo(fx+15, fy+pillH/2); ctx.lineTo(fx+19, fy+pillH/2+4); ctx.lineTo(fx+25, fy+pillH/2-4); ctx.stroke();
-                        ctx.fillStyle = "#fff"; ctx.font = `600 16px Arial`;
+                        ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+                        ctx.beginPath(); ctx.moveTo(fx+20, fy+pillH/2); ctx.lineTo(fx+25, fy+pillH/2+5); ctx.lineTo(fx+32, fy+pillH/2-5); ctx.stroke();
+                        ctx.fillStyle = "#fff"; ctx.font = `600 22px Arial`;
                         const fw = f.split(" ");
-                        if (fw.length > 1 && ctx.measureText(f).width > colW - 38) {
-                            ctx.fillText(fw[0], fx+36, fy+20); ctx.fillText(fw.slice(1).join(" "), fx+36, fy+38);
-                        } else ctx.fillText(f, fx+36, fy+pillH/2+6);
+                        if (fw.length > 1 && ctx.measureText(f).width > colW - 52) {
+                            ctx.fillText(fw[0], fx+46, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+46, fy+52);
+                        } else ctx.fillText(f, fx+46, fy+pillH/2+8);
                     });
                 }
 
@@ -613,12 +611,9 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 const topH = Math.floor(H * 0.30), botY = Math.floor(H * 0.75);
 
                 ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
-                // Тонкие золотые линии по краям карточки (не касаются текста)
-                ctx.fillStyle = gold; ctx.fillRect(0, 0, W, 4);
                 drawPhoto(topH, botY);
                 drawFade(topH, 60, topBg, "rgba(0,0,0,0)");
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
-                ctx.fillStyle = gold; ctx.fillRect(PAD, botY, W - PAD*2, 1);
                 drawFade(botY - 60, 60, "rgba(0,0,0,0)", botBg);
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD + 8, gold, "#000");
@@ -628,15 +623,18 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 if (subtitle) drawSubtitle(subtitle, botY + 38, isLight ? "#555" : "#a08060");
 
                 if (feats.length) {
-                    const pillH = 50, gap = 14;
+                    const pillH = 70, gap = 14;
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
-                        const fx = PAD + i * (colW + gap), fy = botY + 50;
-                        rr(fx, fy, colW, pillH, 4, "transparent", gold, 1);
-                        ctx.fillStyle = gold; ctx.font = `bold 16px Arial`;
-                        ctx.fillText("◆", fx + 12, fy + pillH/2 + 6);
-                        ctx.fillStyle = titleClr; ctx.font = `600 16px Arial`;
-                        ctx.fillText(f, fx + 34, fy + pillH/2 + 6);
+                        const fx = PAD + i * (colW + gap), fy = botY + 48;
+                        rr(fx, fy, colW, pillH, 6, "transparent", gold, 1.5);
+                        ctx.fillStyle = gold; ctx.font = `bold 22px Arial`;
+                        ctx.fillText("◆", fx + 14, fy + pillH/2 + 8);
+                        ctx.fillStyle = titleClr; ctx.font = `600 22px Arial`;
+                        const fw = f.split(" ");
+                        if (fw.length > 1 && ctx.measureText(f).width > colW - 52) {
+                            ctx.fillText(fw[0], fx+46, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+46, fy+52);
+                        } else ctx.fillText(f, fx + 46, fy + pillH/2 + 8);
                     });
                 }
 
@@ -651,15 +649,9 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 const topH = Math.floor(H * 0.28), botY = Math.floor(H * 0.74);
 
                 ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
-                const techGrad = ctx.createLinearGradient(0, 0, W, 0);
-                techGrad.addColorStop(0, cyan); techGrad.addColorStop(1, "transparent");
-                // Синяя линия сверху карточки
-                ctx.fillStyle = techGrad; ctx.fillRect(0, 0, W, 4);
-
                 drawPhoto(topH, botY);
                 drawFade(topH, 55, topBg, "rgba(0,0,0,0)");
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
-                ctx.fillStyle = techGrad; ctx.fillRect(0, botY, W, 3);
                 drawFade(botY - 55, 55, "rgba(0,0,0,0)", botBg);
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD + 8, cyan, "#000");
@@ -669,18 +661,18 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 if (subtitle) drawSubtitle(subtitle, botY + 42, isLight ? "#004060" : "#4ab8d8");
 
                 if (feats.length) {
-                    const pillH = 52, gap = 10;
+                    const pillH = 73, gap = 10;
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
-                        const fx = PAD + i * (colW + gap), fy = botY + 64;
-                        rr(fx, fy, colW, pillH, 6, isLight ? "rgba(0,80,120,0.12)" : "rgba(0,200,255,0.08)", cyan, 1);
+                        const fx = PAD + i * (colW + gap), fy = botY + 58;
+                        rr(fx, fy, colW, pillH, 8, isLight ? "rgba(0,80,120,0.12)" : "rgba(0,200,255,0.08)", cyan, 1.5);
                         ctx.fillStyle = cyan;
-                        ctx.beginPath(); ctx.moveTo(fx+14, fy+pillH/2-6); ctx.lineTo(fx+14, fy+pillH/2+6); ctx.lineTo(fx+24, fy+pillH/2); ctx.fill();
-                        ctx.fillStyle = titleClr; ctx.font = `600 16px Arial`;
+                        ctx.beginPath(); ctx.moveTo(fx+14, fy+pillH/2-9); ctx.lineTo(fx+14, fy+pillH/2+9); ctx.lineTo(fx+28, fy+pillH/2); ctx.fill();
+                        ctx.fillStyle = titleClr; ctx.font = `600 22px Arial`;
                         const fw = f.split(" ");
-                        if (fw.length > 1 && ctx.measureText(f).width > colW - 38) {
-                            ctx.fillText(fw[0], fx+32, fy+20); ctx.fillText(fw.slice(1).join(" "), fx+32, fy+38);
-                        } else ctx.fillText(f, fx+32, fy+pillH/2+6);
+                        if (fw.length > 1 && ctx.measureText(f).width > colW - 46) {
+                            ctx.fillText(fw[0], fx+36, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+36, fy+52);
+                        } else ctx.fillText(f, fx+36, fy+pillH/2+8);
                     });
                 }
 
@@ -694,19 +686,9 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 const topH = Math.floor(H * 0.30), botY = Math.floor(H * 0.76);
 
                 ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
-                ctx.save();
-                for (let xi = -20; xi < W + 20; xi += 22) {
-                    ctx.fillStyle = xi % 44 < 22 ? "rgba(255,194,0,0.07)" : "transparent";
-                    ctx.fillRect(xi, 0, 11, topH);
-                }
-                ctx.restore();
-                // Жёлтая полоса сверху карточки
-                ctx.fillStyle = yellow; ctx.fillRect(0, 0, W, 6);
-
                 drawPhoto(topH, botY);
                 drawFade(topH, 50, topBg, "rgba(0,0,0,0)");
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
-                ctx.fillStyle = yellow; ctx.fillRect(0, botY, W, 4);
                 drawFade(botY - 50, 50, "rgba(0,0,0,0)", botBg);
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD + 10, yellow, "#000");
@@ -714,17 +696,17 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 if (subtitle) drawSubtitle(subtitle, botY + 44, "#aaa");
 
                 if (feats.length) {
-                    const pillH = 54, gap = 10;
+                    const pillH = 76, gap = 10;
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
-                        const fx = PAD + i * (colW + gap), fy = botY + 66;
-                        rr(fx, fy, colW, pillH, 4, "rgba(255,194,0,0.12)", yellow, 1.5);
-                        rr(fx, fy, 4, pillH, [4,0,0,4], yellow);
-                        ctx.fillStyle = "#fff"; ctx.font = `600 16px Arial`;
+                        const fx = PAD + i * (colW + gap), fy = botY + 58;
+                        rr(fx, fy, colW, pillH, 6, "rgba(255,194,0,0.12)", yellow, 2);
+                        rr(fx, fy, 6, pillH, [6,0,0,6], yellow);
+                        ctx.fillStyle = "#fff"; ctx.font = `600 22px Arial`;
                         const fw = f.split(" ");
-                        if (fw.length > 1 && ctx.measureText(f).width > colW - 30) {
-                            ctx.fillText(fw[0], fx+18, fy+20); ctx.fillText(fw.slice(1).join(" "), fx+18, fy+38);
-                        } else ctx.fillText(f, fx+18, fy+pillH/2+6);
+                        if (fw.length > 1 && ctx.measureText(f).width > colW - 32) {
+                            ctx.fillText(fw[0], fx+22, fy+30); ctx.fillText(fw.slice(1).join(" "), fx+22, fy+54);
+                        } else ctx.fillText(f, fx+22, fy+pillH/2+8);
                     });
                 }
 
@@ -739,14 +721,9 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 const topH = Math.floor(H * 0.30), botY = Math.floor(H * 0.76);
 
                 ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
-                // Зелёная линия сверху карточки
-                ctx.fillStyle = green; ctx.fillRect(0, 0, W, 4);
-
                 drawPhoto(topH, botY);
                 drawFade(topH, 50, topBg, "rgba(0,0,0,0)");
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
-                // Тонкая зелёная линия разделитель
-                ctx.fillStyle = green; ctx.fillRect(0, botY, W, 2);
                 drawFade(botY - 50, 50, "rgba(0,0,0,0)", botBg);
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD + 8, green, "#fff");
@@ -755,20 +732,20 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 if (subtitle) drawSubtitle(subtitle, botY + 40, isLight ? "#3a5e3a" : "#7fc87f");
 
                 if (feats.length) {
-                    const pillH = 52, gap = 12;
+                    const pillH = 73, gap = 12;
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
-                        const fx = PAD + i * (colW + gap), fy = botY + 64;
-                        rr(fx, fy, colW, pillH, 26, isLight ? "rgba(76,175,80,0.15)" : "rgba(76,175,80,0.2)", green, 1.5);
-                        ctx.beginPath(); ctx.arc(fx+20, fy+pillH/2, 9, 0, Math.PI*2);
+                        const fx = PAD + i * (colW + gap), fy = botY + 58;
+                        rr(fx, fy, colW, pillH, 36, isLight ? "rgba(76,175,80,0.15)" : "rgba(76,175,80,0.2)", green, 2);
+                        ctx.beginPath(); ctx.arc(fx+26, fy+pillH/2, 13, 0, Math.PI*2);
                         ctx.fillStyle = green; ctx.fill();
-                        ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.lineCap = "round";
-                        ctx.beginPath(); ctx.moveTo(fx+15, fy+pillH/2); ctx.lineTo(fx+19, fy+pillH/2+4); ctx.lineTo(fx+25, fy+pillH/2-4); ctx.stroke();
-                        ctx.fillStyle = titleClr; ctx.font = `600 16px Arial`;
+                        ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+                        ctx.beginPath(); ctx.moveTo(fx+20, fy+pillH/2); ctx.lineTo(fx+25, fy+pillH/2+5); ctx.lineTo(fx+32, fy+pillH/2-5); ctx.stroke();
+                        ctx.fillStyle = titleClr; ctx.font = `600 22px Arial`;
                         const fw = f.split(" ");
-                        if (fw.length > 1 && ctx.measureText(f).width > colW - 40) {
-                            ctx.fillText(fw[0], fx+36, fy+20); ctx.fillText(fw.slice(1).join(" "), fx+36, fy+38);
-                        } else ctx.fillText(f, fx+36, fy+pillH/2+6);
+                        if (fw.length > 1 && ctx.measureText(f).width > colW - 56) {
+                            ctx.fillText(fw[0], fx+46, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+46, fy+52);
+                        } else ctx.fillText(f, fx+46, fy+pillH/2+8);
                     });
                 }
             }
