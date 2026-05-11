@@ -975,6 +975,60 @@ body {
     white-space: nowrap;
 }
 
+/* AI Идея toggle */
+.mp-ai-toggle-wrap {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.mp-toggle {
+    width: 46px;
+    height: 26px;
+    background: #2a2a3a;
+    border-radius: 13px;
+    border: 2px solid #3a3a50;
+    position: relative;
+    transition: background 0.25s, border-color 0.25s;
+    flex-shrink: 0;
+}
+
+.mp-toggle.active {
+    background: linear-gradient(135deg, #5c35d9, #a78bfa);
+    border-color: #7c5af7;
+}
+
+.mp-toggle-knob {
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: left 0.25s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.mp-toggle.active .mp-toggle-knob {
+    left: 22px;
+}
+
+.mp-ai-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #555570;
+    transition: color 0.25s;
+    white-space: nowrap;
+}
+
+.mp-ai-label.active {
+    color: #a78bfa;
+}
+
 .loading-percent-line {
     font-size: 13px;
     font-weight: 700;
