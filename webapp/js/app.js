@@ -572,22 +572,23 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 const topH = Math.floor(H * 0.32), botY = Math.floor(H * 0.77);
 
                 ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
-                ctx.fillStyle = accentClr; ctx.fillRect(0, topH - 3, W, 3);
+                // Акцентная линия — сверху карточки, не трогает текст
+                ctx.fillStyle = accentClr; ctx.fillRect(0, 0, W, 5);
                 drawPhoto(topH, botY);
-                drawFade(topH, 50, topBg, "rgba(0,0,0,0)");
+                drawFade(topH, 60, topBg, "rgba(0,0,0,0)");
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
                 ctx.fillStyle = accentClr; ctx.fillRect(0, botY, W, 3);
-                drawFade(botY - 50, 50, "rgba(0,0,0,0)", botBg);
+                drawFade(botY - 60, 60, "rgba(0,0,0,0)", botBg);
 
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD, accentClr, "#1a1000");
-                drawTitle((name || "").toUpperCase().split(/\s+/), 68, topH - 20, titleClr);
-                if (subtitle) drawSubtitle(subtitle, botY + 34, subClr);
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD + 8, accentClr, "#1a1000");
+                drawTitle((name || "").toUpperCase().split(/\s+/), 72, topH - 16, titleClr);
+                if (subtitle) drawSubtitle(subtitle, botY + 46, subClr);
 
                 if (feats.length) {
                     const pillH = 52, gap = 12;
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
-                        const fx = PAD + i * (colW + gap), fy = botY + 56;
+                        const fx = PAD + i * (colW + gap), fy = botY + 70;
                         rr(fx, fy, colW, pillH, 26, isLight ? "#1a1a1a" : "#2a2010", accentClr, 1.5);
                         ctx.beginPath(); ctx.arc(fx + 20, fy + pillH/2, 8, 0, Math.PI*2);
                         ctx.fillStyle = accentClr; ctx.fill();
@@ -612,18 +613,19 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 const topH = Math.floor(H * 0.30), botY = Math.floor(H * 0.75);
 
                 ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
-                ctx.fillStyle = gold; ctx.fillRect(PAD, topH - 2, W - PAD*2, 1);
+                // Тонкие золотые линии по краям карточки (не касаются текста)
+                ctx.fillStyle = gold; ctx.fillRect(0, 0, W, 4);
                 drawPhoto(topH, botY);
                 drawFade(topH, 60, topBg, "rgba(0,0,0,0)");
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
                 ctx.fillStyle = gold; ctx.fillRect(PAD, botY, W - PAD*2, 1);
                 drawFade(botY - 60, 60, "rgba(0,0,0,0)", botBg);
 
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD, gold, "#000");
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD + 8, gold, "#000");
                 ctx.fillStyle = gold; ctx.font = `24px Arial`;
-                ctx.fillText("◆", PAD, 54);
-                drawTitle((name || "").toUpperCase().split(/\s+/), 68, topH - 20, titleClr, W - PAD*2 - 20);
-                if (subtitle) drawSubtitle(subtitle, botY + 30, isLight ? "#555" : "#a08060");
+                ctx.fillText("◆", PAD, 58);
+                drawTitle((name || "").toUpperCase().split(/\s+/), 74, topH - 16, titleClr, W - PAD*2 - 20);
+                if (subtitle) drawSubtitle(subtitle, botY + 38, isLight ? "#555" : "#a08060");
 
                 if (feats.length) {
                     const pillH = 50, gap = 14;
@@ -651,7 +653,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
                 const techGrad = ctx.createLinearGradient(0, 0, W, 0);
                 techGrad.addColorStop(0, cyan); techGrad.addColorStop(1, "transparent");
-                ctx.fillStyle = techGrad; ctx.fillRect(0, topH - 3, W, 3);
+                // Синяя линия сверху карточки
+                ctx.fillStyle = techGrad; ctx.fillRect(0, 0, W, 4);
 
                 drawPhoto(topH, botY);
                 drawFade(topH, 55, topBg, "rgba(0,0,0,0)");
@@ -659,17 +662,17 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.fillStyle = techGrad; ctx.fillRect(0, botY, W, 3);
                 drawFade(botY - 55, 55, "rgba(0,0,0,0)", botBg);
 
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD, cyan, "#000");
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD + 8, cyan, "#000");
                 ctx.strokeStyle = cyan; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.moveTo(PAD, 18); ctx.lineTo(PAD, 8); ctx.lineTo(PAD+12, 8); ctx.stroke();
-                drawTitle((name || "").toUpperCase().split(/\s+/), 65, topH - 15, titleClr);
-                if (subtitle) drawSubtitle(subtitle, botY + 30, isLight ? "#004060" : "#4ab8d8");
+                ctx.beginPath(); ctx.moveTo(PAD, 22); ctx.lineTo(PAD, 10); ctx.lineTo(PAD+14, 10); ctx.stroke();
+                drawTitle((name || "").toUpperCase().split(/\s+/), 70, topH - 15, titleClr);
+                if (subtitle) drawSubtitle(subtitle, botY + 42, isLight ? "#004060" : "#4ab8d8");
 
                 if (feats.length) {
                     const pillH = 52, gap = 10;
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
-                        const fx = PAD + i * (colW + gap), fy = botY + 48;
+                        const fx = PAD + i * (colW + gap), fy = botY + 64;
                         rr(fx, fy, colW, pillH, 6, isLight ? "rgba(0,80,120,0.12)" : "rgba(0,200,255,0.08)", cyan, 1);
                         ctx.fillStyle = cyan;
                         ctx.beginPath(); ctx.moveTo(fx+14, fy+pillH/2-6); ctx.lineTo(fx+14, fy+pillH/2+6); ctx.lineTo(fx+24, fy+pillH/2); ctx.fill();
@@ -697,7 +700,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                     ctx.fillRect(xi, 0, 11, topH);
                 }
                 ctx.restore();
-                ctx.fillStyle = yellow; ctx.fillRect(0, topH - 4, W, 4);
+                // Жёлтая полоса сверху карточки
+                ctx.fillStyle = yellow; ctx.fillRect(0, 0, W, 6);
 
                 drawPhoto(topH, botY);
                 drawFade(topH, 50, topBg, "rgba(0,0,0,0)");
@@ -705,15 +709,15 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.fillStyle = yellow; ctx.fillRect(0, botY, W, 4);
                 drawFade(botY - 50, 50, "rgba(0,0,0,0)", botBg);
 
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD, yellow, "#000");
-                drawTitle((name || "").toUpperCase().split(/\s+/), 68, topH - 20, "#ffffff");
-                if (subtitle) drawSubtitle(subtitle, botY + 32, "#aaa");
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD + 10, yellow, "#000");
+                drawTitle((name || "").toUpperCase().split(/\s+/), 74, topH - 16, "#ffffff");
+                if (subtitle) drawSubtitle(subtitle, botY + 44, "#aaa");
 
                 if (feats.length) {
                     const pillH = 54, gap = 10;
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
-                        const fx = PAD + i * (colW + gap), fy = botY + 50;
+                        const fx = PAD + i * (colW + gap), fy = botY + 66;
                         rr(fx, fy, colW, pillH, 4, "rgba(255,194,0,0.12)", yellow, 1.5);
                         rr(fx, fy, 4, pillH, [4,0,0,4], yellow);
                         ctx.fillStyle = "#fff"; ctx.font = `600 16px Arial`;
@@ -735,28 +739,26 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 const topH = Math.floor(H * 0.30), botY = Math.floor(H * 0.76);
 
                 ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
-                ctx.strokeStyle = green; ctx.lineWidth = 2.5;
-                ctx.beginPath();
-                for (let xi = 0; xi < W; xi += 20) {
-                    xi === 0 ? ctx.moveTo(xi, topH - 8) : ctx.quadraticCurveTo(xi - 10, topH - 14, xi, topH - 8);
-                }
-                ctx.stroke();
+                // Зелёная линия сверху карточки
+                ctx.fillStyle = green; ctx.fillRect(0, 0, W, 4);
 
                 drawPhoto(topH, botY);
                 drawFade(topH, 50, topBg, "rgba(0,0,0,0)");
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
+                // Тонкая зелёная линия разделитель
+                ctx.fillStyle = green; ctx.fillRect(0, botY, W, 2);
                 drawFade(botY - 50, 50, "rgba(0,0,0,0)", botBg);
 
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD, green, "#fff");
-                ctx.font = "28px Arial"; ctx.fillText("🌿", PAD, 50);
-                drawTitle((name || "").toUpperCase().split(/\s+/), 68, topH - 20, titleClr, W - PAD*2 - 30);
-                if (subtitle) drawSubtitle(subtitle, botY + 30, isLight ? "#3a5e3a" : "#7fc87f");
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD + 8, green, "#fff");
+                ctx.font = "26px Arial"; ctx.fillText("🌿", PAD, 56);
+                drawTitle((name || "").toUpperCase().split(/\s+/), 72, topH - 16, titleClr, W - PAD*2 - 30);
+                if (subtitle) drawSubtitle(subtitle, botY + 40, isLight ? "#3a5e3a" : "#7fc87f");
 
                 if (feats.length) {
                     const pillH = 52, gap = 12;
                     const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                     feats.forEach((f, i) => {
-                        const fx = PAD + i * (colW + gap), fy = botY + 50;
+                        const fx = PAD + i * (colW + gap), fy = botY + 64;
                         rr(fx, fy, colW, pillH, 26, isLight ? "rgba(76,175,80,0.15)" : "rgba(76,175,80,0.2)", green, 1.5);
                         ctx.beginPath(); ctx.arc(fx+20, fy+pillH/2, 9, 0, Math.PI*2);
                         ctx.fillStyle = green; ctx.fill();
