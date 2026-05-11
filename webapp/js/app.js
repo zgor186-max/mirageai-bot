@@ -575,8 +575,12 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.fillStyle = g; ctx.fillRect(0, y, W, h);
             }
             function drawBadge(text, x, y, bg, textColor) {
-                ctx.font = `bold 18px Arial`;
-                const bW = Math.max(ctx.measureText(text).width + 28, 80);
+                const maxBadgeW = W / 2 - PAD; // бейдж не шире половины карточки
+                let sz = 18;
+                ctx.font = `bold ${sz}px Arial`;
+                while (sz > 11 && ctx.measureText(text).width + 28 > maxBadgeW) sz--;
+                ctx.font = `bold ${sz}px Arial`;
+                const bW = Math.min(Math.max(ctx.measureText(text).width + 28, 80), maxBadgeW);
                 rr(x - bW, y, bW, 34, 17, bg);
                 ctx.fillStyle = textColor || "#000";
                 ctx.textAlign = "center";
@@ -597,9 +601,9 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 return ty;
             }
             function drawSubtitle(text, y, color, size) {
-                ctx.font = `400 ${size || 21}px Arial`;
+                ctx.font = `600 ${size || 23}px 'Nunito', Arial`;
                 ctx.fillStyle = color;
-                ctx.fillText(text.substring(0, 52), PAD, y);
+                ctx.fillText(text.substring(0, 80), PAD, y);
             }
 
             // Фото — герой сверху (60%), весь текст снизу
@@ -634,11 +638,16 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                         ctx.fillStyle = accentClr; ctx.fill();
                         ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.lineCap = "round";
                         ctx.beginPath(); ctx.moveTo(fx+20, fy+pillH/2); ctx.lineTo(fx+25, fy+pillH/2+5); ctx.lineTo(fx+32, fy+pillH/2-5); ctx.stroke();
-                        ctx.fillStyle = "#fff"; ctx.font = `600 22px Arial`;
+                        ctx.fillStyle = "#fff";
                         const fw = f.split(" ");
-                        if (fw.length > 1 && ctx.measureText(f).width > colW - 52) {
+                        if (fw.length > 1) {
+                            const sz = Math.min(autoSize(fw[0], colW-52, 22, 11), autoSize(fw.slice(1).join(" "), colW-52, 22, 11));
+                            ctx.font = `600 ${sz}px Arial`;
                             ctx.fillText(fw[0], fx+46, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+46, fy+52);
-                        } else ctx.fillText(f, fx+46, fy+pillH/2+8);
+                        } else {
+                            ctx.font = `600 ${autoSize(f, colW-52, 22, 11)}px Arial`;
+                            ctx.fillText(f, fx+46, fy+pillH/2+8);
+                        }
                     });
                 }
 
@@ -669,11 +678,16 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                         rr(fx, fy, colW, pillH, 6, "transparent", gold, 1.5);
                         ctx.fillStyle = gold; ctx.font = `bold 22px Arial`;
                         ctx.fillText("◆", fx + 14, fy + pillH/2 + 8);
-                        ctx.fillStyle = titleClr; ctx.font = `600 22px Arial`;
+                        ctx.fillStyle = titleClr;
                         const fw = f.split(" ");
-                        if (fw.length > 1 && ctx.measureText(f).width > colW - 52) {
+                        if (fw.length > 1) {
+                            const sz = Math.min(autoSize(fw[0], colW-52, 22, 11), autoSize(fw.slice(1).join(" "), colW-52, 22, 11));
+                            ctx.font = `600 ${sz}px Arial`;
                             ctx.fillText(fw[0], fx+46, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+46, fy+52);
-                        } else ctx.fillText(f, fx + 46, fy + pillH/2 + 8);
+                        } else {
+                            ctx.font = `600 ${autoSize(f, colW-52, 22, 11)}px Arial`;
+                            ctx.fillText(f, fx+46, fy+pillH/2+8);
+                        }
                     });
                 }
 
@@ -704,11 +718,16 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                         rr(fx, fy, colW, pillH, 8, isLight ? "rgba(0,80,120,0.12)" : "rgba(0,200,255,0.08)", cyan, 1.5);
                         ctx.fillStyle = cyan;
                         ctx.beginPath(); ctx.moveTo(fx+14, fy+pillH/2-9); ctx.lineTo(fx+14, fy+pillH/2+9); ctx.lineTo(fx+28, fy+pillH/2); ctx.fill();
-                        ctx.fillStyle = titleClr; ctx.font = `600 22px Arial`;
+                        ctx.fillStyle = titleClr;
                         const fw = f.split(" ");
-                        if (fw.length > 1 && ctx.measureText(f).width > colW - 46) {
+                        if (fw.length > 1) {
+                            const sz = Math.min(autoSize(fw[0], colW-46, 22, 11), autoSize(fw.slice(1).join(" "), colW-46, 22, 11));
+                            ctx.font = `600 ${sz}px Arial`;
                             ctx.fillText(fw[0], fx+36, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+36, fy+52);
-                        } else ctx.fillText(f, fx+36, fy+pillH/2+8);
+                        } else {
+                            ctx.font = `600 ${autoSize(f, colW-46, 22, 11)}px Arial`;
+                            ctx.fillText(f, fx+36, fy+pillH/2+8);
+                        }
                     });
                 }
 
@@ -735,11 +754,16 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                         const fx = PAD + i * (colW + gap), fy = chipsY;
                         rr(fx, fy, colW, pillH, 6, "rgba(255,194,0,0.12)", yellow, 2);
                         rr(fx, fy, 6, pillH, [6,0,0,6], yellow);
-                        ctx.fillStyle = "#fff"; ctx.font = `600 22px Arial`;
+                        ctx.fillStyle = "#fff";
                         const fw = f.split(" ");
-                        if (fw.length > 1 && ctx.measureText(f).width > colW - 32) {
+                        if (fw.length > 1) {
+                            const sz = Math.min(autoSize(fw[0], colW-32, 22, 11), autoSize(fw.slice(1).join(" "), colW-32, 22, 11));
+                            ctx.font = `600 ${sz}px Arial`;
                             ctx.fillText(fw[0], fx+22, fy+30); ctx.fillText(fw.slice(1).join(" "), fx+22, fy+54);
-                        } else ctx.fillText(f, fx+22, fy+pillH/2+8);
+                        } else {
+                            ctx.font = `600 ${autoSize(f, colW-32, 22, 11)}px Arial`;
+                            ctx.fillText(f, fx+22, fy+pillH/2+8);
+                        }
                     });
                 }
 
@@ -771,11 +795,16 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                         ctx.fillStyle = green; ctx.fill();
                         ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.5; ctx.lineCap = "round";
                         ctx.beginPath(); ctx.moveTo(fx+20, fy+pillH/2); ctx.lineTo(fx+25, fy+pillH/2+5); ctx.lineTo(fx+32, fy+pillH/2-5); ctx.stroke();
-                        ctx.fillStyle = titleClr; ctx.font = `600 22px Arial`;
+                        ctx.fillStyle = titleClr;
                         const fw = f.split(" ");
-                        if (fw.length > 1 && ctx.measureText(f).width > colW - 56) {
+                        if (fw.length > 1) {
+                            const sz = Math.min(autoSize(fw[0], colW-56, 22, 11), autoSize(fw.slice(1).join(" "), colW-56, 22, 11));
+                            ctx.font = `600 ${sz}px Arial`;
                             ctx.fillText(fw[0], fx+46, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+46, fy+52);
-                        } else ctx.fillText(f, fx+46, fy+pillH/2+8);
+                        } else {
+                            ctx.font = `600 ${autoSize(f, colW-56, 22, 11)}px Arial`;
+                            ctx.fillText(f, fx+46, fy+pillH/2+8);
+                        }
                     });
                 }
             }
