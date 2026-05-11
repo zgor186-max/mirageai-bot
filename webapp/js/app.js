@@ -334,9 +334,6 @@ function mpCardHandlePhoto(input) {
         document.getElementById("mp-card-upload-area").style.display = "none";
         document.getElementById("mp-card-preview-container").style.display = "block";
         document.getElementById("mp-card-generate-btn").disabled = false;
-
-        // Авто-анализ товара
-        mpCardAnalyze(mpCardPhotoBase64);
     };
     reader.readAsDataURL(file);
 }
@@ -366,7 +363,7 @@ async function mpCardAnalyze(base64) {
                         { type: "image_url", image_url: { url: "data:image/jpeg;base64," + base64 } },
                         { type: "text", text: `Посмотри на изображение товара. Ответь ТОЛЬКО валидным JSON без markdown и без пояснений:
 {
-  "name": "ТОЛЬКО общее название категории товара по-русски, МАКСИМУМ 1-2 слова, ЗАГЛАВНЫМИ буквами. ЗАПРЕЩЕНО писать бренд, модель, серию. Примеры правильно: КРОССОВКИ, КУРТКА, ШУРУПОВЁРТ, СМАРТФОН, ДИВАН. Примеры неправильно: КРОССОВКИ ASICS, IPHONE 15, КУРТКА COLUMBIA",
+  "name": "Название товара по-русски, МАКСИМУМ 2 слова, ЗАГЛАВНЫМИ буквами. Формат: КАТЕГОРИЯ БРЕНД. ЗАПРЕЩЕНО писать модель или серию. Примеры правильно: КРОССОВКИ ASICS, КУРТКА NIKE, ШУРУПОВЁРТ MAKITA, СМАРТФОН SAMSUNG. Примеры неправильно: КРОССОВКИ ASICS GEL-KAYANO, IPHONE 15 PRO, КУРТКА COLUMBIA OMNI-HEAT",
   "subtitle": "короткий продающий слоган (4-6 слов, строчными буквами)",
   "badge": "главная характеристика товара коротко (2-4 слова, ЗАГЛАВНЫМИ, например: 100% ХЛОПОК, 18В, WIFI 6, КОЖА)",
   "feat1": "преимущество 1 (максимум 2 слова)",
