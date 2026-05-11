@@ -630,13 +630,11 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 return ty - Math.round(lastSz * 1.1) + Math.round(lastSz * 0.3);
             }
             function drawSubtitle(text, y, color, size) {
-                const sz = size || 21;
                 const maxW = W - PAD * 2;
-                // Авторазмер чтобы не вылезало за ширину
-                let fsz = sz;
-                ctx.font = `600 ${fsz}px 'Nunito', Arial`;
-                while (fsz > 13 && ctx.measureText(text).width > maxW) fsz--;
-                ctx.font = `600 ${fsz}px 'Nunito', Arial`;
+                let fsz = size || 28;
+                ctx.font = `500 ${fsz}px 'Oswald', Arial`;
+                while (fsz > 15 && ctx.measureText(text).width > maxW) fsz--;
+                ctx.font = `500 ${fsz}px 'Oswald', Arial`;
                 ctx.fillStyle = color;
                 ctx.fillText(text.substring(0, 90), PAD, y);
                 return y;
@@ -1127,3 +1125,4 @@ function finishProgress() {
 function buyCoins(amount, price) {
     tg.showAlert(`Оплата через Telegram Stars появится скоро!\nА пока напиши администратору.`);
 }
+
