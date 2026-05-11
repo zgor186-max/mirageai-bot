@@ -404,7 +404,7 @@ async function mpCardGenerate() {
     else if (mpCardBgStyle === "gradient") bgDesc = gradientDescMap[mpCardColorScheme] || gradientDescMap.warm;
     else bgDesc = schemeStyles.dark;
 
-    const prompt = `Place this product in a ${bgDesc}. Keep the product exactly as it is shown - same shape, colors, and details. Just change the background. Professional marketplace product photo quality. IMPORTANT: Do not add ANY text, words, letters, logos, watermarks, or brand names anywhere in the image.`;
+    const prompt = `Change only the background of this product photo to: ${bgDesc}. The product itself must remain exactly as shown - same shape, colors, materials. STRICT RULES: NO text, NO letters, NO words, NO brand names, NO logos, NO watermarks anywhere in the image. Clean professional product photo for marketplace.`;
 
     switchScreen("loading");
     animateSteps();
@@ -499,14 +499,17 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             // ── Gradient top (зависит от выбранного стиля фона) ──
             const bgMode = mpCardBgStyle || "dark";
             const topColor = bgMode === "light" ? "255,255,255" : "0,0,0";
-            const gTop = ctx.createLinearGradient(0, 0, 0, H * 0.58);
-            gTop.addColorStop(0,    `rgba(${topColor},0.97)`);
-            gTop.addColorStop(0.20, `rgba(${topColor},0.90)`);
-            gTop.addColorStop(0.42, `rgba(${topColor},0.65)`);
-            gTop.addColorStop(0.65, `rgba(${topColor},0.25)`);
-            gTop.addColorStop(1,    `rgba(${topColor},0)`);
+            // Сплошная полоса сверху чтобы скрыть текст ИИ
+            ctx.fillStyle = `rgba(${topColor},1)`;
+            ctx.fillRect(0, 0, W, H * 0.28);
+            // Плавный переход из сплошного в прозрачный
+            const gTop = ctx.createLinearGradient(0, H * 0.28, 0, H * 0.60);
+            gTop.addColorStop(0,   `rgba(${topColor},1)`);
+            gTop.addColorStop(0.3, `rgba(${topColor},0.75)`);
+            gTop.addColorStop(0.7, `rgba(${topColor},0.25)`);
+            gTop.addColorStop(1,   `rgba(${topColor},0)`);
             ctx.fillStyle = gTop;
-            ctx.fillRect(0, 0, W, H * 0.58);
+            ctx.fillRect(0, H * 0.28, W, H * 0.32);
 
             // ── Gradient bottom (features zone) ──
             const gBot = ctx.createLinearGradient(0, H * 0.58, 0, H);
