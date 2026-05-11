@@ -507,139 +507,279 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             const canvas = document.createElement("canvas");
             canvas.width = W; canvas.height = H;
             const ctx = canvas.getContext("2d");
-            const C = COLOR_SCHEMES[mpCardColorScheme] || COLOR_SCHEMES.warm;
-            const PAD = 28;
+            const scheme = mpCardColorScheme || "warm";
             const isLight = (mpCardBgStyle || "dark") === "light";
+            const PAD = 30;
+            const feats = [feat1, feat2, feat3].filter(Boolean);
 
-            function rr(x, y, w, h, r, fill, stroke, strokeW) {
-                ctx.beginPath();
-                ctx.roundRect(x, y, w, h, r);
+            function rr(x, y, w, h, r, fill, stroke, sw) {
+                ctx.beginPath(); ctx.roundRect(x, y, w, h, r);
                 if (fill) { ctx.fillStyle = fill; ctx.fill(); }
-                if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = strokeW || 2; ctx.stroke(); }
+                if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = sw || 2; ctx.stroke(); }
             }
-
-            function autoSize(text, maxW, max, min) {
+            function autoSize(text, maxW, max, min, font) {
                 let sz = max;
-                ctx.font = `700 ${sz}px 'Oswald', Arial`;
+                ctx.font = `${font || '700'} ${sz}px 'Oswald', Arial`;
                 while (sz > min && ctx.measureText(text).width > maxW) sz -= 1;
                 return sz;
             }
-
-            // ── Цвета для светлого/тёмного режима ──
-            const topBg    = isLight ? "#f5f5f5" : "#111111";
-            const botBg    = isLight ? "#ffffff" : "#0d0d0d";
-            const titleClr = isLight ? "#111111" : "#ffffff";
-            const subClr   = isLight ? "#555555" : "rgba(255,255,255,0.7)";
-
-            // ── ЗОНА 1: Верхний блок (0 - H*0.30) — чистый фон + заголовок ──
-            const topH = Math.floor(H * 0.30);
-            ctx.fillStyle = topBg;
-            ctx.fillRect(0, 0, W, topH);
-
-            // BADGE — пилюля сверху справа
-            if (badge) {
-                const badgeText = badge.toUpperCase();
-                ctx.font = `bold 19px Arial`;
-                const bW = Math.max(ctx.measureText(badgeText).width + 30, 80);
-                const bH = 36;
-                const bX = W - bW - PAD, bY = PAD - 4;
-                rr(bX, bY, bW, bH, bH / 2, C.badge);
-                ctx.fillStyle = "#000000";
+            function drawPhoto(topH, botY) {
+                const srcTop = Math.floor(img.height * 0.28);
+                const srcBot = Math.floor(img.height * 0.92);
+                ctx.drawImage(img, 0, srcTop, img.width, srcBot - srcTop, 0, topH, W, botY - topH);
+            }
+            function drawFade(y, h, fromColor, toColor) {
+                const g = ctx.createLinearGradient(0, y, 0, y + h);
+                g.addColorStop(0, fromColor); g.addColorStop(1, toColor);
+                ctx.fillStyle = g; ctx.fillRect(0, y, W, h);
+            }
+            function drawBadge(text, x, y, bg, textColor) {
+                ctx.font = `bold 18px Arial`;
+                const bW = Math.max(ctx.measureText(text).width + 28, 80);
+                rr(x - bW, y, bW, 34, 17, bg);
+                ctx.fillStyle = textColor || "#000";
                 ctx.textAlign = "center";
-                ctx.fillText(badgeText, bX + bW / 2, bY + 24);
+                ctx.fillText(text, x - bW / 2, y + 22);
                 ctx.textAlign = "left";
             }
-
-            // ЗАГОЛОВОК — каждое слово на всю ширину
-            const titleWords = (name || "").toUpperCase().split(/\s+/).filter(Boolean);
-            let ty = 70;
-            for (const word of titleWords) {
-                const sz = autoSize(word, W - PAD * 2, 120, 28);
-                ctx.font = `700 ${sz}px 'Oswald', Arial`;
-                ctx.fillStyle = titleClr;
-                ctx.fillText(word, PAD, ty);
-                ty += Math.round(sz * 1.05);
-                if (ty > topH - 10) break;
+            function drawTitle(words, startY, maxY, color, maxW) {
+                let ty = startY;
+                for (const word of words) {
+                    const sz = autoSize(word, maxW || W - PAD * 2, 118, 26);
+                    ctx.font = `700 ${sz}px 'Oswald', Arial`;
+                    ctx.fillStyle = color;
+                    ctx.fillText(word, PAD, ty);
+                    ty += Math.round(sz * 1.05);
+                    if (ty > maxY) break;
+                }
+                return ty;
+            }
+            function drawSubtitle(text, y, color, size) {
+                ctx.font = `400 ${size || 21}px Arial`;
+                ctx.fillStyle = color;
+                ctx.fillText(text.substring(0, 52), PAD, y);
             }
 
-            // ── ЗОНА 2: Фото (topH - H*0.78) — только средняя часть AI-картинки ──
-            const imgZoneY = topH;
-            const imgZoneH = Math.floor(H * 0.78) - imgZoneY;
+            // ════════════════════════════════════════
+            // 1. ОДЕЖДА / ОБУВЬ — светлый минимализм
+            // ════════════════════════════════════════
+            if (scheme === "warm") {
+                const topBg = isLight ? "#fafafa" : "#1a1208";
+                const botBg = isLight ? "#ffffff" : "#120e06";
+                const accentClr = "#d4a017";
+                const titleClr = isLight ? "#1a1a1a" : "#fff8e8";
+                const subClr = isLight ? "#666" : "#c8a96e";
+                const topH = Math.floor(H * 0.32), botY = Math.floor(H * 0.77);
 
-            // Берём только СЕРЕДИНУ картинки (пропускаем верх 30% и низ 10%)
-            const srcTop  = Math.floor(img.height * 0.30);
-            const srcBot  = Math.floor(img.height * 0.90);
-            const srcH2   = srcBot - srcTop;
-            ctx.drawImage(img, 0, srcTop, img.width, srcH2, 0, imgZoneY, W, imgZoneH);
+                ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
+                // Тонкая золотая линия разделитель
+                ctx.fillStyle = accentClr; ctx.fillRect(0, topH - 3, W, 3);
+                drawPhoto(topH, botY);
+                drawFade(topH, 50, topBg, "rgba(0,0,0,0)");
+                ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
+                ctx.fillStyle = accentClr; ctx.fillRect(0, botY, W, 3);
+                drawFade(botY - 50, 50, "rgba(0,0,0,0)", botBg);
 
-            // Тонкий переход сверху фото
-            const gPhotoTop = ctx.createLinearGradient(0, imgZoneY, 0, imgZoneY + 40);
-            gPhotoTop.addColorStop(0, topBg);
-            gPhotoTop.addColorStop(1, "rgba(0,0,0,0)");
-            ctx.fillStyle = gPhotoTop;
-            ctx.fillRect(0, imgZoneY, W, 40);
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD, accentClr, "#1a1000");
+                drawTitle((name || "").toUpperCase().split(/\s+/), 68, topH - 20, titleClr);
+                if (subtitle) drawSubtitle(subtitle, botY + 34, subClr);
 
-            // ── ЗОНА 3: Нижний блок (H*0.78 - H) — чистый фон + преимущества ──
-            const botY = Math.floor(H * 0.78);
-            ctx.fillStyle = botBg;
-            ctx.fillRect(0, botY, W, H - botY);
+                // Пилюли горизонтально
+                if (feats.length) {
+                    const pillH = 52, gap = 12;
+                    const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
+                    feats.forEach((f, i) => {
+                        const fx = PAD + i * (colW + gap), fy = botY + 56;
+                        rr(fx, fy, colW, pillH, 26, isLight ? "#1a1a1a" : "#2a2010", accentClr, 1.5);
+                        ctx.beginPath(); ctx.arc(fx + 20, fy + pillH/2, 8, 0, Math.PI*2);
+                        ctx.fillStyle = accentClr; ctx.fill();
+                        ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.lineCap = "round";
+                        ctx.beginPath(); ctx.moveTo(fx+15, fy+pillH/2); ctx.lineTo(fx+19, fy+pillH/2+4); ctx.lineTo(fx+25, fy+pillH/2-4); ctx.stroke();
+                        ctx.fillStyle = "#fff"; ctx.font = `600 16px Arial`;
+                        const fw = f.split(" ");
+                        if (fw.length > 1 && ctx.measureText(f).width > colW - 38) {
+                            ctx.fillText(fw[0], fx+36, fy+20); ctx.fillText(fw.slice(1).join(" "), fx+36, fy+38);
+                        } else ctx.fillText(f, fx+36, fy+pillH/2+6);
+                    });
+                }
 
-            // Тонкий переход снизу фото
-            const gPhotoBot = ctx.createLinearGradient(0, botY - 40, 0, botY);
-            gPhotoBot.addColorStop(0, "rgba(0,0,0,0)");
-            gPhotoBot.addColorStop(1, botBg);
-            ctx.fillStyle = gPhotoBot;
-            ctx.fillRect(0, botY - 40, W, 40);
+            // ════════════════════════════════════════
+            // 2. ПРЕМИУМ / АКСЕССУАРЫ — тёмный элегантный
+            // ════════════════════════════════════════
+            } else if (scheme === "dark") {
+                const topBg = isLight ? "#f0ede8" : "#0a0a0a";
+                const botBg = isLight ? "#e8e4de" : "#050505";
+                const gold = "#c9a84c";
+                const titleClr = isLight ? "#111" : "#fff";
+                const topH = Math.floor(H * 0.30), botY = Math.floor(H * 0.75);
 
-            // ПОДЗАГОЛОВОК
-            if (subtitle) {
-                ctx.font = `400 22px Arial`;
-                ctx.fillStyle = subClr;
-                ctx.fillText(subtitle.substring(0, 55), PAD, botY + 32);
-            }
+                ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
+                // Тонкие золотые линии
+                ctx.fillStyle = gold; ctx.fillRect(PAD, topH - 2, W - PAD*2, 1);
+                drawPhoto(topH, botY);
+                drawFade(topH, 60, topBg, "rgba(0,0,0,0)");
+                ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
+                ctx.fillStyle = gold; ctx.fillRect(PAD, botY, W - PAD*2, 1);
+                drawFade(botY - 60, 60, "rgba(0,0,0,0)", botBg);
 
-            // ПРЕИМУЩЕСТВА — 3 пилюли в ряд
-            const feats = [feat1, feat2, feat3].filter(Boolean);
-            if (feats.length) {
-                const featY = botY + 55;
-                const colW = (W - PAD * 2 - 16 * (feats.length - 1)) / feats.length;
-                feats.forEach((f, i) => {
-                    const fx = PAD + i * (colW + 16);
-                    const pillH = 54;
-                    const pillBg = isLight ? "#111111" : "rgba(255,255,255,0.10)";
-                    const pillBorder = isLight ? "#111111" : C.featStroke;
-                    rr(fx, featY, colW, pillH, 14, pillBg, pillBorder, 1.5);
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD, gold, "#000");
+                // Декоративный элемент — ромб слева от заголовка
+                ctx.fillStyle = gold; ctx.font = `24px Arial`;
+                ctx.fillText("◆", PAD, 54);
+                drawTitle((name || "").toUpperCase().split(/\s+/), 68, topH - 20, titleClr, W - PAD*2 - 20);
+                if (subtitle) drawSubtitle(subtitle, botY + 30, isLight ? "#555" : "#a08060");
 
-                    // Галочка
-                    const cx2 = fx + 20;
-                    const cy2 = featY + pillH / 2;
-                    ctx.beginPath();
-                    ctx.arc(cx2, cy2, 9, 0, Math.PI * 2);
-                    ctx.fillStyle = C.badge;
-                    ctx.fill();
-                    ctx.strokeStyle = "#000";
-                    ctx.lineWidth = 2;
-                    ctx.lineCap = "round";
-                    ctx.lineJoin = "round";
-                    ctx.beginPath();
-                    ctx.moveTo(cx2 - 4, cy2);
-                    ctx.lineTo(cx2 - 1, cy2 + 4);
-                    ctx.lineTo(cx2 + 5, cy2 - 4);
-                    ctx.stroke();
+                if (feats.length) {
+                    const pillH = 50, gap = 14;
+                    const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
+                    feats.forEach((f, i) => {
+                        const fx = PAD + i * (colW + gap), fy = botY + 50;
+                        rr(fx, fy, colW, pillH, 4, "transparent", gold, 1);
+                        ctx.fillStyle = gold; ctx.font = `bold 16px Arial`;
+                        ctx.fillText("◆", fx + 12, fy + pillH/2 + 6);
+                        ctx.fillStyle = titleClr; ctx.font = `600 16px Arial`;
+                        ctx.fillText(f, fx + 34, fy + pillH/2 + 6);
+                    });
+                }
 
-                    // Текст
-                    ctx.fillStyle = isLight ? "#ffffff" : C.featText;
-                    ctx.font = `600 17px Arial`;
-                    ctx.textAlign = "left";
-                    // Перенос если длинный текст
-                    const words = f.split(" ");
-                    if (words.length > 1 && ctx.measureText(f).width > colW - 40) {
-                        ctx.fillText(words[0], fx + 36, featY + 22);
-                        ctx.fillText(words.slice(1).join(" "), fx + 36, featY + 40);
-                    } else {
-                        ctx.fillText(f, fx + 36, featY + pillH / 2 + 6);
-                    }
-                });
+            // ════════════════════════════════════════
+            // 3. ЭЛЕКТРОНИКА / ГАДЖЕТЫ — тёмный техно
+            // ════════════════════════════════════════
+            } else if (scheme === "tech") {
+                const topBg = isLight ? "#e8f4ff" : "#050d1a";
+                const botBg = isLight ? "#ddeeff" : "#030a14";
+                const cyan = "#00c8ff";
+                const titleClr = isLight ? "#001830" : "#ffffff";
+                const topH = Math.floor(H * 0.28), botY = Math.floor(H * 0.74);
+
+                ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
+                // Синяя полоса снизу заголовка
+                const techGrad = ctx.createLinearGradient(0, 0, W, 0);
+                techGrad.addColorStop(0, cyan); techGrad.addColorStop(1, "transparent");
+                ctx.fillStyle = techGrad; ctx.fillRect(0, topH - 3, W, 3);
+
+                drawPhoto(topH, botY);
+                drawFade(topH, 55, topBg, "rgba(0,0,0,0)");
+                ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
+                ctx.fillStyle = techGrad; ctx.fillRect(0, botY, W, 3);
+                drawFade(botY - 55, 55, "rgba(0,0,0,0)", botBg);
+
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD, cyan, "#000");
+                // Угловые декоративные скобки
+                ctx.strokeStyle = cyan; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(PAD, 18); ctx.lineTo(PAD, 8); ctx.lineTo(PAD+12, 8); ctx.stroke();
+                drawTitle((name || "").toUpperCase().split(/\s+/), 65, topH - 15, titleClr);
+                if (subtitle) drawSubtitle(subtitle, botY + 30, isLight ? "#004060" : "#4ab8d8");
+
+                if (feats.length) {
+                    const pillH = 52, gap = 10;
+                    const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
+                    feats.forEach((f, i) => {
+                        const fx = PAD + i * (colW + gap), fy = botY + 48;
+                        rr(fx, fy, colW, pillH, 6, isLight ? "rgba(0,80,120,0.12)" : "rgba(0,200,255,0.08)", cyan, 1);
+                        // Мигающий треугольник индикатор
+                        ctx.fillStyle = cyan;
+                        ctx.beginPath(); ctx.moveTo(fx+14, fy+pillH/2-6); ctx.lineTo(fx+14, fy+pillH/2+6); ctx.lineTo(fx+24, fy+pillH/2); ctx.fill();
+                        ctx.fillStyle = titleClr; ctx.font = `600 16px Arial`;
+                        const fw = f.split(" ");
+                        if (fw.length > 1 && ctx.measureText(f).width > colW - 38) {
+                            ctx.fillText(fw[0], fx+32, fy+20); ctx.fillText(fw.slice(1).join(" "), fx+32, fy+38);
+                        } else ctx.fillText(f, fx+32, fy+pillH/2+6);
+                    });
+                }
+
+            // ════════════════════════════════════════
+            // 4. ИНСТРУМЕНТЫ / СТРОЙКА — мощный промышленный
+            // ════════════════════════════════════════
+            } else if (scheme === "workshop") {
+                const topBg = isLight ? "#1c1c1c" : "#111111";
+                const botBg = isLight ? "#1c1c1c" : "#0d0d0d";
+                const yellow = "#ffc200";
+                const topH = Math.floor(H * 0.30), botY = Math.floor(H * 0.76);
+
+                ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
+                // Жёлтая диагональная полоска (предупреждающий стиль)
+                ctx.save();
+                for (let xi = -20; xi < W + 20; xi += 22) {
+                    ctx.fillStyle = xi % 44 < 22 ? "rgba(255,194,0,0.07)" : "transparent";
+                    ctx.fillRect(xi, 0, 11, topH);
+                }
+                ctx.restore();
+                ctx.fillStyle = yellow; ctx.fillRect(0, topH - 4, W, 4);
+
+                drawPhoto(topH, botY);
+                drawFade(topH, 50, topBg, "rgba(0,0,0,0)");
+                ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
+                ctx.fillStyle = yellow; ctx.fillRect(0, botY, W, 4);
+                drawFade(botY - 50, 50, "rgba(0,0,0,0)", botBg);
+
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD, yellow, "#000");
+                drawTitle((name || "").toUpperCase().split(/\s+/), 68, topH - 20, "#ffffff");
+                if (subtitle) drawSubtitle(subtitle, botY + 32, "#aaa");
+
+                if (feats.length) {
+                    const pillH = 54, gap = 10;
+                    const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
+                    feats.forEach((f, i) => {
+                        const fx = PAD + i * (colW + gap), fy = botY + 50;
+                        rr(fx, fy, colW, pillH, 4, "rgba(255,194,0,0.12)", yellow, 1.5);
+                        // Жёлтая вертикальная полоса слева
+                        rr(fx, fy, 4, pillH, [4,0,0,4], yellow);
+                        ctx.fillStyle = "#fff"; ctx.font = `600 16px Arial`;
+                        const fw = f.split(" ");
+                        if (fw.length > 1 && ctx.measureText(f).width > colW - 30) {
+                            ctx.fillText(fw[0], fx+18, fy+20); ctx.fillText(fw.slice(1).join(" "), fx+18, fy+38);
+                        } else ctx.fillText(f, fx+18, fy+pillH/2+6);
+                    });
+                }
+
+            // ════════════════════════════════════════
+            // 5. КОСМЕТИКА / ЕДА / ПРИРОДА — мягкий органик
+            // ════════════════════════════════════════
+            } else {
+                const topBg = isLight ? "#f0f7f0" : "#0d1a0d";
+                const botBg = isLight ? "#e8f4e8" : "#081008";
+                const green = "#4caf50";
+                const titleClr = isLight ? "#1a2e1a" : "#e8ffe8";
+                const topH = Math.floor(H * 0.30), botY = Math.floor(H * 0.76);
+
+                ctx.fillStyle = topBg; ctx.fillRect(0, 0, W, topH);
+                // Волнистая линия снизу заголовка
+                ctx.strokeStyle = green; ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                for (let xi = 0; xi < W; xi += 20) {
+                    xi === 0 ? ctx.moveTo(xi, topH - 8) : ctx.quadraticCurveTo(xi - 10, topH - 14, xi, topH - 8);
+                }
+                ctx.stroke();
+
+                drawPhoto(topH, botY);
+                drawFade(topH, 50, topBg, "rgba(0,0,0,0)");
+                ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
+                drawFade(botY - 50, 50, "rgba(0,0,0,0)", botBg);
+
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD, green, "#fff");
+                // Листик декор
+                ctx.font = "28px Arial"; ctx.fillText("🌿", PAD, 50);
+                drawTitle((name || "").toUpperCase().split(/\s+/), 68, topH - 20, titleClr, W - PAD*2 - 30);
+                if (subtitle) drawSubtitle(subtitle, botY + 30, isLight ? "#3a5e3a" : "#7fc87f");
+
+                if (feats.length) {
+                    const pillH = 52, gap = 12;
+                    const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
+                    feats.forEach((f, i) => {
+                        const fx = PAD + i * (colW + gap), fy = botY + 50;
+                        rr(fx, fy, colW, pillH, 26, isLight ? "rgba(76,175,80,0.15)" : "rgba(76,175,80,0.2)", green, 1.5);
+                        ctx.beginPath(); ctx.arc(fx+20, fy+pillH/2, 9, 0, Math.PI*2);
+                        ctx.fillStyle = green; ctx.fill();
+                        ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.lineCap = "round";
+                        ctx.beginPath(); ctx.moveTo(fx+15, fy+pillH/2); ctx.lineTo(fx+19, fy+pillH/2+4); ctx.lineTo(fx+25, fy+pillH/2-4); ctx.stroke();
+                        ctx.fillStyle = titleClr; ctx.font = `600 16px Arial`;
+                        const fw = f.split(" ");
+                        if (fw.length > 1 && ctx.measureText(f).width > colW - 40) {
+                            ctx.fillText(fw[0], fx+36, fy+20); ctx.fillText(fw.slice(1).join(" "), fx+36, fy+38);
+                        } else ctx.fillText(f, fx+36, fy+pillH/2+6);
+                    });
+                }
             }
 
             resolve(canvas.toDataURL("image/jpeg", 0.93));
