@@ -102,7 +102,7 @@ function viewGalleryItem(url) {
     switchScreen("result");
 }
 
-function shareResult() {
+function sendToChat() {
     if (!currentResultUrl) return;
     const data = {
         action: "result",
@@ -112,6 +112,40 @@ function shareResult() {
         already_paid: true
     };
     tg.sendData(JSON.stringify(data));
+}
+
+function downloadResult() {
+    if (!currentResultUrl) return;
+    const a = document.createElement("a");
+    a.href = currentResultUrl;
+    a.download = "MirageAI_" + Date.now() + ".jpg";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function forwardResult() {
+    if (!currentResultUrl) return;
+    // Если это base64 — конвертируем в blob и шарим
+    if (currentResultUrl.startsWith("data:")) {
+        fetch(currentResultUrl)
+            .then(r => r.blob())
+            .then(blob => {
+                const file = new File([blob], "MirageAI.jpg", { type: "image/jpeg" });
+                if (navigator.share && navigator.canShare({ files: [file] })) {
+                    navigator.share({ files: [file], title: "MirageAI" });
+                } else {
+                    // Fallback — скачиваем
+                    downloadResult();
+                }
+            });
+    } else {
+        if (navigator.share) {
+            navigator.share({ url: currentResultUrl, title: "MirageAI" });
+        } else {
+            downloadResult();
+        }
+    }
 }
 
 function showHistory() {
@@ -489,33 +523,38 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 return sz;
             }
 
-            // ── Фото на весь холст ──
-            // Crop-fit: scale proportionally so photo fills width, center vertically
-            const scale = Math.max(W / img.width, H / img.height);
-            const sw = img.width * scale, sh = img.height * scale;
-            const sx = (W - sw) / 2, sy = (H - sh) / 2;
-            ctx.drawImage(img, sx, sy, sw, sh);
-
-            // ── Gradient top (зависит от выбранного стиля фона) ──
             const bgMode = mpCardBgStyle || "dark";
-            const topColor = bgMode === "light" ? "255,255,255" : "0,0,0";
-            // Сплошная полоса сверху чтобы скрыть текст ИИ
-            ctx.fillStyle = `rgba(${topColor},1)`;
-            ctx.fillRect(0, 0, W, H * 0.28);
-            // Плавный переход из сплошного в прозрачный
-            const gTop = ctx.createLinearGradient(0, H * 0.28, 0, H * 0.60);
-            gTop.addColorStop(0,   `rgba(${topColor},1)`);
-            gTop.addColorStop(0.3, `rgba(${topColor},0.75)`);
-            gTop.addColorStop(0.7, `rgba(${topColor},0.25)`);
-            gTop.addColorStop(1,   `rgba(${topColor},0)`);
+            const isLight = bgMode === "light";
+            const solidColor = isLight ? "#ffffff" : "#000000";
+            const topRgb = isLight ? "255,255,255" : "0,0,0";
+
+            // ── Сплошной фон для всего холста ──
+            ctx.fillStyle = solidColor;
+            ctx.fillRect(0, 0, W, H);
+
+            // ── Фото начинается с 28% высоты (обрезаем верх где ИИ пишет текст) ──
+            // Берём изображение, пропуская верхние 20% где обычно размещается текст ИИ
+            const cropFrac = 0.20;
+            const srcY = Math.floor(img.height * cropFrac);
+            const srcH2 = img.height - srcY;
+            const destY = Math.floor(H * 0.28);
+            const destH2 = H - destY;
+            ctx.drawImage(img, 0, srcY, img.width, srcH2, 0, destY, W, destH2);
+
+            // ── Плавный переход от сплошного цвета к фото ──
+            const gTop = ctx.createLinearGradient(0, destY - 20, 0, destY + H * 0.15);
+            gTop.addColorStop(0,   `rgba(${topRgb},1)`);
+            gTop.addColorStop(0.5, `rgba(${topRgb},0.5)`);
+            gTop.addColorStop(1,   `rgba(${topRgb},0)`);
             ctx.fillStyle = gTop;
-            ctx.fillRect(0, H * 0.28, W, H * 0.32);
+            ctx.fillRect(0, destY - 20, W, H * 0.15 + 20);
 
             // ── Gradient bottom (features zone) ──
+            const botRgb = isLight ? "240,240,240" : "0,0,0";
             const gBot = ctx.createLinearGradient(0, H * 0.58, 0, H);
-            gBot.addColorStop(0, "rgba(0,0,0,0)");
-            gBot.addColorStop(0.4, "rgba(0,0,0,0.70)");
-            gBot.addColorStop(1, "rgba(0,0,0,0.96)");
+            gBot.addColorStop(0, `rgba(${botRgb},0)`);
+            gBot.addColorStop(0.4, `rgba(${botRgb},0.75)`);
+            gBot.addColorStop(1, `rgba(${botRgb},0.97)`);
             ctx.fillStyle = gBot;
             ctx.fillRect(0, H * 0.58, W, H * 0.42);
 
@@ -537,8 +576,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             }
 
             // ── TITLE — each word fills full width ──
-            const titleColor = bgMode === "light" ? "#111111" : C.title;
-            const titleShadowColor = bgMode === "light" ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.95)";
+            const titleColor = isLight ? "#111111" : C.title;
+            const titleShadowColor = isLight ? "rgba(200,200,200,0.5)" : "rgba(0,0,0,0.95)";
             const titleWords = (name || "").toUpperCase().split(/\s+/).filter(Boolean);
             let ty = 72;
             for (const word of titleWords) {
@@ -608,8 +647,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                     ctx.stroke();
 
                     // text
-                    shadow(6, "rgba(0,0,0,0.8)");
-                    ctx.fillStyle = C.featText;
+                    shadow(6, isLight ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.8)");
+                    ctx.fillStyle = isLight ? "#222222" : C.featText;
                     ctx.font = `600 20px Arial`;
                     ctx.textAlign = "left";
                     ctx.fillText(text, pillX + pillH / 2 + 16, fy + pillH / 2 + 7);

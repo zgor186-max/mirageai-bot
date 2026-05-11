@@ -741,6 +741,14 @@ body {
     background: linear-gradient(135deg, #5c35d9, #7c5af7);
     color: white;
 }
+.result-btn-download {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    color: white;
+}
+.result-btn-forward {
+    background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+    color: white;
+}
 .result-btn-new {
     background: var(--bg3);
     color: var(--text);
