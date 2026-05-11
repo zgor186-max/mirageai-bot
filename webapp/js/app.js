@@ -591,8 +591,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 return sz;
             }
             function drawPhoto(topH, botY) {
-                const srcTop = Math.floor(img.height * 0.28);
-                const srcBot = Math.floor(img.height * 0.92);
+                const srcTop = Math.floor(img.height * 0.05);
+                const srcBot = Math.floor(img.height * 0.97);
                 ctx.drawImage(img, 0, srcTop, img.width, srcBot - srcTop, 0, topH, W, botY - topH);
             }
             function drawFade(y, h, fromColor, toColor) {
@@ -644,7 +644,7 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
             // Фото — герой сверху (60%), весь текст снизу
             const topH = 0;
-            const botY = Math.floor(H * 0.65);
+            const botY = Math.floor(H * 0.68);
 
             // ════════════════════════════════════════
             // 1. ОДЕЖДА / ОБУВЬ — тёплый минимализм
@@ -1127,3 +1127,4 @@ function finishProgress() {
 function buyCoins(amount, price) {
     tg.showAlert(`Оплата через Telegram Stars появится скоро!\nА пока напиши администратору.`);
 }
+
