@@ -364,15 +364,15 @@ async function mpCardAnalyze(base64) {
                     role: "user",
                     content: [
                         { type: "image_url", image_url: { url: "data:image/jpeg;base64," + base64 } },
-                        { type: "text", text: `Внимательно посмотри на это изображение товара и точно определи что на нём изображено. Ответь ТОЛЬКО валидным JSON без markdown и без пояснений:
+                        { type: "text", text: `Посмотри на изображение товара. Ответь ТОЛЬКО валидным JSON без markdown и без пояснений:
 {
-  "name": "точное название товара по-русски (1-3 слова, ЗАГЛАВНЫМИ буквами, например: ПИЖАМА В КЛЕТКУ, ШУРУПОВЁРТ, ЗИМНЯЯ КУРТКА)",
-  "subtitle": "привлекательный слоган для маркетплейса по-русски (4-7 слов)",
-  "badge": "главная характеристика товара (например: 100% ХЛОПОК, 900 ВТ, WIFI, 1 МЕТР)",
-  "feat1": "преимущество 1 (2-3 слова)",
-  "feat2": "преимущество 2 (2-3 слова)",
-  "feat3": "преимущество 3 (2-3 слова)",
-  "style": "тип фона — один из: warm (одежда/дом), dark (премиум/мода), tech (электроника/гаджеты), workshop (инструменты), nature (еда/природа)"
+  "name": "ТОЛЬКО общее название категории товара по-русски, МАКСИМУМ 1-2 слова, ЗАГЛАВНЫМИ буквами. ЗАПРЕЩЕНО писать бренд, модель, серию. Примеры правильно: КРОССОВКИ, КУРТКА, ШУРУПОВЁРТ, СМАРТФОН, ДИВАН. Примеры неправильно: КРОССОВКИ ASICS, IPHONE 15, КУРТКА COLUMBIA",
+  "subtitle": "короткий продающий слоган (4-6 слов, строчными буквами)",
+  "badge": "главная характеристика товара коротко (2-4 слова, ЗАГЛАВНЫМИ, например: 100% ХЛОПОК, 18В, WIFI 6, КОЖА)",
+  "feat1": "преимущество 1 (максимум 2 слова)",
+  "feat2": "преимущество 2 (максимум 2 слова)",
+  "feat3": "преимущество 3 (максимум 2 слова)",
+  "style": "один из: warm (одежда/обувь/дом), dark (премиум/часы/сумки), tech (электроника/гаджеты), workshop (инструменты/стройка), nature (еда/косметика/природа)"
 }` }
                     ]
                 }]
@@ -578,8 +578,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
                 drawFade(botY - 60, 60, "rgba(0,0,0,0)", botBg);
 
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD + 8, accentClr, "#1a1000");
-                drawTitle((name || "").toUpperCase().split(/\s+/), 72, topH - 16, titleClr);
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 52, accentClr, "#1a1000");
+                drawTitle((name || "").toUpperCase().split(/\s+/), 54, topH - 10, titleClr);
                 if (subtitle) drawSubtitle(subtitle, botY + 46, subClr);
 
                 if (feats.length) {
@@ -616,10 +616,10 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
                 drawFade(botY - 60, 60, "rgba(0,0,0,0)", botBg);
 
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD + 8, gold, "#000");
-                ctx.fillStyle = gold; ctx.font = `24px Arial`;
-                ctx.fillText("◆", PAD, 58);
-                drawTitle((name || "").toUpperCase().split(/\s+/), 74, topH - 16, titleClr, W - PAD*2 - 20);
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 52, gold, "#000");
+                ctx.fillStyle = gold; ctx.font = `22px Arial`;
+                ctx.fillText("◆", PAD, 50);
+                drawTitle((name || "").toUpperCase().split(/\s+/), 56, topH - 10, titleClr, W - PAD*2 - 20);
                 if (subtitle) drawSubtitle(subtitle, botY + 38, isLight ? "#555" : "#a08060");
 
                 if (feats.length) {
@@ -654,10 +654,10 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
                 drawFade(botY - 55, 55, "rgba(0,0,0,0)", botBg);
 
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD + 8, cyan, "#000");
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 52, cyan, "#000");
                 ctx.strokeStyle = cyan; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.moveTo(PAD, 22); ctx.lineTo(PAD, 10); ctx.lineTo(PAD+14, 10); ctx.stroke();
-                drawTitle((name || "").toUpperCase().split(/\s+/), 70, topH - 15, titleClr);
+                ctx.beginPath(); ctx.moveTo(PAD, 20); ctx.lineTo(PAD, 10); ctx.lineTo(PAD+14, 10); ctx.stroke();
+                drawTitle((name || "").toUpperCase().split(/\s+/), 54, topH - 10, titleClr);
                 if (subtitle) drawSubtitle(subtitle, botY + 42, isLight ? "#004060" : "#4ab8d8");
 
                 if (feats.length) {
@@ -691,8 +691,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
                 drawFade(botY - 50, 50, "rgba(0,0,0,0)", botBg);
 
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD + 10, yellow, "#000");
-                drawTitle((name || "").toUpperCase().split(/\s+/), 74, topH - 16, "#ffffff");
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 52, yellow, "#000");
+                drawTitle((name || "").toUpperCase().split(/\s+/), 54, topH - 10, "#ffffff");
                 if (subtitle) drawSubtitle(subtitle, botY + 44, "#aaa");
 
                 if (feats.length) {
@@ -726,9 +726,9 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.fillStyle = botBg; ctx.fillRect(0, botY, W, H - botY);
                 drawFade(botY - 50, 50, "rgba(0,0,0,0)", botBg);
 
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, PAD + 8, green, "#fff");
-                ctx.font = "26px Arial"; ctx.fillText("🌿", PAD, 56);
-                drawTitle((name || "").toUpperCase().split(/\s+/), 72, topH - 16, titleClr, W - PAD*2 - 30);
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 52, green, "#fff");
+                ctx.font = "24px Arial"; ctx.fillText("🌿", PAD, 48);
+                drawTitle((name || "").toUpperCase().split(/\s+/), 56, topH - 10, titleClr, W - PAD*2 - 30);
                 if (subtitle) drawSubtitle(subtitle, botY + 40, isLight ? "#3a5e3a" : "#7fc87f");
 
                 if (feats.length) {
