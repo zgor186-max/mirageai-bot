@@ -116,12 +116,28 @@ function sendToChat() {
 
 function downloadResult() {
     if (!currentResultUrl) return;
-    const a = document.createElement("a");
-    a.href = currentResultUrl;
-    a.download = "MirageAI_" + Date.now() + ".jpg";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    if (currentResultUrl.startsWith("data:")) {
+        // Base64 — создаём blob и скачиваем
+        fetch(currentResultUrl)
+            .then(r => r.blob())
+            .then(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "MirageAI_" + Date.now() + ".jpg";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            });
+    } else {
+        // Обычный URL
+        if (tg.downloadFile) {
+            tg.downloadFile(currentResultUrl, "MirageAI.jpg");
+        } else {
+            window.open(currentResultUrl, "_blank");
+        }
+    }
 }
 
 function forwardResult() {
@@ -495,7 +511,10 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = "anonymous";
-        img.onload = () => {
+        img.onload = async () => {
+            // Загружаем шрифты перед рисованием
+            await document.fonts.load("700 60px 'Oswald'");
+            await document.fonts.load("400 60px 'Bebas Neue'");
             const W = 800, H = 1060;
             const canvas = document.createElement("canvas");
             canvas.width = W; canvas.height = H;
@@ -518,7 +537,7 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
             function autoSize(text, maxW, max, min) {
                 let sz = max;
-                ctx.font = `900 ${sz}px 'Arial Black', Arial`;
+                ctx.font = `700 ${sz}px 'Oswald', 'Arial Black', Arial`;
                 while (sz > min && ctx.measureText(text).width > maxW) sz -= 1;
                 return sz;
             }
@@ -532,12 +551,12 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             ctx.fillStyle = solidColor;
             ctx.fillRect(0, 0, W, H);
 
-            // ── Фото начинается с 28% высоты (обрезаем верх где ИИ пишет текст) ──
-            // Берём изображение, пропуская верхние 20% где обычно размещается текст ИИ
-            const cropFrac = 0.20;
+            // ── Фото начинается с 35% высоты (обрезаем верх где ИИ пишет текст) ──
+            // Берём изображение, пропуская верхние 35% где обычно размещается текст ИИ
+            const cropFrac = 0.35;
             const srcY = Math.floor(img.height * cropFrac);
             const srcH2 = img.height - srcY;
-            const destY = Math.floor(H * 0.28);
+            const destY = Math.floor(H * 0.35);
             const destH2 = H - destY;
             ctx.drawImage(img, 0, srcY, img.width, srcH2, 0, destY, W, destH2);
 
@@ -583,7 +602,7 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             for (const word of titleWords) {
                 const sz = autoSize(word, W - PAD * 2, 108, 26);
                 shadow(16, titleShadowColor);
-                ctx.font = `900 ${sz}px 'Arial Black', Arial`;
+                ctx.font = `700 ${sz}px 'Oswald', 'Arial Black', Arial`;
                 ctx.fillStyle = titleColor;
                 ctx.fillText(word, PAD, ty);
                 shadow(0);
@@ -594,8 +613,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             // ── SUBTITLE below title ──
             if (subtitle && ty < H * 0.50) {
                 ctx.font = `500 22px Arial`;
-                ctx.fillStyle = "rgba(255,255,255,0.78)";
-                shadow(8, "rgba(0,0,0,0.9)");
+                ctx.fillStyle = isLight ? "rgba(50,50,50,0.85)" : "rgba(255,255,255,0.78)";
+                shadow(8, isLight ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.9)");
                 let line = "", sy2 = ty + 6;
                 for (const w of subtitle.split(" ")) {
                     const t = line + w + " ";
@@ -625,7 +644,9 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                     const pillX = PAD;
 
                     // pill background
-                    rr(pillX, fy, pillW, pillH, pillH / 2, "rgba(255,255,255,0.13)", C.featStroke, 1.5);
+                    const pillBg = isLight ? "rgba(30,30,30,0.82)" : "rgba(255,255,255,0.13)";
+                    const pillStroke = isLight ? "rgba(30,30,30,0.5)" : C.featStroke;
+                    rr(pillX, fy, pillW, pillH, pillH / 2, pillBg, pillStroke, 1.5);
 
                     // checkmark circle
                     const cx2 = pillX + pillH / 2;
@@ -647,8 +668,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                     ctx.stroke();
 
                     // text
-                    shadow(6, isLight ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.8)");
-                    ctx.fillStyle = isLight ? "#222222" : C.featText;
+                    shadow(0);
+                    ctx.fillStyle = isLight ? "#ffffff" : C.featText;
                     ctx.font = `600 20px Arial`;
                     ctx.textAlign = "left";
                     ctx.fillText(text, pillX + pillH / 2 + 16, fy + pillH / 2 + 7);
