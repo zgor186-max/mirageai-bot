@@ -615,16 +615,19 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             }
             function drawTitle(words, startY, maxY, color, maxW) {
                 let ty = startY;
+                let lastSz = 22;
                 for (const word of words) {
                     const sz = autoSize(word, maxW || W - PAD * 2, 96, 22);
                     const lineH = Math.round(sz * 1.1);
-                    if (ty > maxY) break;          // не рисуем если вышли за зону
+                    if (ty > maxY) break;
                     ctx.font = `700 ${sz}px 'Oswald', Arial`;
                     ctx.fillStyle = color;
                     ctx.fillText(word, PAD, ty);
+                    lastSz = sz;
                     ty += lineH;
                 }
-                return ty;
+                // Возвращаем нижний край последнего слова, а не позицию следующей строки
+                return ty - Math.round(lastSz * 1.1) + Math.round(lastSz * 0.3);
             }
             function drawSubtitle(text, y, color, size) {
                 const sz = size || 21;
@@ -658,7 +661,7 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, accentClr, "#1a1000");
                 const tY1 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 70, botY + 220, titleClr);
-                const sY1 = subtitle ? drawSubtitle(subtitle, tY1 + 14, subClr) : tY1;
+                const sY1 = subtitle ? drawSubtitle(subtitle, tY1 + 8, subClr) : tY1;
 
                 if (feats.length) {
                     const pillH = 73, gap = 12;
@@ -700,7 +703,7 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.fillStyle = gold; ctx.font = `22px Arial`;
                 ctx.fillText("◆", PAD, botY + 52);
                 const tY2 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 70, botY + 220, titleClr, W - PAD*2 - 20);
-                const sY2 = subtitle ? drawSubtitle(subtitle, tY2 + 14, isLight ? "#555" : "#a08060") : tY2;
+                const sY2 = subtitle ? drawSubtitle(subtitle, tY2 + 8, isLight ? "#555" : "#a08060") : tY2;
 
                 if (feats.length) {
                     const pillH = 70, gap = 14;
@@ -740,7 +743,7 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.strokeStyle = cyan; ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.moveTo(PAD, botY + 20); ctx.lineTo(PAD, botY + 10); ctx.lineTo(PAD+14, botY + 10); ctx.stroke();
                 const tY3 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 70, botY + 220, titleClr);
-                const sY3 = subtitle ? drawSubtitle(subtitle, tY3 + 14, isLight ? "#004060" : "#4ab8d8") : tY3;
+                const sY3 = subtitle ? drawSubtitle(subtitle, tY3 + 8, isLight ? "#004060" : "#4ab8d8") : tY3;
 
                 if (feats.length) {
                     const pillH = 73, gap = 10;
@@ -777,7 +780,7 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, yellow, "#000");
                 const tY4 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 70, botY + 220, "#ffffff");
-                const sY4 = subtitle ? drawSubtitle(subtitle, tY4 + 14, "#aaa") : tY4;
+                const sY4 = subtitle ? drawSubtitle(subtitle, tY4 + 8, "#aaa") : tY4;
 
                 if (feats.length) {
                     const pillH = 76, gap = 10;
@@ -815,7 +818,7 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, botY - 48, green, "#fff");
                 ctx.font = "24px Arial"; ctx.fillText("🌿", PAD, botY + 52);
                 const tY5 = drawTitle((name || "").toUpperCase().split(/\s+/), botY + 70, botY + 220, titleClr, W - PAD*2 - 30);
-                const sY5 = subtitle ? drawSubtitle(subtitle, tY5 + 14, isLight ? "#3a5e3a" : "#7fc87f") : tY5;
+                const sY5 = subtitle ? drawSubtitle(subtitle, tY5 + 8, isLight ? "#3a5e3a" : "#7fc87f") : tY5;
 
                 if (feats.length) {
                     const pillH = 73, gap = 12;
