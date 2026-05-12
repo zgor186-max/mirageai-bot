@@ -842,7 +842,7 @@ async function mpCardAnalyze(base64) {
                         { type: "text", text: `Посмотри на изображение товара. Ответь ТОЛЬКО валидным JSON без markdown и без пояснений:
 {
   "name": "Название товара по-русски, МАКСИМУМ 2 слова, ЗАГЛАВНЫМИ буквами. Формат: КАТЕГОРИЯ БРЕНД. ЗАПРЕЩЕНО писать модель или серию. Примеры: КРОССОВКИ ASICS, ШУРУПОВЁРТ MAKITA, СМАРТФОН SAMSUNG",
-  "category": "один из: workshop (инструменты/стройка), darktech (электроника/гаджеты/ноутбуки), gaming (игровые аксессуары/геймпад/гарнитуры), marble (косметика/парфюм/красота люкс), spa (спа/уход/свечи/расслабление), scandinavian (дом/декор/мебель/интерьер), cozy (уютный дом/текстиль/плед/подушки), kids (детские товары/игрушки/книги), gym (фитнес/спорт/спортивное питание), parking (авто-аксессуары/держатели/регистратор), garage (автоинструменты/химия для авто/шины), kitchen (еда/кухонная посуда/ножи/доски), cafe (кофе/кружки/термосы/лайфстайл), pets (товары для животных/корм/лежанки), collector (фигурки/аниме/коллекционное/мерч)",
+  "category": "один из: clothing (одежда/обувь/головные уборы), accessories (сумки/часы/очки/украшения/ювелирные изделия), food (продукты/блюда/напитки/упаковка еды), beauty (косметика/уход/парфюм/банки/флаконы/тюбики), gadgets (электроника/гаджеты/инструменты/техника/устройства), home (мебель/декор/свет/интерьер/текстиль/посуда), other (всё остальное что не подошло выше)",
   "badge": "САМАЯ главная характеристика (2-4 слова, ЗАГЛАВНЫМИ). Примеры: НАТУРАЛЬНАЯ ЗАМША, 100% ХЛОПОК, 18В, WIFI 6",
   "subtitle": "3 характеристики через буллет, строчными. Формат: свойство1 • свойство2 • свойство3",
   "feat1": "УНИКАЛЬНОЕ преимущество 1, максимум 2 слова. Только конкретика: лёгкий вес, нескользящая подошва",
@@ -895,9 +895,21 @@ async function mpCardAnalyze(base64) {
     }
 }
 
+// Маппинг пользовательских категорий на фоны BACKGROUNDS_DB
+const CATEGORY_TO_BG = {
+    clothing:    "cozy",
+    accessories: "marble",
+    food:        "kitchen",
+    beauty:      "spa",
+    gadgets:     "darktech",
+    home:        "scandinavian",
+    other:       "workshop"
+};
+
 function mpCategoryChange(categoryId) {
-    mpSelectedBg = categoryId;
-    const bg = BACKGROUNDS_DB.find(b => b.id === categoryId);
+    const bgId = CATEGORY_TO_BG[categoryId] || categoryId;
+    mpSelectedBg = bgId;
+    const bg = BACKGROUNDS_DB.find(b => b.id === bgId);
     if (bg) mpCardColorScheme = bg.scheme;
     // Синхронизируем select если вызвано программно
     const catEl = document.getElementById("mp-card-category");
