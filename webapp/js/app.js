@@ -673,14 +673,6 @@ async function mpCardGenerate() {
     }
 }
 
-const COLOR_SCHEMES = {
-    warm:     { title: "#fff8e8", badge: "#f5c842", featStroke: "rgba(245,200,70,0.85)",  featText: "#fff3cc" },
-    dark:     { title: "#ffffff", badge: "#e8c84a", featStroke: "rgba(220,185,60,0.85)",  featText: "#ffe680" },
-    tech:     { title: "#e8f8ff", badge: "#00d4ff", featStroke: "rgba(0,210,255,0.85)",   featText: "#a0eeff" },
-    workshop: { title: "#fff5e0", badge: "#ffb700", featStroke: "rgba(255,185,0,0.85)",   featText: "#ffd966" },
-    nature:   { title: "#f0fff2", badge: "#5eff6a", featStroke: "rgba(80,230,90,0.85)",   featText: "#b8ffbe" },
-};
-
 async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, feat3 }) {
     return new Promise((resolve, reject) => {
         const img = new Image();
@@ -709,18 +701,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 while (sz > min && ctx.measureText(text).width > maxW) sz -= 1;
                 return sz;
             }
-            function drawPhoto(topH, botY) {
-                const srcTop = Math.floor(img.height * 0.05);
-                const srcBot = Math.floor(img.height * 0.97);
-                ctx.drawImage(img, 0, srcTop, img.width, srcBot - srcTop, 0, topH, W, botY - topH);
-            }
-            function drawFade(y, h, fromColor, toColor) {
-                const g = ctx.createLinearGradient(0, y, 0, y + h);
-                g.addColorStop(0, fromColor); g.addColorStop(1, toColor);
-                ctx.fillStyle = g; ctx.fillRect(0, y, W, h);
-            }
             function drawBadge(text, x, y, bg, textColor) {
-                const maxBadgeW = W / 2 - PAD; // бейдж не шире половины карточки
+                const maxBadgeW = W / 2 - PAD;
                 let sz = 18;
                 ctx.font = `bold ${sz}px Arial`;
                 while (sz > 11 && ctx.measureText(text).width + 28 > maxBadgeW) sz--;
@@ -745,7 +727,6 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                     lastSz = sz;
                     ty += lineH;
                 }
-                // Возвращаем нижний край последнего слова, а не позицию следующей строки
                 return ty - Math.round(lastSz * 1.1) + Math.round(lastSz * 0.3);
             }
             function drawSubtitle(text, y, color, size) {
@@ -759,101 +740,170 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 return y;
             }
 
-            // ── PREMIUM OVERLAY ──
-            const GRAD_TOP = Math.floor(H * 0.62);
-            const TITLE_Y  = Math.floor(H * 0.775);
-            const PILL_H   = 56;
-            const CHIPS_Y  = H - PAD - PILL_H - 4;
+            const GRAD_TOP = Math.floor(H * 0.55);
+            const TITLE_Y  = Math.floor(H * 0.72);
+            const PILL_H   = 73;
+            const CHIPS_Y  = H - PAD - PILL_H;
 
-            const SC = {
-                warm:     { accent:"#d4a017", title:"#fff8e8", sub:"#ddc880", tint: isLight ? [42,30,5]  : [15,10,2]  },
-                dark:     { accent:"#c9a84c", title:"#ffffff",  sub:"#b09070", tint: isLight ? [20,18,10] : [4,4,4]    },
-                tech:     { accent:"#00c8ff", title:"#ffffff",  sub:"#4ab8d8", tint: isLight ? [0,12,35]  : [2,8,18]   },
-                workshop: { accent:"#ffc200", title:"#ffffff",  sub:"#aaaaaa", tint: isLight ? [12,10,0]  : [8,6,0]    },
-                nature:   { accent:"#4caf50", title:"#e8ffe8",  sub:"#7fc87f", tint: isLight ? [4,18,4]   : [4,12,4]   },
-            }[scheme] || { accent:"#d4a017", title:"#fff8e8", sub:"#ddc880", tint:[15,10,2] };
-            const [tr,tg,tb] = SC.tint;
-
-            // 1. Фото
-            const srcTop = Math.floor(img.height * 0.05);
-            const srcBot = Math.floor(img.height * 0.97);
-            ctx.drawImage(img, 0, srcTop, img.width, srcBot - srcTop, 0, 0, W, H);
-
-            // 2. Мягкий градиент снизу (товар виден на 62%)
-            const gOver = ctx.createLinearGradient(0, GRAD_TOP, 0, H);
-            gOver.addColorStop(0,    "rgba(0,0,0,0)");
-            gOver.addColorStop(0.25, `rgba(${tr},${tg},${tb},0.32)`);
-            gOver.addColorStop(0.62, `rgba(${tr},${tg},${tb},0.80)`);
-            gOver.addColorStop(1,    `rgba(${tr},${tg},${tb},0.97)`);
-            ctx.fillStyle = gOver;
-            ctx.fillRect(0, GRAD_TOP, W, H - GRAD_TOP);
-
-            // 3. Бейдж (компактный, top-right)
-            if (badge) {
-                const bt = badge.toUpperCase();
-                const bfs = 13;
-                ctx.font = `bold ${bfs}px Arial`;
-                const btw = ctx.measureText(bt).width;
-                const bpx = 14, bpy = 8, bh = bfs + bpy * 2, bw = btw + bpx * 2;
-                const bx = W - PAD - bw, by = 36;
-                rr(bx, by, bw, bh, bh / 2, SC.accent);
-                ctx.fillStyle = "#000";
-                ctx.textAlign = "left";
-                ctx.fillText(bt, bx + bpx, by + bpy + bfs - 1);
+            function drawFullPhoto() {
+                const srcTop = Math.floor(img.height * 0.05);
+                const srcBot = Math.floor(img.height * 0.97);
+                ctx.drawImage(img, 0, srcTop, img.width, srcBot - srcTop, 0, 0, W, H);
+            }
+            function drawOverlay(tintColor) {
+                const g = ctx.createLinearGradient(0, GRAD_TOP, 0, H);
+                g.addColorStop(0,    "rgba(0,0,0,0)");
+                g.addColorStop(0.38, "rgba(0,0,0,0.62)");
+                g.addColorStop(1,    tintColor);
+                ctx.fillStyle = g;
+                ctx.fillRect(0, GRAD_TOP, W, H - GRAD_TOP);
             }
 
-            // 4. Тонкая акцентная линия над заголовком
-            ctx.fillStyle = SC.accent;
-            ctx.fillRect(PAD, TITLE_Y - 20, 40, 3);
+            if (scheme === "warm") {
+                const accentClr = "#d4a017";
+                const titleClr  = "#fff8e8";
+                const subClr    = "#ddc880";
+                drawFullPhoto();
+                drawOverlay(isLight ? "rgba(50,35,5,0.94)" : "rgba(18,12,2,0.96)");
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, 65, accentClr, "#1a1000");
+                const tY1 = drawTitle((name||"").toUpperCase().split(/\s+/), TITLE_Y, CHIPS_Y - 50, titleClr);
+                if (subtitle) drawSubtitle(subtitle, tY1 + 10, subClr);
+                if (feats.length) {
+                    const gap = 12, colW = (W - PAD*2 - gap*(feats.length-1)) / feats.length;
+                    feats.forEach((f, i) => {
+                        const fx = PAD + i*(colW+gap), fy = CHIPS_Y;
+                        rr(fx, fy, colW, PILL_H, 36, "rgba(40,28,5,0.92)", accentClr, 2);
+                        ctx.beginPath(); ctx.arc(fx+26, fy+PILL_H/2, 11, 0, Math.PI*2);
+                        ctx.fillStyle = accentClr; ctx.fill();
+                        ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+                        ctx.beginPath(); ctx.moveTo(fx+20, fy+PILL_H/2); ctx.lineTo(fx+25, fy+PILL_H/2+5); ctx.lineTo(fx+32, fy+PILL_H/2-5); ctx.stroke();
+                        ctx.fillStyle = "#fff";
+                        const fw = f.split(" ");
+                        if (fw.length > 1) {
+                            const sz = Math.min(autoSize(fw[0], colW-52, 22, 11), autoSize(fw.slice(1).join(" "), colW-52, 22, 11));
+                            ctx.font = `600 ${sz}px Arial`;
+                            ctx.fillText(fw[0], fx+46, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+46, fy+52);
+                        } else {
+                            ctx.font = `600 ${autoSize(f, colW-52, 22, 11)}px Arial`;
+                            ctx.fillText(f, fx+46, fy+PILL_H/2+8);
+                        }
+                    });
+                }
 
-            // 5. Заголовок (max 66px, не перекрывает товар)
-            ctx.textAlign = "left";
-            let ty = TITLE_Y;
-            for (const word of (name || "").toUpperCase().split(/\s+/)) {
-                const sz = autoSize(word, W - PAD * 2, 66, 20);
-                if (ty > CHIPS_Y - 46) break;
-                ctx.font = `700 ${sz}px 'Oswald', Arial`;
-                ctx.fillStyle = SC.title;
-                ctx.fillText(word, PAD, ty);
-                ty += Math.round(sz * 1.08);
-            }
+            } else if (scheme === "dark") {
+                const gold     = "#c9a84c";
+                const titleClr = "#ffffff";
+                drawFullPhoto();
+                drawOverlay(isLight ? "rgba(25,22,14,0.94)" : "rgba(5,5,5,0.96)");
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, 65, gold, "#000");
+                ctx.fillStyle = gold; ctx.font = `22px Arial`;
+                ctx.fillText("◆", PAD, TITLE_Y - 30);
+                const tY2 = drawTitle((name||"").toUpperCase().split(/\s+/), TITLE_Y, CHIPS_Y - 50, titleClr, W - PAD*2 - 20);
+                if (subtitle) drawSubtitle(subtitle, tY2 + 10, "#a08060");
+                if (feats.length) {
+                    const gap = 14, colW = (W - PAD*2 - gap*(feats.length-1)) / feats.length;
+                    feats.forEach((f, i) => {
+                        const fx = PAD + i*(colW+gap), fy = CHIPS_Y;
+                        rr(fx, fy, colW, PILL_H, 6, "rgba(20,15,5,0.88)", gold, 1.5);
+                        ctx.fillStyle = gold; ctx.font = `bold 22px Arial`;
+                        ctx.fillText("◆", fx+14, fy+PILL_H/2+8);
+                        ctx.fillStyle = titleClr;
+                        const fw = f.split(" ");
+                        if (fw.length > 1) {
+                            const sz = Math.min(autoSize(fw[0], colW-52, 22, 11), autoSize(fw.slice(1).join(" "), colW-52, 22, 11));
+                            ctx.font = `600 ${sz}px Arial`;
+                            ctx.fillText(fw[0], fx+46, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+46, fy+52);
+                        } else {
+                            ctx.font = `600 ${autoSize(f, colW-52, 22, 11)}px Arial`;
+                            ctx.fillText(f, fx+46, fy+PILL_H/2+8);
+                        }
+                    });
+                }
 
-            // 6. Подзаголовок
-            if (subtitle && ty < CHIPS_Y - 28) {
-                let fsz = 19;
-                ctx.font = `400 ${fsz}px Arial`;
-                while (fsz > 12 && ctx.measureText(subtitle).width > W - PAD * 2) fsz--;
-                ctx.font = `400 ${fsz}px Arial`;
-                ctx.fillStyle = SC.sub;
-                ctx.fillText(subtitle.substring(0, 90), PAD, ty + 12);
-            }
+            } else if (scheme === "tech") {
+                const cyan     = "#00c8ff";
+                const titleClr = "#ffffff";
+                drawFullPhoto();
+                drawOverlay(isLight ? "rgba(0,15,40,0.94)" : "rgba(3,10,20,0.96)");
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, 65, cyan, "#000");
+                const tY3 = drawTitle((name||"").toUpperCase().split(/\s+/), TITLE_Y, CHIPS_Y - 50, titleClr);
+                if (subtitle) drawSubtitle(subtitle, tY3 + 10, "#4ab8d8");
+                if (feats.length) {
+                    const gap = 10, colW = (W - PAD*2 - gap*(feats.length-1)) / feats.length;
+                    feats.forEach((f, i) => {
+                        const fx = PAD + i*(colW+gap), fy = CHIPS_Y;
+                        rr(fx, fy, colW, PILL_H, 8, "rgba(0,30,60,0.88)", cyan, 1.5);
+                        ctx.fillStyle = cyan;
+                        ctx.beginPath(); ctx.moveTo(fx+14, fy+PILL_H/2-9); ctx.lineTo(fx+14, fy+PILL_H/2+9); ctx.lineTo(fx+28, fy+PILL_H/2); ctx.fill();
+                        ctx.fillStyle = titleClr;
+                        const fw = f.split(" ");
+                        if (fw.length > 1) {
+                            const sz = Math.min(autoSize(fw[0], colW-46, 22, 11), autoSize(fw.slice(1).join(" "), colW-46, 22, 11));
+                            ctx.font = `600 ${sz}px Arial`;
+                            ctx.fillText(fw[0], fx+36, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+36, fy+52);
+                        } else {
+                            ctx.font = `600 ${autoSize(f, colW-46, 22, 11)}px Arial`;
+                            ctx.fillText(f, fx+36, fy+PILL_H/2+8);
+                        }
+                    });
+                }
 
-            // 7. Чипы преимуществ (компактные, современные)
-            if (feats.length) {
-                const gap = 10;
-                const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
-                feats.forEach((f, i) => {
-                    const fx = PAD + i * (colW + gap), fy = CHIPS_Y;
-                    rr(fx, fy, colW, PILL_H, 10, `rgba(${tr},${tg},${tb},0.84)`, SC.accent, 1.5);
-                    // Маленький акцентный круг-иконка
-                    ctx.beginPath(); ctx.arc(fx + 18, fy + PILL_H / 2, 5, 0, Math.PI * 2);
-                    ctx.fillStyle = SC.accent; ctx.fill();
-                    // Текст
-                    ctx.fillStyle = "#fff";
-                    ctx.textAlign = "left";
-                    const fw = f.split(" ");
-                    const maxTW = colW - 34;
-                    if (fw.length > 1) {
-                        const sz = Math.min(autoSize(fw[0], maxTW, 17, 10), autoSize(fw.slice(1).join(" "), maxTW, 17, 10));
-                        ctx.font = `600 ${sz}px Arial`;
-                        ctx.fillText(fw[0], fx + 30, fy + 20);
-                        ctx.fillText(fw.slice(1).join(" "), fx + 30, fy + 20 + sz + 3);
-                    } else {
-                        const sz = autoSize(f, maxTW, 17, 10);
-                        ctx.font = `600 ${sz}px Arial`;
-                        ctx.fillText(f, fx + 30, fy + PILL_H / 2 + sz / 3);
-                    }
-                });
+            } else if (scheme === "workshop") {
+                const yellow = "#ffc200";
+                drawFullPhoto();
+                drawOverlay(isLight ? "rgba(15,12,0,0.95)" : "rgba(10,8,0,0.97)");
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, 65, yellow, "#000");
+                const tY4 = drawTitle((name||"").toUpperCase().split(/\s+/), TITLE_Y, CHIPS_Y - 50, "#ffffff");
+                if (subtitle) drawSubtitle(subtitle, tY4 + 10, "#aaaaaa");
+                if (feats.length) {
+                    const gap = 10, colW = (W - PAD*2 - gap*(feats.length-1)) / feats.length;
+                    feats.forEach((f, i) => {
+                        const fx = PAD + i*(colW+gap), fy = CHIPS_Y;
+                        rr(fx, fy, colW, PILL_H, 6, "rgba(30,24,0,0.88)", yellow, 2);
+                        rr(fx, fy, 6, PILL_H, [6,0,0,6], yellow);
+                        ctx.fillStyle = "#fff";
+                        const fw = f.split(" ");
+                        if (fw.length > 1) {
+                            const sz = Math.min(autoSize(fw[0], colW-32, 22, 11), autoSize(fw.slice(1).join(" "), colW-32, 22, 11));
+                            ctx.font = `600 ${sz}px Arial`;
+                            ctx.fillText(fw[0], fx+22, fy+30); ctx.fillText(fw.slice(1).join(" "), fx+22, fy+54);
+                        } else {
+                            ctx.font = `600 ${autoSize(f, colW-32, 22, 11)}px Arial`;
+                            ctx.fillText(f, fx+22, fy+PILL_H/2+8);
+                        }
+                    });
+                }
+
+            } else {
+                const green    = "#4caf50";
+                const titleClr = "#e8ffe8";
+                drawFullPhoto();
+                drawOverlay(isLight ? "rgba(5,20,5,0.94)" : "rgba(5,14,5,0.97)");
+                if (badge) drawBadge(badge.toUpperCase(), W - PAD, 65, green, "#fff");
+                ctx.font = "24px Arial"; ctx.fillText("🌿", PAD, TITLE_Y - 22);
+                const tY5 = drawTitle((name||"").toUpperCase().split(/\s+/), TITLE_Y, CHIPS_Y - 50, titleClr, W - PAD*2 - 30);
+                if (subtitle) drawSubtitle(subtitle, tY5 + 10, "#7fc87f");
+                if (feats.length) {
+                    const gap = 12, colW = (W - PAD*2 - gap*(feats.length-1)) / feats.length;
+                    feats.forEach((f, i) => {
+                        const fx = PAD + i*(colW+gap), fy = CHIPS_Y;
+                        rr(fx, fy, colW, PILL_H, 36, "rgba(10,35,10,0.88)", green, 2);
+                        ctx.beginPath(); ctx.arc(fx+26, fy+PILL_H/2, 13, 0, Math.PI*2);
+                        ctx.fillStyle = green; ctx.fill();
+                        ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+                        ctx.beginPath(); ctx.moveTo(fx+20, fy+PILL_H/2); ctx.lineTo(fx+25, fy+PILL_H/2+5); ctx.lineTo(fx+32, fy+PILL_H/2-5); ctx.stroke();
+                        ctx.fillStyle = titleClr;
+                        const fw = f.split(" ");
+                        if (fw.length > 1) {
+                            const sz = Math.min(autoSize(fw[0], colW-56, 22, 11), autoSize(fw.slice(1).join(" "), colW-56, 22, 11));
+                            ctx.font = `600 ${sz}px Arial`;
+                            ctx.fillText(fw[0], fx+46, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+46, fy+52);
+                        } else {
+                            ctx.font = `600 ${autoSize(f, colW-56, 22, 11)}px Arial`;
+                            ctx.fillText(f, fx+46, fy+PILL_H/2+8);
+                        }
+                    });
+                }
             }
 
             resolve(canvas.toDataURL("image/jpeg", 0.93));
