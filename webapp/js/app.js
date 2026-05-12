@@ -623,7 +623,7 @@ async function mpCardGenerate() {
     const schemeStyles = bgStylesMap[mpCardColorScheme] || bgStylesMap.warm;
     const bgDesc = mpCardBgStyle === "light" ? schemeStyles.light : schemeStyles.dark;
 
-    const prompt = `Professional marketplace product photography for Wildberries and Ozon. Place this exact product as the hero subject in a ${bgDesc}. Three-point studio lighting: key light upper-left 45 degrees, fill light at 2:1 ratio, rim light separating product from background. Product must be positioned in the UPPER 70% of the frame (leave bottom 30% clear for text overlay), occupying 60-70% of frame width, centered horizontally. Product perfectly sharp with accurate color reproduction. Background realistically blurred at f/2.8 bokeh. 85mm lens equivalent, 5500K color temperature. The background MUST be a REAL recognizable interior scene, NOT a plain solid color. Photorealistic, 3:4 aspect ratio. NO text, NO letters, NO watermarks, NO logos in the image.`;
+    const prompt = `Professional marketplace product photography for Wildberries and Ozon. Place this exact product as the hero subject in a ${bgDesc}. Three-point studio lighting applied to the product: key light upper-left at 45 degrees, fill light reducing shadows to 2:1 ratio, subtle rim light separating product from background. Product occupies 65-75% of frame positioned at rule of thirds, perfectly sharp with accurate color reproduction. Background realistically blurred at f/2.8 bokeh creating natural depth separation. 85mm lens equivalent, warm neutral color temperature 5500K, sRGB color profile. The background MUST be a REAL recognizable interior scene with visible depth, NOT a plain solid color or flat gradient. Photorealistic, hero shot quality, 3:4 aspect ratio. NO text, NO letters, NO watermarks, NO logos.`;
 
     switchScreen("loading");
     animateSteps();
@@ -673,9 +673,18 @@ async function mpCardGenerate() {
     }
 }
 
+const COLOR_SCHEMES = {
+    warm:     { title: "#fff8e8", badge: "#f5c842", featStroke: "rgba(245,200,70,0.85)",  featText: "#fff3cc" },
+    dark:     { title: "#ffffff", badge: "#e8c84a", featStroke: "rgba(220,185,60,0.85)",  featText: "#ffe680" },
+    tech:     { title: "#e8f8ff", badge: "#00d4ff", featStroke: "rgba(0,210,255,0.85)",   featText: "#a0eeff" },
+    workshop: { title: "#fff5e0", badge: "#ffb700", featStroke: "rgba(255,185,0,0.85)",   featText: "#ffd966" },
+    nature:   { title: "#f0fff2", badge: "#5eff6a", featStroke: "rgba(80,230,90,0.85)",   featText: "#b8ffbe" },
+};
+
 async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, feat3 }) {
     return new Promise((resolve, reject) => {
         const img = new Image();
+        // crossOrigin не нужен для data URI — убираем чтобы не блокировать iOS Safari
         if (!imageUrl.startsWith("data:")) img.crossOrigin = "anonymous";
         img.onload = async () => {
             try {
@@ -685,128 +694,164 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             canvas.width = W; canvas.height = H;
             const ctx = canvas.getContext("2d");
             const scheme = mpCardColorScheme || "warm";
-            const PAD = 28;
+            const isLight = (mpCardBgStyle || "dark") === "light";
+            const PAD = 30;
             const feats = [feat1, feat2, feat3].filter(Boolean);
-
-            // Aidentika-style: solid bottom panel, product fully visible in top zone
-            const PANEL_Y  = Math.floor(H * 0.68);   // panel starts at 68% (~748px)
-            const CHIP_H   = 50;
-            const CHIP_Y   = H - PAD - CHIP_H;        // chips anchored to panel bottom
-
-            const SC = {
-                warm:     { panel:[16,11,3],   accent:"#d4a017", title:"#fff8e8", sub:"rgba(210,190,120,0.85)" },
-                dark:     { panel:[8,6,8],      accent:"#c9a84c", title:"#ffffff",  sub:"rgba(170,145,100,0.85)" },
-                tech:     { panel:[4,10,24],    accent:"#00c8ff", title:"#ffffff",  sub:"rgba(80,180,215,0.85)"  },
-                workshop: { panel:[14,10,2],    accent:"#ffc200", title:"#ffffff",  sub:"rgba(185,165,80,0.85)"  },
-                nature:   { panel:[4,16,6],     accent:"#4caf50", title:"#e8ffe8",  sub:"rgba(100,195,100,0.85)" },
-            }[scheme] || { panel:[16,11,3], accent:"#d4a017", title:"#fff8e8", sub:"rgba(210,190,120,0.85)" };
-            const [pr,pg,pb] = SC.panel;
 
             function rr(x, y, w, h, r, fill, stroke, sw) {
                 ctx.beginPath(); ctx.roundRect(x, y, w, h, r);
-                if (fill)   { ctx.fillStyle = fill;           ctx.fill();   }
-                if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = sw || 1.5; ctx.stroke(); }
+                if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+                if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = sw || 2; ctx.stroke(); }
             }
-            function autoSize(text, maxW, max, min) {
+            function autoSize(text, maxW, max, min, font) {
                 let sz = max;
-                ctx.font = `700 ${sz}px 'Oswald', Arial`;
-                while (sz > min && ctx.measureText(text).width > maxW) sz--;
+                ctx.font = `${font || '700'} ${sz}px 'Oswald', Arial`;
+                while (sz > min && ctx.measureText(text).width > maxW) sz -= 1;
                 return sz;
             }
+            function drawPhoto(topH, botY) {
+                const srcTop = Math.floor(img.height * 0.05);
+                const srcBot = Math.floor(img.height * 0.97);
+                ctx.drawImage(img, 0, srcTop, img.width, srcBot - srcTop, 0, topH, W, botY - topH);
+            }
+            function drawFade(y, h, fromColor, toColor) {
+                const g = ctx.createLinearGradient(0, y, 0, y + h);
+                g.addColorStop(0, fromColor); g.addColorStop(1, toColor);
+                ctx.fillStyle = g; ctx.fillRect(0, y, W, h);
+            }
+            function drawBadge(text, x, y, bg, textColor) {
+                const maxBadgeW = W / 2 - PAD; // бейдж не шире половины карточки
+                let sz = 18;
+                ctx.font = `bold ${sz}px Arial`;
+                while (sz > 11 && ctx.measureText(text).width + 28 > maxBadgeW) sz--;
+                ctx.font = `bold ${sz}px Arial`;
+                const bW = Math.min(Math.max(ctx.measureText(text).width + 28, 80), maxBadgeW);
+                rr(x - bW, y, bW, 34, 17, bg);
+                ctx.fillStyle = textColor || "#000";
+                ctx.textAlign = "center";
+                ctx.fillText(text, x - bW / 2, y + 22);
+                ctx.textAlign = "left";
+            }
+            function drawTitle(words, startY, maxY, color, maxW) {
+                let ty = startY;
+                let lastSz = 22;
+                for (const word of words) {
+                    const sz = autoSize(word, maxW || W - PAD * 2, 96, 22);
+                    const lineH = Math.round(sz * 1.1);
+                    if (ty > maxY) break;
+                    ctx.font = `700 ${sz}px 'Oswald', Arial`;
+                    ctx.fillStyle = color;
+                    ctx.fillText(word, PAD, ty);
+                    lastSz = sz;
+                    ty += lineH;
+                }
+                // Возвращаем нижний край последнего слова, а не позицию следующей строки
+                return ty - Math.round(lastSz * 1.1) + Math.round(lastSz * 0.3);
+            }
+            function drawSubtitle(text, y, color, size) {
+                const maxW = W - PAD * 2;
+                let fsz = size || 28;
+                ctx.font = `500 ${fsz}px 'Oswald', Arial`;
+                while (fsz > 15 && ctx.measureText(text).width > maxW) fsz--;
+                ctx.font = `500 ${fsz}px 'Oswald', Arial`;
+                ctx.fillStyle = color;
+                ctx.fillText(text.substring(0, 90), PAD, y);
+                return y;
+            }
 
-            // 1. Product photo — fills top zone fully, no overlay
-            ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, W, PANEL_Y + 24);
+            // ── PREMIUM OVERLAY ──
+            const GRAD_TOP = Math.floor(H * 0.62);
+            const TITLE_Y  = Math.floor(H * 0.775);
+            const PILL_H   = 56;
+            const CHIPS_Y  = H - PAD - PILL_H - 4;
 
-            // 2. Micro-blend: 24px fade into panel (keeps edge clean)
-            const fade = ctx.createLinearGradient(0, PANEL_Y - 4, 0, PANEL_Y + 24);
-            fade.addColorStop(0, "rgba(0,0,0,0)");
-            fade.addColorStop(1, `rgb(${pr},${pg},${pb})`);
-            ctx.fillStyle = fade;
-            ctx.fillRect(0, PANEL_Y - 4, W, 28);
+            const SC = {
+                warm:     { accent:"#d4a017", title:"#fff8e8", sub:"#ddc880", tint: isLight ? [42,30,5]  : [15,10,2]  },
+                dark:     { accent:"#c9a84c", title:"#ffffff",  sub:"#b09070", tint: isLight ? [20,18,10] : [4,4,4]    },
+                tech:     { accent:"#00c8ff", title:"#ffffff",  sub:"#4ab8d8", tint: isLight ? [0,12,35]  : [2,8,18]   },
+                workshop: { accent:"#ffc200", title:"#ffffff",  sub:"#aaaaaa", tint: isLight ? [12,10,0]  : [8,6,0]    },
+                nature:   { accent:"#4caf50", title:"#e8ffe8",  sub:"#7fc87f", tint: isLight ? [4,18,4]   : [4,12,4]   },
+            }[scheme] || { accent:"#d4a017", title:"#fff8e8", sub:"#ddc880", tint:[15,10,2] };
+            const [tr,tg,tb] = SC.tint;
 
-            // 3. Solid panel
-            ctx.fillStyle = `rgb(${pr},${pg},${pb})`;
-            ctx.fillRect(0, PANEL_Y + 20, W, H - PANEL_Y - 20);
+            // 1. Фото
+            const srcTop = Math.floor(img.height * 0.05);
+            const srcBot = Math.floor(img.height * 0.97);
+            ctx.drawImage(img, 0, srcTop, img.width, srcBot - srcTop, 0, 0, W, H);
 
-            // 4. Accent line at panel top edge
-            ctx.fillStyle = SC.accent;
-            ctx.fillRect(0, PANEL_Y + 20, W, 2);
+            // 2. Мягкий градиент снизу (товар виден на 62%)
+            const gOver = ctx.createLinearGradient(0, GRAD_TOP, 0, H);
+            gOver.addColorStop(0,    "rgba(0,0,0,0)");
+            gOver.addColorStop(0.25, `rgba(${tr},${tg},${tb},0.32)`);
+            gOver.addColorStop(0.62, `rgba(${tr},${tg},${tb},0.80)`);
+            gOver.addColorStop(1,    `rgba(${tr},${tg},${tb},0.97)`);
+            ctx.fillStyle = gOver;
+            ctx.fillRect(0, GRAD_TOP, W, H - GRAD_TOP);
 
-            // 5. Badge pill (top-left of panel)
-            const BADGE_TOP = PANEL_Y + 32;
+            // 3. Бейдж (компактный, top-right)
             if (badge) {
                 const bt = badge.toUpperCase();
-                ctx.font = "bold 12px Arial";
-                const bpx = 14, bpy = 7;
+                const bfs = 13;
+                ctx.font = `bold ${bfs}px Arial`;
                 const btw = ctx.measureText(bt).width;
-                const bw = btw + bpx * 2, bh = 12 + bpy * 2;
-                rr(PAD, BADGE_TOP, bw, bh, bh / 2, SC.accent);
-                ctx.fillStyle = "#111";
+                const bpx = 14, bpy = 8, bh = bfs + bpy * 2, bw = btw + bpx * 2;
+                const bx = W - PAD - bw, by = 36;
+                rr(bx, by, bw, bh, bh / 2, SC.accent);
+                ctx.fillStyle = "#000";
                 ctx.textAlign = "left";
-                ctx.fillText(bt, PAD + bpx, BADGE_TOP + bpy + 11);
+                ctx.fillText(bt, bx + bpx, by + bpy + bfs - 1);
             }
 
-            // 6. Title — bold, max 2 words per line, up to 2 lines
+            // 4. Тонкая акцентная линия над заголовком
+            ctx.fillStyle = SC.accent;
+            ctx.fillRect(PAD, TITLE_Y - 20, 40, 3);
+
+            // 5. Заголовок (max 66px, не перекрывает товар)
             ctx.textAlign = "left";
-            const TITLE_TOP = BADGE_TOP + (badge ? 40 : 12);
-            const words = (name || "").toUpperCase().split(/\s+/).filter(Boolean);
-            let ty = TITLE_TOP;
-            // Group into lines of max 2 words
-            const lines = [];
-            for (let i = 0; i < words.length && lines.length < 2; i += 2) {
-                lines.push(words.slice(i, i + 2).join(" "));
-            }
-            for (const line of lines) {
-                const sz = autoSize(line, W - PAD * 2, 60, 24);
-                if (ty + sz > CHIP_Y - 30) break;
+            let ty = TITLE_Y;
+            for (const word of (name || "").toUpperCase().split(/\s+/)) {
+                const sz = autoSize(word, W - PAD * 2, 66, 20);
+                if (ty > CHIPS_Y - 46) break;
                 ctx.font = `700 ${sz}px 'Oswald', Arial`;
                 ctx.fillStyle = SC.title;
-                ctx.fillText(line, PAD, ty + sz);
-                ty += Math.round(sz * 1.12);
+                ctx.fillText(word, PAD, ty);
+                ty += Math.round(sz * 1.08);
             }
 
-            // 7. Subtitle
-            if (subtitle) {
-                const subY = ty + 8;
-                if (subY + 20 < CHIP_Y - 12) {
-                    let fsz = 17;
-                    ctx.font = `400 ${fsz}px Arial`;
-                    while (fsz > 11 && ctx.measureText(subtitle).width > W - PAD * 2) fsz--;
-                    ctx.font = `400 ${fsz}px Arial`;
-                    ctx.fillStyle = SC.sub;
-                    ctx.fillText(subtitle.substring(0, 90), PAD, subY + fsz);
-                }
+            // 6. Подзаголовок
+            if (subtitle && ty < CHIPS_Y - 28) {
+                let fsz = 19;
+                ctx.font = `400 ${fsz}px Arial`;
+                while (fsz > 12 && ctx.measureText(subtitle).width > W - PAD * 2) fsz--;
+                ctx.font = `400 ${fsz}px Arial`;
+                ctx.fillStyle = SC.sub;
+                ctx.fillText(subtitle.substring(0, 90), PAD, ty + 12);
             }
 
-            // 8. Feature chips — anchored to panel bottom
+            // 7. Чипы преимуществ (компактные, современные)
             if (feats.length) {
                 const gap = 10;
                 const colW = (W - PAD * 2 - gap * (feats.length - 1)) / feats.length;
                 feats.forEach((f, i) => {
-                    const fx = PAD + i * (colW + gap), fy = CHIP_Y;
-                    // Chip background: dark tint with accent border
-                    rr(fx, fy, colW, CHIP_H, 10,
-                        `rgba(${pr+8},${pg+6},${pb+8},0.9)`, SC.accent, 1.5);
-                    // Accent dot
-                    ctx.beginPath();
-                    ctx.arc(fx + 16, fy + CHIP_H / 2, 4, 0, Math.PI * 2);
+                    const fx = PAD + i * (colW + gap), fy = CHIPS_Y;
+                    rr(fx, fy, colW, PILL_H, 10, `rgba(${tr},${tg},${tb},0.84)`, SC.accent, 1.5);
+                    // Маленький акцентный круг-иконка
+                    ctx.beginPath(); ctx.arc(fx + 18, fy + PILL_H / 2, 5, 0, Math.PI * 2);
                     ctx.fillStyle = SC.accent; ctx.fill();
-                    // Chip text
+                    // Текст
                     ctx.fillStyle = "#fff";
                     ctx.textAlign = "left";
                     const fw = f.split(" ");
-                    const maxTW = colW - 30;
+                    const maxTW = colW - 34;
                     if (fw.length > 1) {
-                        const s1 = autoSize(fw[0], maxTW, 15, 9);
-                        const s2 = autoSize(fw.slice(1).join(" "), maxTW, 15, 9);
-                        const sz = Math.min(s1, s2);
+                        const sz = Math.min(autoSize(fw[0], maxTW, 17, 10), autoSize(fw.slice(1).join(" "), maxTW, 17, 10));
                         ctx.font = `600 ${sz}px Arial`;
-                        ctx.fillText(fw[0], fx + 27, fy + 18);
-                        ctx.fillText(fw.slice(1).join(" "), fx + 27, fy + 18 + sz + 3);
+                        ctx.fillText(fw[0], fx + 30, fy + 20);
+                        ctx.fillText(fw.slice(1).join(" "), fx + 30, fy + 20 + sz + 3);
                     } else {
-                        const sz = autoSize(f, maxTW, 15, 9);
+                        const sz = autoSize(f, maxTW, 17, 10);
                         ctx.font = `600 ${sz}px Arial`;
-                        ctx.fillText(f, fx + 27, fy + CHIP_H / 2 + sz / 3);
+                        ctx.fillText(f, fx + 30, fy + PILL_H / 2 + sz / 3);
                     }
                 });
             }
