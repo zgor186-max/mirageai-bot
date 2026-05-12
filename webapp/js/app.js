@@ -1236,13 +1236,7 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, W, H);
             ctx.filter = "none";
 
-            // 2. Title bar — semi-transparent gradient overlay on top of image
-            const tBg = ctx.createLinearGradient(0, 0, 0, TITLE_H + 60);
-            tBg.addColorStop(0,    `rgba(${tr},${tg},${tb},0.78)`);
-            tBg.addColorStop(0.5,  `rgba(${tr},${tg},${tb},0.55)`);
-            tBg.addColorStop(1,    `rgba(${tr},${tg},${tb},0)`);
-            ctx.fillStyle = tBg;
-            ctx.fillRect(0, 0, W, TITLE_H + 40);
+            // 2. No gradient — text shadow ensures readability on any background
 
             // 3. Badge pill (top-right)
             if (badge) {
@@ -1265,6 +1259,10 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             const tsz = autoSz(fullTitle, tMaxW, 70, 26);
             ctx.font = `700 ${tsz}px 'Oswald', Arial`;
             ctx.fillStyle = "#ffffff";
+            ctx.shadowColor = "rgba(0,0,0,0.85)";
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetX = 1;
+            ctx.shadowOffsetY = 1;
             const titleY = PAD_TOP + tsz;
             ctx.fillText(fullTitle, PAD, titleY);
 
@@ -1274,9 +1272,14 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.font = `400 ${ssz}px Arial`;
                 while (ssz > 11 && ctx.measureText(subtitle).width > W - PAD*2) ssz--;
                 ctx.font = `400 ${ssz}px Arial`;
-                ctx.fillStyle = "rgba(255,255,255,0.72)";
+                ctx.fillStyle = "rgba(255,255,255,0.9)";
+                ctx.shadowBlur = 8;
                 ctx.fillText(subtitle.substring(0, 90), PAD, titleY + ssz + 6);
             }
+            ctx.shadowColor = "transparent";
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
 
             // 6. Left gradient for advantages readability (full height)
             if (feats.length > 0) {
