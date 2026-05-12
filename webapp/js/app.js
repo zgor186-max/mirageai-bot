@@ -1154,8 +1154,10 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 return sz;
             }
 
-            // 1. Product image — starts at PROD_Y (5% overlap of title)
+            // 1. Product image — starts at PROD_Y (5% overlap of title), +20% brightness
+            ctx.filter = "brightness(1.2)";
             ctx.drawImage(img, 0, 0, img.width, img.height, 0, PROD_Y, W, H - PROD_Y);
+            ctx.filter = "none";
 
             // 2. Title bar dark gradient
             const tBg = ctx.createLinearGradient(0, 0, 0, TITLE_H + 18);
