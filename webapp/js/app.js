@@ -713,6 +713,7 @@ let mpCardColorScheme = "warm";
 let mpCardBgStyle = "dark";
 let mpSelectedBg = "workshop";
 let mpCardBgPrompt = "";
+let mpCardCategory = "clothing";
 
 function mpSelectBg(style, el) {
     mpCardBgStyle = style;
@@ -952,6 +953,9 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
             ? data.background_prompt + (data.props && !data.background_prompt.includes(data.props.split(",")[0]) ? `, ${data.props}` : "")
             : "";
 
+        // Сохраняем категорию для generate-card запроса
+        mpCardCategory = data.category || "clothing";
+
         // Цветовая схема по категории
         const schemeMap = {
             clothing: "warm", accessories: "dark", food: "nature",
@@ -1069,7 +1073,8 @@ async function mpCardGenerate() {
             body: JSON.stringify({
                 photo: mpCardPhotoBase64,
                 scene_prompt: scenePrompt,
-                product_name: name || "product"
+                product_name: name || "product",
+                category: mpCardCategory || "clothing"
             })
         });
         clearTimeout(timeout);

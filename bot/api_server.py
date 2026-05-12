@@ -75,6 +75,7 @@ async def generate_card_handler(request):
         photo_b64    = data.get("photo", "")
         scene_prompt = data.get("scene_prompt", "")
         product_name = data.get("product_name", "product")
+        category     = data.get("category", "other")
 
         if not photo_b64 or not scene_prompt:
             return web.json_response({"error": "photo and scene_prompt required"}, status=400, headers=CORS_HEADERS)
@@ -82,14 +83,27 @@ async def generate_card_handler(request):
         if photo_b64.startswith("data:"):
             photo_b64 = photo_b64.split(",", 1)[1]
 
-        print(f"[Card] scene_prompt={scene_prompt[:80]}")
+        print(f"[Card] category={category} scene={scene_prompt[:80]}")
+
+        # Category-specific placement instructions
+        PLACEMENT = {
+            "clothing":    "neatly folded and laid flat on the surface, filling 65% of the frame. Flat lay overhead product photography style. Soft shadow beneath.",
+            "accessories": "placed upright and prominently on the surface, hero shot angle, filling 65% of the frame. Soft shadow beneath.",
+            "food":        "placed on the surface surrounded by the scene props, filling 65% of the frame. Appetizing food photography angle.",
+            "beauty":      "standing upright on the surface, hero beauty shot, filling 65% of the frame. Soft specular highlights on packaging.",
+            "gadgets":     "placed at a 45-degree hero angle on the surface, filling 65% of the frame. Premium tech product shot.",
+            "home":        "placed naturally on the surface as it would be used, filling 65% of the frame. Lifestyle product photography.",
+            "other":       "placed prominently on the surface, filling 65% of the frame. Soft shadow beneath.",
+        }
+        placement_instruction = PLACEMENT.get(category, PLACEMENT["other"])
 
         place_prompt = (
-            f"Place the {product_name} from the reference image naturally into this scene: {scene_prompt}. "
-            f"The product rests firmly on the surface with a soft realistic shadow beneath it. "
-            f"The product is fully integrated into the scene, not floating in the air. "
-            f"Keep the product's exact appearance, colors and details. "
-            f"Photorealistic commercial product photography. NO text, NO watermarks."
+            f"Take the {product_name} from the reference image and place it into this scene: {scene_prompt}. "
+            f"The {product_name} is {placement_instruction} "
+            f"The product is firmly grounded on the surface — NOT floating, NOT hanging in air. "
+            f"Preserve the exact colors, pattern and details of the original {product_name}. "
+            f"The surrounding props from the scene are visible around the product. "
+            f"Photorealistic commercial product photography, warm cinematic lighting. NO text, NO watermarks, NO hangers."
         )
 
         try:
