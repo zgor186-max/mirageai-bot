@@ -3,7 +3,7 @@ tg.ready();
 tg.expand();
 
 // ── API сервер (Replicate через наш сервер) ──
-const API_SERVER = "http://5.42.112.194:8080";
+const API_SERVER = "https://mirageai.duckdns.org";
 
 let selectedTemplate = null;
 let selectedPhotoBase64 = null;
