@@ -78,45 +78,53 @@ async def generate_card_handler(request):
 
         print(f"[Card] Step 1 — generating scene: {scene_prompt[:80]}")
 
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=300)) as session:
-            # Step 1: Generate background scene (no product)
-            bg_url = await call_text2img(session, scene_prompt)
-            if not bg_url:
-                return web.json_response({"error": "Scene generation failed"}, status=500, headers=CORS_HEADERS)
+        place_prompt = (
+            f"Place the {product_name} from the reference image naturally into this scene: {scene_prompt}. "
+            f"The product rests firmly on the surface with a soft realistic shadow beneath it. "
+            f"The product is fully integrated into the scene, not floating in the air. "
+            f"Keep the product's exact appearance, colors and details. "
+            f"Photorealistic commercial product photography. NO text, NO watermarks."
+        )
 
-            print(f"[Card] Step 1 done: {bg_url[:60]}")
-            print(f"[Card] Step 2 — placing product in scene")
+        try:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=300)) as session:
+                # Step 1: Generate background scene (no product)
+                print(f"[Card] Step 1 — generating scene")
+                bg_url = await call_text2img(session, scene_prompt)
 
-            # Step 2: Place product into the scene
-            place_prompt = (
-                f"Place the {product_name} from the reference image naturally into this scene. "
-                f"The product rests firmly on the surface. Add a soft realistic shadow beneath the product. "
-                f"The product is fully integrated into the scene, not floating. "
-                f"Keep the product's exact appearance, colors and details. "
-                f"Photorealistic commercial product photography. NO text, NO watermarks."
-            )
+                if bg_url:
+                    print(f"[Card] Step 1 done: {bg_url[:60]}")
+                    print(f"[Card] Step 2 — placing product in scene")
 
-            # Upload both images to Replicate
-            product_url = await upload_image_to_replicate(session, photo_b64)
-            bg_b64 = await download_as_b64(session, bg_url)
-            bg_upload_url = await upload_image_to_replicate(session, bg_b64) if bg_b64 else None
+                    # Upload product photo
+                    product_url = await upload_image_to_replicate(session, photo_b64)
 
-            if not product_url:
-                return web.json_response({"error": "Product upload failed"}, status=500, headers=CORS_HEADERS)
+                    if product_url:
+                        # Download bg and re-upload for two-image call
+                        bg_b64 = await download_as_b64(session, bg_url)
+                        bg_upload_url = await upload_image_to_replicate(session, bg_b64) if bg_b64 else None
 
-            result_url = await call_kontext_two_images(session, product_url, bg_upload_url, place_prompt)
+                        result_url = await call_kontext_two_images(session, product_url, bg_upload_url, place_prompt)
 
-            if not result_url:
-                # Fallback: single step with product only
-                print("[Card] Two-image fallback to single step")
-                result_url = await call_replicate(photo_b64, f"{place_prompt} Scene: {scene_prompt}")
+                        if result_url:
+                            image_b64 = await download_image_as_base64(result_url)
+                            print(f"[Card] Two-step done ✓")
+                            return web.json_response({"url": image_b64 or result_url}, headers=CORS_HEADERS)
 
-            if not result_url:
-                return web.json_response({"error": "Generation failed"}, status=500, headers=CORS_HEADERS)
+                # Fallback: single step
+                print("[Card] Falling back to single-step generation")
 
-            image_b64 = await download_image_as_base64(result_url)
-            print(f"[Card] Step 2 done")
-            return web.json_response({"url": image_b64 or result_url}, headers=CORS_HEADERS)
+        except Exception as e:
+            print(f"[Card] Two-step error: {e}, falling back")
+
+        # Single-step fallback
+        result_url = await call_replicate(photo_b64, place_prompt)
+        if not result_url:
+            return web.json_response({"error": "Generation failed"}, status=500, headers=CORS_HEADERS)
+
+        image_b64 = await download_image_as_base64(result_url)
+        print(f"[Card] Single-step fallback done ✓")
+        return web.json_response({"url": image_b64 or result_url}, headers=CORS_HEADERS)
 
     except Exception as e:
         import traceback
