@@ -9,82 +9,82 @@ const API_SERVER = "https://mirageai.duckdns.org";
 const CATEGORIES = [
     {
         id: "clothing", name: "Одежда", emoji: "👗", scheme: "warm",
-        photoPrompt: "Professional fashion product photography, clothing item worn by an attractive slim model, clean white studio background, soft diffused lighting, full body or 3/4 shot, sharp fabric texture and fit clearly visible, photorealistic, commercial e-commerce quality, 3:4 ratio, no text no logos no watermarks",
+        photoPrompt: "Professional e-commerce fashion photography. The clothing item is worn naturally by an attractive slim model, neutral expression, full body or 3/4 shot. Soft three-point studio lighting: key light upper-left at 45 degrees, fill light reducing shadows to 2:1 ratio, subtle rim light separating model from background. Clean seamless white background. 85mm lens equivalent, f/8 aperture. Sharp fabric texture and fit clearly visible. Model pose highlights drape and silhouette. Photorealistic, marketplace hero shot, 3:4 ratio, NO text NO logos NO watermarks.",
         bgDesc: {
-            dark: "cozy living room interior, warm wooden floor, soft sofa and cushions visible in background, warm amber lamp light glowing, realistic home atmosphere",
-            light: "bright Scandinavian apartment interior, white walls, light wood floor, large window with natural daylight, minimalist home decor"
+            dark: "cozy Scandinavian living room, warm oak wooden floor with visible grain, linen sofa with cushions softly blurred at f/2.8 bokeh in background, warm amber table lamp glow, realistic photorealistic interior",
+            light: "bright Nordic apartment, white painted walls, light ash wood floor, floor-to-ceiling window with soft natural daylight streaming in, minimal Scandinavian furniture blurred at f/2.8, airy clean atmosphere"
         }
     },
     {
         id: "shoes", name: "Обувь", emoji: "👟", scheme: "warm",
-        photoPrompt: "Professional footwear product photography, shoe shown at elegant side angle on white surface, clean white studio background, soft box lighting, sharp texture stitching and sole details, product fills 80% of frame, slight natural shadow underneath, photorealistic, 3:4 ratio",
+        photoPrompt: "Professional footwear e-commerce photography. Shoe positioned at elegant 3/4 side angle slightly turned left, showing full silhouette profile, sole edge and heel detail. Placed on clean white acrylic surface. Soft diffused studio lighting with natural grounding shadow underneath. Key light from upper-left. Clean white seamless background. 85mm macro lens equivalent, f/11 aperture for full product sharpness. Shoe occupies 75% of frame. Sharp stitching and texture details. Photorealistic, marketplace-ready, 3:4 ratio, NO text NO logos.",
         bgDesc: {
-            dark: "elegant dark interior, luxurious wood floor, warm accent lighting, premium home atmosphere",
-            light: "bright minimalist room, light wood floor, large window with natural daylight, clean walls"
+            dark: "elegant dark premium interior, warm walnut wood floor with subtle grain, low warm accent lighting from floor lamp, luxurious blurred background at f/2.8 bokeh, premium home atmosphere",
+            light: "bright minimalist room, light birch wood floor, large window with diffused natural daylight, white walls, minimal Scandinavian decor blurred in background"
         }
     },
     {
         id: "beauty", name: "Красота", emoji: "💄", scheme: "nature",
-        photoPrompt: "Professional beauty and cosmetics product photography, product centered on clean white marble surface, elegant water droplets or ingredient splash scattered around it, fresh luxurious feel, soft diffused studio lighting, sharp label and packaging details visible, photorealistic, 3:4 ratio",
+        photoPrompt: "Professional cosmetics product photography. Product centered on white Carrara marble surface with subtle natural veining. Fresh water droplets scattered elegantly around it suggesting purity and freshness. Botanical ingredient elements softly arranged nearby. Soft diffused studio lighting from upper-left, subtle specular highlights on packaging showing premium quality. 85mm macro lens, f/5.6 aperture. Product sharp with fully readable label. Photorealistic, high-end beauty editorial quality, 3:4 ratio, NO text NO logos NO watermarks.",
         bgDesc: {
-            dark: "luxury bathroom counter, soft ambient candlelight, white marble surfaces, fresh green plants and white towels in background",
-            light: "bright white marble bathroom, natural window daylight, fresh flowers in background, clean minimal styling"
+            dark: "luxury spa bathroom counter, soft ambient candlelight creating warm glow, white marble surfaces, fresh eucalyptus branches and white towels softly blurred at f/2.8 in background, premium spa atmosphere",
+            light: "bright white marble bathroom, large window with soft natural daylight, fresh white flowers and green plants blurred in background at f/2.8, clean minimal luxury atmosphere"
         }
     },
     {
         id: "home", name: "Дом", emoji: "🏠", scheme: "warm",
-        photoPrompt: "Professional interior lifestyle product photography, home decor item placed naturally in a modern cozy Scandinavian living space, natural daylight, editorial home magazine quality, product is the focal point, styled with minimal neutral props, photorealistic, 3:4 ratio",
+        photoPrompt: "Professional interior lifestyle product photography. Home decor item placed naturally as the clear focal point in a modern Scandinavian living space. Minimal neutral styled props supporting product without competing. Soft natural window light from left supplemented with studio fill. 85mm lens f/8. Sharp product with softly blurred interior context at f/2.8 bokeh. Warm neutral color temperature 5500K. Editorial home magazine quality. Photorealistic, 3:4 ratio, NO text NO logos.",
         bgDesc: {
-            dark: "cozy living room interior, warm evening light, stylish furniture and tasteful decor visible in background",
-            light: "bright Scandinavian interior, white walls, light furniture, natural plants, large window with daylight"
+            dark: "cozy Scandinavian living room, warm evening amber light from table lamp, stylish linen sofa and oak coffee table blurred at f/2.8 in background, tasteful minimal decor, warm photorealistic atmosphere",
+            light: "bright Nordic interior, white walls, light oak furniture, large window with daylight, natural green plants blurred at f/2.8 in background, clean airy Scandinavian atmosphere"
         }
     },
     {
         id: "electronics", name: "Электроника", emoji: "📱", scheme: "tech",
-        photoPrompt: "Professional tech product photography, electronic device shown at 45-degree isometric angle, clean dark background with subtle blue accent lighting, dramatic studio lighting highlighting product design and screen, sharp details of buttons ports and surface finish, sleek modern commercial look, photorealistic, 3:4 ratio",
+        photoPrompt: "Professional consumer electronics product photography. Device shown at 45-degree isometric hero angle revealing front, top and side simultaneously. Deep charcoal background with subtle blue-purple gradient. Dramatic key light from upper-right creating sharp specular highlight along product edge, fill light preventing shadow loss. Screen showing subtle active UI glow. 85mm lens f/8. Razor-sharp focus on buttons, ports and surface finish. Sleek premium tech commercial quality. Photorealistic, 3:4 ratio, NO text NO logos.",
         bgDesc: {
-            dark: "modern dark home office setup, desk with subtle RGB lighting glow, monitor screens in background, dark tech workspace atmosphere",
-            light: "clean modern workspace, white desk, large window with natural light, MacBook and minimal tech accessories visible in background"
+            dark: "modern dark home office, matte black desk surface, subtle RGB underglow creating atmospheric cyan and purple glow, dual monitors with UI interface blurred at f/2.8 in background, professional dark tech workspace",
+            light: "clean modern workspace, white birch wood desk, large window with soft natural daylight, minimal MacBook and tech accessories blurred at f/2.8 in background, bright professional atmosphere"
         }
     },
     {
         id: "kids", name: "Детские", emoji: "🧸", scheme: "warm",
-        photoPrompt: "Professional children's product photography, item shown with a happy smiling child aged 4-7 in a bright colorful home environment, warm soft lighting, pastel color palette, safe and trustworthy feel, child naturally playing or using the product, photorealistic, 3:4 ratio",
+        photoPrompt: "Professional children's product photography. Item shown naturally with a happy smiling child aged 5-7 in a bright cheerful home environment. Warm diffused window light from left. Pastel color palette: soft yellows, light blues, gentle pinks. Product clearly visible and child interaction looks natural and joyful. 85mm lens f/5.6. Both child and product sharp. Safe, trustworthy and playful atmosphere. Photorealistic, 3:4 ratio, NO text NO logos.",
         bgDesc: {
-            dark: "cozy children's room, soft warm lighting, colorful toys and gentle pastel decor visible in background",
-            light: "bright cheerful children's room, white walls with colorful accents, natural daylight, toys scattered naturally"
+            dark: "cozy children's bedroom, soft warm nightlight glow, colorful plush toys and pastel decor blurred at f/2.8 in background, gentle warm atmosphere, safe and cozy feeling",
+            light: "bright cheerful children's room, white walls with colorful pastel accents, natural daylight from large window, wooden toys and books blurred in background at f/2.8, playful and safe atmosphere"
         }
     },
     {
         id: "food", name: "Продукты", emoji: "🍎", scheme: "nature",
-        photoPrompt: "Professional food product photography, item on rustic wooden table or white marble surface, fresh natural ingredients flying and scattered elegantly around the packaging, warm appetizing lighting, condensation water droplets for freshness effect, rich vibrant colors, styled with natural props, photorealistic, 3:4 ratio",
+        photoPrompt: "Professional food product photography. Item on white Carrara marble surface or warm rustic oak wooden board. Fresh natural product-relevant ingredients (herbs, fruits, spices) arranged elegantly around packaging using controlled scatter technique. Warm appetizing key light from upper-left with soft fill. Condensation water droplets on cold products for freshness. Rich vibrant colors with accurate color reproduction. 85mm macro lens f/8. Product label sharp and fully readable. Food styling editorial quality. Photorealistic, 3:4 ratio, NO text NO logos.",
         bgDesc: {
-            dark: "cozy kitchen counter, fresh herbs and vegetables visible in background, warm evening light, natural wood surfaces",
-            light: "bright kitchen with white marble countertop, fresh plants and colorful fruits in background, natural sunlight streaming in"
+            dark: "cozy kitchen counter, natural oak wooden surface, fresh herbs in terracotta pots and colorful vegetables blurred at f/2.8 in background, warm under-cabinet evening light, organic natural atmosphere",
+            light: "bright kitchen with white Carrara marble countertop, fresh botanical plants and colorful seasonal fruits blurred at f/2.8 in background, natural sunlight streaming in from window, clean fresh atmosphere"
         }
     },
     {
         id: "auto", name: "Автотовары", emoji: "🚗", scheme: "workshop",
-        photoPrompt: "Professional automotive product photography, item shown installed or in use in a modern car interior or garage environment, dramatic directional lighting, product clearly visible in functional context, masculine premium feel, clean professional commercial look, photorealistic, 3:4 ratio",
+        photoPrompt: "Professional automotive accessories product photography. Item shown installed or in functional context of a premium car interior or clean professional garage. Dramatic directional key light from upper-right creating depth and dimension. Sharp detail on surface finish, engineering and functional elements. Masculine premium commercial feel. Size reference element visible for scale. 85mm lens f/8. Photorealistic, 3:4 ratio, NO text NO logos.",
         bgDesc: {
-            dark: "industrial garage workshop interior, concrete floor, car partially visible in background, focused dramatic overhead spotlight",
-            light: "bright modern garage, light concrete floor, clean car interior visible in background, professional workshop lighting"
+            dark: "industrial professional garage workshop, grey concrete floor with subtle texture, high-quality power tools hanging on organized pegboard wall blurred at f/2.8 in background, focused overhead spotlight on product, masculine atmosphere",
+            light: "bright professional workshop, light concrete floor, organized tool storage and clean car visible in background at f/2.8, industrial windows with daylight, clean professional atmosphere"
         }
     },
     {
         id: "sport", name: "Спорт", emoji: "🏋️", scheme: "tech",
-        photoPrompt: "Professional sports product photography, item shown in use by an athletic person in gym or outdoor setting, dynamic energetic composition, bright natural or professional studio lighting, active lifestyle feel, sharp product details clearly visible, photorealistic, 3:4 ratio",
+        photoPrompt: "Professional sports equipment product photography. Item shown in dynamic active context with an athletic person in motion in gym or outdoor setting. Natural bright energetic lighting suggesting performance and energy. Sharp product details visible with motion-freeze quality. Vibrant saturated colors with accurate reproduction. 85mm lens f/5.6. Active lifestyle background softly blurred at f/2.8 bokeh. Photorealistic, 3:4 ratio, NO text NO logos.",
         bgDesc: {
-            dark: "modern gym interior, dramatic lighting, professional fitness equipment visible in background, dark energetic atmosphere",
-            light: "bright outdoor sports setting, natural daylight, active lifestyle atmosphere, green nature background"
+            dark: "modern professional gym interior, dramatic overhead spotlighting, black rubber floor, premium fitness equipment blurred at f/2.8 in background, dark energetic motivational atmosphere",
+            light: "bright outdoor sports setting, natural morning sunlight, green nature and sports track blurred at f/2.8 in background, active healthy lifestyle atmosphere"
         }
     },
     {
         id: "accessories", name: "Аксессуары", emoji: "💍", scheme: "dark",
-        photoPrompt: "Professional jewelry and accessories product photography, item worn by an elegant model or placed on neutral stone or velvet surface, macro close-up showing fine details and craftsmanship, soft diffused studio lighting with subtle luxury reflections, premium feel, clean background, photorealistic, 3:4 ratio",
+        photoPrompt: "Professional jewelry and accessories product photography. Item worn by an elegant model or placed on premium dark velvet or polished grey stone surface. Macro close-up revealing fine craftsmanship and material quality. Three-point studio lighting with subtle specular highlights showing metal shine and gemstone refraction. 85mm macro lens f/8. Razor-sharp product detail. Luxurious atmosphere with clean controlled background. Photorealistic, 3:4 ratio, NO text NO logos.",
         bgDesc: {
-            dark: "luxury dark boutique interior, black velvet or dark marble surface, dramatic professional spotlight, elegant dark decor",
-            light: "high-end bright showroom interior, light grey polished surface, clean white walls, professional retail lighting"
+            dark: "luxury high-end boutique interior, polished black marble surface with subtle reflection, soft dramatic spotlights creating pools of light from above, dark mahogany shelving blurred at f/2.8 in background, premium store atmosphere",
+            light: "premium bright showroom interior, light grey polished concrete floor with subtle reflection, clean white walls, professional retail lighting from above, minimal luxury props blurred at f/2.8 in background"
         }
     }
 ];
@@ -599,16 +599,31 @@ async function mpCardGenerate() {
     const feat3 = document.getElementById("mp-card-feat3").value.trim();
 
     const bgStylesMap = {
-        warm:     { dark: "cozy living room interior, warm wooden floor, soft sofa and cushions visible in background, warm amber lamp light glowing, realistic home atmosphere", light: "bright Scandinavian apartment interior, white walls, light wood floor, large window with natural daylight, minimalist home decor" },
-        dark:     { dark: "luxury dark boutique interior, black marble surface, soft dramatic spotlights, elegant dark shelving in background, premium store atmosphere", light: "high-end bright showroom interior, light grey polished floor, clean white walls, professional retail lighting" },
-        tech:     { dark: "modern dark home office setup, desk with RGB lighting glow, monitor screens in background, dark tech workspace atmosphere", light: "clean modern workspace, white desk, large window, MacBook and tech accessories visible in background, bright natural light" },
-        workshop: { dark: "industrial garage workshop interior, concrete floor, tools hanging on wall in background, focused overhead spotlight on product", light: "bright professional workshop, light concrete floor, organized tool storage visible in background, daylight through windows" },
-        nature:   { dark: "cozy kitchen counter, fresh herbs and vegetables in background, warm evening light, natural wood surfaces", light: "bright kitchen with white marble countertop, fresh plants and fruits in background, natural sunlight streaming in" },
+        warm:     {
+            dark:  "cozy Scandinavian living room, warm oak wooden floor with visible grain, linen sofa with cushions softly blurred at f/2.8 bokeh in background, warm amber table lamp glow creating cozy atmosphere",
+            light: "bright Nordic apartment, white painted walls, light ash wood floor, floor-to-ceiling window with soft natural daylight, minimal Scandinavian furniture blurred at f/2.8 bokeh"
+        },
+        dark:     {
+            dark:  "luxury high-end boutique interior, polished black marble floor with subtle reflection, soft dramatic spotlights creating pools of light from above, dark mahogany shelving blurred at f/2.8 in background",
+            light: "premium bright showroom interior, light grey polished concrete floor with reflection, clean white walls, professional retail spotlighting from above, minimal luxury props blurred at f/2.8"
+        },
+        tech:     {
+            dark:  "modern dark home office, matte black desk surface, subtle RGB underglow with cyan and purple atmospheric glow, dual monitors with UI interface blurred at f/2.8 in background, professional dark tech workspace",
+            light: "clean modern workspace, white birch wood desk, large window with soft natural daylight, minimal MacBook and tech accessories blurred at f/2.8 in background"
+        },
+        workshop: {
+            dark:  "industrial professional garage workshop, grey concrete floor with texture, high-quality power tools on organized pegboard wall blurred at f/2.8 in background, focused overhead spotlight on product",
+            light: "bright professional workshop, light concrete floor, organized tool storage and clean equipment visible blurred at f/2.8 in background, industrial windows with daylight"
+        },
+        nature:   {
+            dark:  "cozy kitchen counter, natural oak wooden surface, fresh herbs in terracotta pots and colorful vegetables blurred at f/2.8 in background, warm under-cabinet evening light",
+            light: "bright kitchen with white Carrara marble countertop, fresh botanical plants and colorful seasonal fruits blurred at f/2.8 in background, natural sunlight streaming in from window"
+        },
     };
     const schemeStyles = bgStylesMap[mpCardColorScheme] || bgStylesMap.warm;
     const bgDesc = mpCardBgStyle === "light" ? schemeStyles.light : schemeStyles.dark;
 
-    const prompt = `Professional product photography: place this exact product in a ${bgDesc}. The background must be a REAL realistic interior scene, NOT a plain solid color or gradient. The product is the main subject, placed naturally in the scene. Background should be visible and recognizable as a real place. NO text, NO letters, NO watermarks. Photorealistic, high quality marketplace photo.`;
+    const prompt = `Professional marketplace product photography for Wildberries and Ozon. Place this exact product as the hero subject in a ${bgDesc}. Three-point studio lighting applied to the product: key light upper-left at 45 degrees, fill light reducing shadows to 2:1 ratio, subtle rim light separating product from background. Product occupies 65-75% of frame positioned at rule of thirds, perfectly sharp with accurate color reproduction. Background realistically blurred at f/2.8 bokeh creating natural depth separation. 85mm lens equivalent, warm neutral color temperature 5500K, sRGB color profile. The background MUST be a REAL recognizable interior scene with visible depth, NOT a plain solid color or flat gradient. Photorealistic, hero shot quality, 3:4 aspect ratio. NO text, NO letters, NO watermarks, NO logos.`;
 
     switchScreen("loading");
     animateSteps();
@@ -945,10 +960,10 @@ async function mpGenerate() {
     if (!mpPhotoBase64) return;
 
     const stylePrompts = {
-        model: "Place this product on a professional fashion model. Show the product being worn naturally. Keep the product exactly as shown. Professional e-commerce photo style.",
-        store: "Place this product on a clean store hanger or display stand. Professional retail photography, neutral background.",
-        flat: "Create a flat lay photo of this product. Shot from directly above, clean minimal background, professional product photography.",
-        studio: "Create a professional studio catalog photo of this product. Clean neutral background, perfect lighting, e-commerce style."
+        model:  "Professional fashion e-commerce photography. This exact product worn naturally by an attractive slim model, neutral studio expression, full body or 3/4 shot, product is the clear focus. Soft three-point studio lighting: key light upper-left 45 degrees, fill light at 2:1 ratio, rim light separating model from background. Clean white seamless background. 85mm lens f/8. Sharp fabric texture and fit clearly visible. Model pose highlights product silhouette and drape. Photorealistic, Wildberries Ozon marketplace hero shot, 3:4 ratio, NO text NO logos NO watermarks.",
+        store:  "Professional retail product photography. This exact item displayed naturally on a premium wooden or chrome hanger against clean white seamless studio background. Soft diffused studio lighting from upper-left with fill light. Product hangs naturally showing silhouette and drape. Subtle grounding shadow for realism. 85mm lens f/8. Sharp fabric texture detail across entire product. Catalog-ready quality. Photorealistic, 3:4 ratio, NO text NO logos.",
+        flat:   "Professional flat lay product photography. This exact item arranged on clean white seamless surface, shot from directly overhead at 90 degrees bird's eye view. Soft even lighting with no harsh shadows using diffused softbox from directly above. Product occupies 70% of frame centered. Razor-sharp detail across entire product surface. 50mm lens equivalent f/11. Editorial flat lay styling quality. Photorealistic, 3:4 ratio, NO text NO logos.",
+        studio: "Professional studio catalog product photography. This exact item centered on clean light grey acrylic sweep background. Three-point studio lighting: key light upper-left, fill light eliminating harsh shadows, subtle rim light. No shadows on background. Product occupies 75% of frame. Razor-sharp focus across entire product. Accurate color reproduction. 85mm lens f/11. Pure product catalog quality for Wildberries Ozon marketplace. Photorealistic, 3:4 ratio, NO text NO logos NO watermarks."
     };
 
     const wishes = document.getElementById("mp-wishes").value.trim();
