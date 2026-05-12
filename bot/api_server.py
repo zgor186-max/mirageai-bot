@@ -87,23 +87,46 @@ async def generate_card_handler(request):
 
         # Category-specific placement instructions
         PLACEMENT = {
-            "clothing":    "neatly folded and laid flat on the surface, filling 65% of the frame. Flat lay overhead product photography style. Soft shadow beneath.",
-            "accessories": "placed upright and prominently on the surface, hero shot angle, filling 65% of the frame. Soft shadow beneath.",
-            "food":        "placed on the surface surrounded by the scene props, filling 65% of the frame. Appetizing food photography angle.",
-            "beauty":      "standing upright on the surface, hero beauty shot, filling 65% of the frame. Soft specular highlights on packaging.",
-            "gadgets":     "placed at a 45-degree hero angle on the surface, filling 65% of the frame. Premium tech product shot.",
-            "home":        "placed naturally on the surface as it would be used, filling 65% of the frame. Lifestyle product photography.",
-            "other":       "placed prominently on the surface, filling 65% of the frame. Soft shadow beneath.",
+            "clothing": (
+                "is unfolded and laid completely flat on the surface in a flat lay arrangement, "
+                "filling 70% of the frame. The top and bottom parts are separated and displayed together. "
+                "Every part of the fabric is touching the surface — NO parts floating, hovering or hanging in air. "
+                "NO hanger anywhere. Viewed from slightly above (40-degree angle). "
+                "Soft drop shadow beneath the fabric edges."
+            ),
+            "accessories": (
+                "is placed upright and prominently on the surface, hero shot angle, filling 65% of the frame. "
+                "Firmly resting on the surface with a soft shadow beneath. NOT floating."
+            ),
+            "food": (
+                "is placed on the surface surrounded by the scene props, filling 65% of the frame. "
+                "Firmly on the surface. Appetizing food photography angle."
+            ),
+            "beauty": (
+                "is standing upright on the surface, hero beauty shot, filling 65% of the frame. "
+                "Firmly on the surface. Soft specular highlights on packaging. NOT floating."
+            ),
+            "gadgets": (
+                "is placed at a 45-degree hero angle on the surface, filling 65% of the frame. "
+                "Firmly on the surface. Premium tech product shot. NOT floating."
+            ),
+            "home": (
+                "is placed naturally on the surface as it would be used, filling 65% of the frame. "
+                "Firmly on the surface. Lifestyle product photography. NOT floating."
+            ),
+            "other": (
+                "is placed prominently on the surface, filling 65% of the frame. "
+                "Firmly on the surface with soft shadow beneath. NOT floating."
+            ),
         }
         placement_instruction = PLACEMENT.get(category, PLACEMENT["other"])
 
         place_prompt = (
-            f"Take the {product_name} from the reference image and place it into this scene: {scene_prompt}. "
-            f"The {product_name} is {placement_instruction} "
-            f"The product is firmly grounded on the surface — NOT floating, NOT hanging in air. "
+            f"Take the {product_name} from the reference image and integrate it into this scene: {scene_prompt}. "
+            f"The {product_name} {placement_instruction} "
             f"Preserve the exact colors, pattern and details of the original {product_name}. "
-            f"The surrounding props from the scene are visible around the product. "
-            f"Photorealistic commercial product photography, warm cinematic lighting. NO text, NO watermarks, NO hangers."
+            f"The props from the scene (cup, candles, books etc.) remain visible around the product. "
+            f"Photorealistic commercial product photography, warm cinematic lighting. NO text, NO watermarks."
         )
 
         try:
