@@ -1054,21 +1054,22 @@ async function mpCardGenerate() {
     const feat3 = document.getElementById("mp-card-feat3").value.trim();
 
     const sceneBg = mpCardBgPrompt || "clean professional studio, soft gradient background, neutral tones";
-    const prompt = `Professional marketplace product photography for Wildberries and Ozon. Place this exact product as the hero subject in a ${sceneBg}. Three-point studio lighting: key light upper-left at 45 degrees, fill light at 2:1 ratio, rim light separating product from background. Product occupies 65-75% of frame positioned at upper-center, perfectly sharp with accurate color reproduction. Background realistically blurred at f/2.8 bokeh with natural depth. 85mm lens equivalent, 5500K color temperature. Photorealistic, 3:4 aspect ratio. NO text, NO letters, NO watermarks, NO logos.`;
+    const scenePrompt = `${sceneBg}. Photorealistic commercial photography scene, cinematic lighting, high detail, 3:4 aspect ratio. NO text, NO watermarks.`;
 
     switchScreen("loading");
     animateSteps();
 
     try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 180000);
-        const resp = await fetch(`${API_SERVER}/generate`, {
+        const timeout = setTimeout(() => controller.abort(), 300000);
+        const resp = await fetch(`${API_SERVER}/generate-card`, {
             signal: controller.signal,
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 photo: mpCardPhotoBase64,
-                prompt
+                scene_prompt: scenePrompt,
+                product_name: name || "product"
             })
         });
         clearTimeout(timeout);

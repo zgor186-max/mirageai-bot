@@ -6,6 +6,7 @@ import os
 
 REPLICATE_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 REPLICATE_MODEL = "black-forest-labs/flux-kontext-pro"
+REPLICATE_TEXT2IMG = "black-forest-labs/flux-1.1-pro"
 FACESWAP_VERSION = "278a81e7ebb22db98bcba54de985d22cc1abeead2754eb1f2af717247be69b34"
 
 CORS_HEADERS = {
@@ -56,6 +57,158 @@ async def generate_handler(request):
         import traceback
         traceback.print_exc()
         return web.json_response({"error": str(e)}, status=500, headers=CORS_HEADERS)
+
+
+async def generate_card_handler(request):
+    """Two-step generation: scene first, then place product in it"""
+    if request.method == "OPTIONS":
+        return web.Response(status=200, headers=CORS_HEADERS)
+
+    try:
+        data = await request.json()
+        photo_b64    = data.get("photo", "")
+        scene_prompt = data.get("scene_prompt", "")
+        product_name = data.get("product_name", "product")
+
+        if not photo_b64 or not scene_prompt:
+            return web.json_response({"error": "photo and scene_prompt required"}, status=400, headers=CORS_HEADERS)
+
+        if photo_b64.startswith("data:"):
+            photo_b64 = photo_b64.split(",", 1)[1]
+
+        print(f"[Card] Step 1 — generating scene: {scene_prompt[:80]}")
+
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=300)) as session:
+            # Step 1: Generate background scene (no product)
+            bg_url = await call_text2img(session, scene_prompt)
+            if not bg_url:
+                return web.json_response({"error": "Scene generation failed"}, status=500, headers=CORS_HEADERS)
+
+            print(f"[Card] Step 1 done: {bg_url[:60]}")
+            print(f"[Card] Step 2 — placing product in scene")
+
+            # Step 2: Place product into the scene
+            place_prompt = (
+                f"Place the {product_name} from the reference image naturally into this scene. "
+                f"The product rests firmly on the surface. Add a soft realistic shadow beneath the product. "
+                f"The product is fully integrated into the scene, not floating. "
+                f"Keep the product's exact appearance, colors and details. "
+                f"Photorealistic commercial product photography. NO text, NO watermarks."
+            )
+
+            # Upload both images to Replicate
+            product_url = await upload_image_to_replicate(session, photo_b64)
+            bg_b64 = await download_as_b64(session, bg_url)
+            bg_upload_url = await upload_image_to_replicate(session, bg_b64) if bg_b64 else None
+
+            if not product_url:
+                return web.json_response({"error": "Product upload failed"}, status=500, headers=CORS_HEADERS)
+
+            result_url = await call_kontext_two_images(session, product_url, bg_upload_url, place_prompt)
+
+            if not result_url:
+                # Fallback: single step with product only
+                print("[Card] Two-image fallback to single step")
+                result_url = await call_replicate(photo_b64, f"{place_prompt} Scene: {scene_prompt}")
+
+            if not result_url:
+                return web.json_response({"error": "Generation failed"}, status=500, headers=CORS_HEADERS)
+
+            image_b64 = await download_image_as_base64(result_url)
+            print(f"[Card] Step 2 done")
+            return web.json_response({"url": image_b64 or result_url}, headers=CORS_HEADERS)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return web.json_response({"error": str(e)}, status=500, headers=CORS_HEADERS)
+
+
+async def call_text2img(session: aiohttp.ClientSession, prompt: str) -> str | None:
+    """Step 1: Generate background scene without product"""
+    api_headers = {
+        "Authorization": f"Token {REPLICATE_TOKEN}",
+        "Content-Type": "application/json",
+        "Prefer": "wait",
+    }
+    payload = {
+        "input": {
+            "prompt": f"{prompt}. Empty scene, no products present, photorealistic commercial photography background, ultra detailed",
+            "aspect_ratio": "3:4",
+            "output_format": "jpg",
+        }
+    }
+    try:
+        async with session.post(
+            f"https://api.replicate.com/v1/models/{REPLICATE_TEXT2IMG}/predictions",
+            headers=api_headers,
+            json=payload,
+        ) as resp:
+            result = await resp.json(content_type=None)
+            status = result.get("status")
+            pred_id = result.get("id")
+            if status == "succeeded":
+                return _extract_output(result)
+            if status in ("starting", "processing"):
+                return await _poll(session, pred_id, api_headers)
+            print(f"[Text2Img] failed: {result.get('error')}")
+            return None
+    except Exception as e:
+        print(f"[Text2Img] error: {e}")
+        return None
+
+
+async def call_kontext_two_images(session, product_url: str, bg_url: str | None, prompt: str) -> str | None:
+    """Step 2: Place product into scene using flux-kontext-pro"""
+    api_headers = {
+        "Authorization": f"Token {REPLICATE_TOKEN}",
+        "Content-Type": "application/json",
+        "Prefer": "wait",
+    }
+    # flux-kontext-pro supports input_images array
+    input_images = [product_url]
+    if bg_url:
+        input_images.append(bg_url)
+
+    payload = {
+        "input": {
+            "prompt": prompt,
+            "input_image": product_url,
+            **({"input_images": input_images} if bg_url else {}),
+            "aspect_ratio": "3:4",
+            "output_format": "jpg",
+            "safety_tolerance": 2,
+        }
+    }
+    try:
+        async with session.post(
+            f"https://api.replicate.com/v1/models/{REPLICATE_MODEL}/predictions",
+            headers=api_headers,
+            json=payload,
+        ) as resp:
+            raw = await resp.text()
+            print(f"[Kontext2] HTTP={resp.status} raw={raw[:200]}")
+            result = await resp.json(content_type=None)
+            status = result.get("status")
+            pred_id = result.get("id")
+            if status == "succeeded":
+                return _extract_output(result)
+            if status in ("starting", "processing"):
+                return await _poll(session, pred_id, api_headers)
+            return None
+    except Exception as e:
+        print(f"[Kontext2] error: {e}")
+        return None
+
+
+async def download_as_b64(session: aiohttp.ClientSession, url: str) -> str | None:
+    try:
+        async with session.get(url) as resp:
+            if resp.status == 200:
+                return base64.b64encode(await resp.read()).decode()
+    except Exception as e:
+        print(f"[download_as_b64] error: {e}")
+    return None
 
 
 async def faceswap_handler(request):
@@ -283,6 +436,8 @@ def create_app() -> web.Application:
     app.router.add_get("/health", health_handler)
     app.router.add_post("/generate", generate_handler)
     app.router.add_route("OPTIONS", "/generate", generate_handler)
+    app.router.add_post("/generate-card", generate_card_handler)
+    app.router.add_route("OPTIONS", "/generate-card", generate_card_handler)
     app.router.add_post("/faceswap", faceswap_handler)
     app.router.add_route("OPTIONS", "/faceswap", faceswap_handler)
     return app
