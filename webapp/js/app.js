@@ -751,8 +751,6 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 drawFullPhoto();
                 drawOverlay(isLight ? "rgba(0,15,40,0.94)" : "rgba(3,10,20,0.96)");
                 if (badge) drawBadge(badge.toUpperCase(), W - PAD, 65, cyan, "#000");
-                ctx.strokeStyle = cyan; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.moveTo(PAD, TITLE_Y-32); ctx.lineTo(PAD, TITLE_Y-44); ctx.lineTo(PAD+14, TITLE_Y-44); ctx.stroke();
                 const tY3 = drawTitle((name||"").toUpperCase().split(/\s+/), TITLE_Y, CHIPS_Y - 50, titleClr);
                 if (subtitle) drawSubtitle(subtitle, tY3 + 10, "#4ab8d8");
                 if (feats.length) {
