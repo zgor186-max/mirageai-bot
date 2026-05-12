@@ -899,14 +899,14 @@ async function mpCardAnalyze(base64) {
                         { type: "image_url", image_url: { url: "data:image/jpeg;base64," + base64 } },
                         { type: "text", text: `Посмотри на изображение товара. Ответь ТОЛЬКО валидным JSON без markdown и без пояснений.
 
-Доступные локации по категориям (выбери ОДНУ наиболее подходящую для этого товара):
-clothing: ${LOCATION_SEEDS.clothing.join(" | ")}
-accessories: ${LOCATION_SEEDS.accessories.join(" | ")}
-food: ${LOCATION_SEEDS.food.join(" | ")}
-beauty: ${LOCATION_SEEDS.beauty.join(" | ")}
-gadgets: ${LOCATION_SEEDS.gadgets.join(" | ")}
-home: ${LOCATION_SEEDS.home.join(" | ")}
-other: ${LOCATION_SEEDS.other.join(" | ")}
+Доступные локации (по одной на каждую категорию, ИСПОЛЬЗУЙ именно эти варианты):
+clothing: ${LOCATION_SEEDS.clothing[Math.floor(Math.random()*LOCATION_SEEDS.clothing.length)]}
+accessories: ${LOCATION_SEEDS.accessories[Math.floor(Math.random()*LOCATION_SEEDS.accessories.length)]}
+food: ${LOCATION_SEEDS.food[Math.floor(Math.random()*LOCATION_SEEDS.food.length)]}
+beauty: ${LOCATION_SEEDS.beauty[Math.floor(Math.random()*LOCATION_SEEDS.beauty.length)]}
+gadgets: ${LOCATION_SEEDS.gadgets[Math.floor(Math.random()*LOCATION_SEEDS.gadgets.length)]}
+home: ${LOCATION_SEEDS.home[Math.floor(Math.random()*LOCATION_SEEDS.home.length)]}
+other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.length)]}
 
 {
   "name": "Название товара по-русски, МАКСИМУМ 2 слова, ЗАГЛАВНЫМИ буквами. Примеры: КРОССОВКИ ASICS, ШУРУПОВЁРТ MAKITA, СМАРТФОН SAMSUNG",
@@ -1215,9 +1215,8 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             const TINTS  = { warm:[16,11,3], dark:[6,5,8], tech:[3,9,22], workshop:[12,9,0], nature:[4,14,5] };
             const [tr,tg,tb] = TINTS[scheme] || [16,11,3];
 
-            // Title bar height; product overlaps it by 5%
-            const TITLE_H = 118;
-            const PROD_Y  = Math.round(TITLE_H * 0.95);
+            const TITLE_H = 130;
+            const PAD_TOP = 22;
 
             function autoSz(text, maxW, max, min) {
                 let sz = max;
@@ -1226,18 +1225,18 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 return sz;
             }
 
-            // 1. Product image — starts at PROD_Y (5% overlap of title), +20% brightness
+            // 1. Product image — full canvas height
             ctx.filter = "brightness(1.6)";
-            ctx.drawImage(img, 0, 0, img.width, img.height, 0, PROD_Y, W, H - PROD_Y);
+            ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, W, H);
             ctx.filter = "none";
 
-            // 2. Title bar dark gradient
-            const tBg = ctx.createLinearGradient(0, 0, 0, TITLE_H + 18);
-            tBg.addColorStop(0,    `rgba(${tr},${tg},${tb},0.97)`);
-            tBg.addColorStop(0.72, `rgba(${tr},${tg},${tb},0.88)`);
+            // 2. Title bar — semi-transparent gradient overlay on top of image
+            const tBg = ctx.createLinearGradient(0, 0, 0, TITLE_H + 40);
+            tBg.addColorStop(0,    `rgba(${tr},${tg},${tb},0.88)`);
+            tBg.addColorStop(0.65, `rgba(${tr},${tg},${tb},0.72)`);
             tBg.addColorStop(1,    `rgba(${tr},${tg},${tb},0)`);
             ctx.fillStyle = tBg;
-            ctx.fillRect(0, 0, W, TITLE_H + 18);
+            ctx.fillRect(0, 0, W, TITLE_H + 40);
 
             // 3. Badge pill (top-right)
             if (badge) {
@@ -1260,35 +1259,35 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             const tsz = autoSz(fullTitle, tMaxW, 70, 26);
             ctx.font = `700 ${tsz}px 'Oswald', Arial`;
             ctx.fillStyle = "#ffffff";
-            const titleY = Math.min(tsz + 14, 84);
+            const titleY = PAD_TOP + tsz;
             ctx.fillText(fullTitle, PAD, titleY);
 
-            // 5. Subtitle in title bar
+            // 5. Subtitle below title
             if (subtitle) {
                 let ssz = 17;
                 ctx.font = `400 ${ssz}px Arial`;
                 while (ssz > 11 && ctx.measureText(subtitle).width > W - PAD*2) ssz--;
                 ctx.font = `400 ${ssz}px Arial`;
-                ctx.fillStyle = "rgba(255,255,255,0.65)";
-                ctx.fillText(subtitle.substring(0, 90), PAD, titleY + ssz + 5);
+                ctx.fillStyle = "rgba(255,255,255,0.72)";
+                ctx.fillText(subtitle.substring(0, 90), PAD, titleY + ssz + 6);
             }
 
-            // 6. Left gradient for advantages readability
+            // 6. Left gradient for advantages readability (full height)
             if (feats.length > 0) {
                 const lGrad = ctx.createLinearGradient(0, 0, 275, 0);
-                lGrad.addColorStop(0,   `rgba(${tr},${tg},${tb},0.87)`);
-                lGrad.addColorStop(0.6, `rgba(${tr},${tg},${tb},0.48)`);
+                lGrad.addColorStop(0,   `rgba(${tr},${tg},${tb},0.82)`);
+                lGrad.addColorStop(0.6, `rgba(${tr},${tg},${tb},0.42)`);
                 lGrad.addColorStop(1,   `rgba(${tr},${tg},${tb},0)`);
                 ctx.fillStyle = lGrad;
-                ctx.fillRect(0, PROD_Y, 275, H - PROD_Y);
+                ctx.fillRect(0, TITLE_H, 275, H - TITLE_H);
 
-                // 7. Three advantages on left, evenly distributed
-                const availH = H - PROD_Y - 50;
+                // 7. Three advantages on left, evenly distributed over full image height
+                const availH = H - TITLE_H - 50;
                 const spacing = availH / (feats.length + 1);
                 const ICR = 22, ICX = 50, TXT_X = ICX + ICR + 12, TXT_W = 186;
 
                 feats.forEach((feat, i) => {
-                    const cy = PROD_Y + spacing * (i + 1);
+                    const cy = TITLE_H + spacing * (i + 1);
 
                     // Circle background
                     ctx.beginPath(); ctx.arc(ICX, cy, ICR, 0, Math.PI*2);
