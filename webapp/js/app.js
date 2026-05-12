@@ -537,7 +537,13 @@ async function mpCardGenerate() {
         if (!resultUrl) throw new Error(result?.error || "No image in response");
 
         // Рисуем текст поверх через Canvas
-        const finalBase64 = await drawCardOverlay(resultUrl, { name, subtitle, badge, feat1, feat2, feat3 });
+        let finalBase64;
+        try {
+            finalBase64 = await drawCardOverlay(resultUrl, { name, subtitle, badge, feat1, feat2, feat3 });
+        } catch (overlayErr) {
+            console.warn("drawCardOverlay failed, using raw image:", overlayErr);
+            finalBase64 = resultUrl; // fallback: показываем картинку без текста
+        }
 
         userCoins = Math.max(0, userCoins - 20);
         localStorage.setItem("coins", userCoins);
@@ -569,8 +575,10 @@ const COLOR_SCHEMES = {
 async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, feat3 }) {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = "anonymous";
+        // crossOrigin не нужен для data URI — убираем чтобы не блокировать iOS Safari
+        if (!imageUrl.startsWith("data:")) img.crossOrigin = "anonymous";
         img.onload = async () => {
+            try {
             await document.fonts.load("700 60px 'Oswald'");
             const W = 800, H = 1100;
             const canvas = document.createElement("canvas");
@@ -834,8 +842,9 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             }
 
             resolve(canvas.toDataURL("image/jpeg", 0.93));
+            } catch(e) { reject(e); }
         };
-        img.onerror = reject;
+        img.onerror = (e) => reject(new Error("Image load failed: " + (e?.message || "unknown")));
         img.src = imageUrl;
     });
 }
