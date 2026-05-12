@@ -343,6 +343,8 @@ async def upload_image_to_replicate(session: aiohttp.ClientSession, photo_b64: s
             headers=headers,
             data=img_bytes,
         ) as resp:
+            raw = await resp.text()
+            print(f"[Replicate] file upload HTTP={resp.status} response={raw[:200]}")
             result = await resp.json(content_type=None)
             url = result.get("urls", {}).get("get") or result.get("url")
             print(f"[Replicate] uploaded file: {url}")
