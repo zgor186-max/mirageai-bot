@@ -809,18 +809,21 @@ function mpCardHandlePhoto(input) {
         document.getElementById("mp-card-upload-area").style.display = "none";
         document.getElementById("mp-card-preview-container").style.display = "block";
         document.getElementById("mp-card-generate-btn").disabled = false;
+        // Показываем ячейку и запускаем анализ
+        const cell = document.getElementById("mp-card-analysis-cell");
+        const loading = document.getElementById("mp-analysis-loading");
+        const result = document.getElementById("mp-analysis-result");
+        if (cell) cell.style.display = "block";
+        if (loading) loading.style.display = "flex";
+        if (result) result.style.display = "none";
+        mpCardAnalyze(mpCardPhotoBase64);
     };
     reader.readAsDataURL(file);
 }
 
 async function mpCardAnalyze(base64) {
-    // Показываем индикатор анализа
-    const fields = ["mp-card-name","mp-card-subtitle","mp-card-badge","mp-card-feat1","mp-card-feat2","mp-card-feat3"];
-    fields.forEach(id => {
-        const el = document.getElementById(id);
-        el.placeholder = "⏳ Анализирую товар...";
-        el.disabled = true;
-    });
+    const loadingEl = document.getElementById("mp-analysis-loading");
+    const resultEl  = document.getElementById("mp-analysis-result");
 
     try {
         const POLZA_KEY = "pza_Y_e6drIevLO8ptUDrT2T5srYMGIrIEgP";
@@ -838,13 +841,13 @@ async function mpCardAnalyze(base64) {
                         { type: "image_url", image_url: { url: "data:image/jpeg;base64," + base64 } },
                         { type: "text", text: `Посмотри на изображение товара. Ответь ТОЛЬКО валидным JSON без markdown и без пояснений:
 {
-  "name": "Название товара по-русски, МАКСИМУМ 2 слова, ЗАГЛАВНЫМИ буквами. Формат: КАТЕГОРИЯ БРЕНД. ЗАПРЕЩЕНО писать модель или серию. Примеры правильно: КРОССОВКИ ASICS, КУРТКА NIKE, ШУРУПОВЁРТ MAKITA, СМАРТФОН SAMSUNG. Примеры неправильно: КРОССОВКИ ASICS GEL-KAYANO, IPHONE 15 PRO, КУРТКА COLUMBIA OMNI-HEAT",
-  "badge": "САМАЯ главная характеристика товара (2-4 слова, ЗАГЛАВНЫМИ). Примеры: НАТУРАЛЬНАЯ ЗАМША, 100% ХЛОПОК, 18В, WIFI 6. Это будет использовано ТОЛЬКО здесь.",
-  "subtitle": "3 характеристики через буллет, строчными. ЗАПРЕЩЕНО повторять badge. Формат: свойство1 • свойство2 • свойство3. Примеры: боковая молния • мягкая стелька • демисезонные",
-  "feat1": "УНИКАЛЬНОЕ преимущество 1, максимум 2 слова. ЗАПРЕЩЕНО повторять badge и subtitle. ЗАПРЕЩЕНО: стильный дизайн, высокое качество, удобный. Только конкретика: лёгкий вес, нескользящая подошва, усиленный носок",
-  "feat2": "УНИКАЛЬНОЕ преимущество 2, максимум 2 слова. ЗАПРЕЩЕНО повторять badge, subtitle и feat1. Только конкретные свойства которые ещё не упомянуты",
-  "feat3": "УНИКАЛЬНОЕ преимущество 3, максимум 2 слова. ЗАПРЕЩЕНО повторять badge, subtitle, feat1 и feat2. Только конкретные свойства которые ещё не упомянуты",
-  "style": "один из: warm (одежда/обувь/дом), dark (премиум/часы/сумки), tech (электроника/гаджеты), workshop (инструменты/стройка), nature (еда/косметика/природа)"
+  "name": "Название товара по-русски, МАКСИМУМ 2 слова, ЗАГЛАВНЫМИ буквами. Формат: КАТЕГОРИЯ БРЕНД. ЗАПРЕЩЕНО писать модель или серию. Примеры: КРОССОВКИ ASICS, ШУРУПОВЁРТ MAKITA, СМАРТФОН SAMSUNG",
+  "category": "один из: workshop (инструменты/стройка), darktech (электроника/гаджеты/ноутбуки), gaming (игровые аксессуары/геймпад/гарнитуры), marble (косметика/парфюм/красота люкс), spa (спа/уход/свечи/расслабление), scandinavian (дом/декор/мебель/интерьер), cozy (уютный дом/текстиль/плед/подушки), kids (детские товары/игрушки/книги), gym (фитнес/спорт/спортивное питание), parking (авто-аксессуары/держатели/регистратор), garage (автоинструменты/химия для авто/шины), kitchen (еда/кухонная посуда/ножи/доски), cafe (кофе/кружки/термосы/лайфстайл), pets (товары для животных/корм/лежанки), collector (фигурки/аниме/коллекционное/мерч)",
+  "badge": "САМАЯ главная характеристика (2-4 слова, ЗАГЛАВНЫМИ). Примеры: НАТУРАЛЬНАЯ ЗАМША, 100% ХЛОПОК, 18В, WIFI 6",
+  "subtitle": "3 характеристики через буллет, строчными. Формат: свойство1 • свойство2 • свойство3",
+  "feat1": "УНИКАЛЬНОЕ преимущество 1, максимум 2 слова. Только конкретика: лёгкий вес, нескользящая подошва",
+  "feat2": "УНИКАЛЬНОЕ преимущество 2, максимум 2 слова. Не повторять feat1",
+  "feat3": "УНИКАЛЬНОЕ преимущество 3, максимум 2 слова. Не повторять feat1 и feat2"
 }` }
                     ]
                 }]
@@ -854,7 +857,6 @@ async function mpCardAnalyze(base64) {
         const result = await resp.json();
         console.log("Analyze API response:", JSON.stringify(result).substring(0, 500));
 
-        // Пробуем разные форматы ответа
         let text = result?.choices?.[0]?.message?.content
             || result?.data?.[0]?.text
             || result?.output
@@ -866,29 +868,40 @@ async function mpCardAnalyze(base64) {
         if (!jsonMatch) throw new Error("No JSON in: " + text.substring(0, 200));
         const data = JSON.parse(jsonMatch[0]);
 
-        document.getElementById("mp-card-name").value = data.name || "";
-        document.getElementById("mp-card-subtitle").value = data.subtitle || "";
-        document.getElementById("mp-card-badge").value = data.badge || "";
-        // Преимущества из базы фонов (приоритет над AI)
+        // Заполняем видимые поля
+        const nameEl = document.getElementById("mp-card-name");
+        if (nameEl) nameEl.value = data.name || "";
+
+        const catEl = document.getElementById("mp-card-category");
+        if (catEl && data.category) catEl.value = data.category;
+
+        // Применяем категорию к фону
+        if (data.category) mpCategoryChange(data.category);
+
+        // Заполняем скрытые поля для генерации
         const dbAdvs = findAdvantages(data.name || "");
-        document.getElementById("mp-card-feat1").value = dbAdvs[0] || data.feat1 || "";
-        document.getElementById("mp-card-feat2").value = dbAdvs[1] || data.feat2 || "";
-        document.getElementById("mp-card-feat3").value = dbAdvs[2] || data.feat3 || "";
-        const bg = BACKGROUNDS_DB.find(b => b.id === mpSelectedBg);
-        mpCardColorScheme = bg ? bg.scheme : (data.style || "warm");
+        const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+        setVal("mp-card-subtitle", data.subtitle || "");
+        setVal("mp-card-badge",    data.badge    || "");
+        setVal("mp-card-feat1",    dbAdvs[0] || data.feat1 || "");
+        setVal("mp-card-feat2",    dbAdvs[1] || data.feat2 || "");
+        setVal("mp-card-feat3",    dbAdvs[2] || data.feat3 || "");
 
     } catch (e) {
         console.warn("Auto-analyze failed:", e.message);
     } finally {
-        const placeholders = ["Название товара", "Подзаголовок", "Значок (напр: 100% ХЛОПОК)", "Преимущество 1", "Преимущество 2", "Преимущество 3"];
-        fields.forEach((id, i) => {
-            const el = document.getElementById(id);
-            if (!el.placeholder.includes("⏳")) return;
-            el.placeholder = placeholders[i];
-            el.disabled = false;
-        });
-        fields.forEach(id => { document.getElementById(id).disabled = false; });
+        if (loadingEl) loadingEl.style.display = "none";
+        if (resultEl)  resultEl.style.display  = "flex";
     }
+}
+
+function mpCategoryChange(categoryId) {
+    mpSelectedBg = categoryId;
+    const bg = BACKGROUNDS_DB.find(b => b.id === categoryId);
+    if (bg) mpCardColorScheme = bg.scheme;
+    // Синхронизируем select если вызвано программно
+    const catEl = document.getElementById("mp-card-category");
+    if (catEl && catEl.value !== categoryId) catEl.value = categoryId;
 }
 
 let mpAiToggleActive = false;

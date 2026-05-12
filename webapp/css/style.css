@@ -1146,6 +1146,63 @@ body {
     font-weight: 700;
 }
 
+/* Analysis cell */
+.mp-analysis-cell {
+    margin: 12px 16px 0;
+    background: rgba(255,255,255,0.04);
+    border-radius: 16px;
+    border: 1.5px solid rgba(167,139,250,0.2);
+    overflow: hidden;
+}
+.mp-analysis-loading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    color: var(--text2);
+    font-size: 14px;
+}
+.mp-analysis-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(167,139,250,0.25);
+    border-top-color: #a78bfa;
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.mp-analysis-result {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+}
+.mp-select {
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a78bfa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    cursor: pointer;
+}
+.mp-select:focus {
+    border-color: rgba(167,139,250,0.5);
+}
+.mp-select option {
+    background: #1a1a2e;
+    color: var(--text);
+}
+
 .mp-ai-btn {
     margin-left: auto;
     background: linear-gradient(135deg, #5c35d9, #a78bfa);

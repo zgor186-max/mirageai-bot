@@ -247,37 +247,41 @@
                 <button class="change-photo-btn" onclick="document.getElementById('mp-card-photo-input').click()">Изменить фото</button>
             </div>
 
-            <div class="mp-section" style="margin-top:12px;">
-                <div class="mp-section-num">02</div>
-                <div class="mp-section-title">Фон сцены</div>
-            </div>
-            <div class="mp-bg-scene-wrap">
-                <div class="mp-bg-scene-scroll" id="mp-bg-scene-scroll">
-                    <div class="mp-bg-scene-row" id="mp-bg-scene-row"></div>
+            <!-- Ячейка анализа -->
+            <div id="mp-card-analysis-cell" class="mp-analysis-cell" style="display:none;">
+                <div id="mp-analysis-loading" class="mp-analysis-loading">
+                    <div class="mp-analysis-spinner"></div>
+                    <span>Определяю товар...</span>
                 </div>
-                <div class="mp-bg-scene-fade-right" id="mp-bg-fade-right"></div>
-                <div class="mp-bg-scene-fade-left" id="mp-bg-fade-left"></div>
+                <div id="mp-analysis-result" class="mp-analysis-result" style="display:none;">
+                    <input id="mp-card-name" class="mp-input" type="text" placeholder="Название товара" maxlength="25">
+                    <select id="mp-card-category" class="mp-select" onchange="mpCategoryChange(this.value)">
+                        <option value="">Категория</option>
+                        <option value="workshop">🔨 Инструменты</option>
+                        <option value="darktech">💻 Электроника</option>
+                        <option value="gaming">🎮 Игры и гаджеты</option>
+                        <option value="marble">💎 Красота (люкс)</option>
+                        <option value="spa">🧖 Спа и уход</option>
+                        <option value="scandinavian">🏠 Дом и интерьер</option>
+                        <option value="cozy">🕯 Уютный дом</option>
+                        <option value="kids">🧸 Детские товары</option>
+                        <option value="gym">🏋️ Фитнес и спорт</option>
+                        <option value="parking">🚗 Авто (аксессуары)</option>
+                        <option value="garage">🔧 Авто (инструменты)</option>
+                        <option value="kitchen">🍳 Еда и кухня</option>
+                        <option value="cafe">☕ Кофе и лайфстайл</option>
+                        <option value="pets">🐾 Товары для питомцев</option>
+                        <option value="collector">🏆 Коллекционное</option>
+                    </select>
+                </div>
             </div>
-            <div class="mp-bg-dots" id="mp-bg-dots"></div>
 
-            <div class="mp-section" style="margin-top:12px;">
-                <div class="mp-section-num">03</div>
-                <div class="mp-section-title">Текст на карточке</div>
-                <div class="mp-ai-toggle-wrap" onclick="mpToggleAiIdea()">
-                    <div class="mp-toggle" id="mp-ai-toggle">
-                        <div class="mp-toggle-knob"></div>
-                    </div>
-                    <span class="mp-ai-label" id="mp-ai-label">AI Идея</span>
-                </div>
-            </div>
-            <div style="padding:0 16px;display:flex;flex-direction:column;gap:10px;">
-                <input id="mp-card-name" class="mp-input" type="text" placeholder="Название товара (напр: Пижама в клетку)" maxlength="25">
-                <input id="mp-card-subtitle" class="mp-input" type="text" placeholder="Подзаголовок (напр: Комфорт и стиль для сна)" maxlength="60">
-                <input id="mp-card-badge" class="mp-input" type="text" placeholder="Значок (напр: 100% ХЛОПОК)" maxlength="22">
-                <input id="mp-card-feat1" class="mp-input" type="text" placeholder="Преимущество 1 (напр: Удобный крой)" maxlength="18">
-                <input id="mp-card-feat2" class="mp-input" type="text" placeholder="Преимущество 2 (напр: Мягкая ткань)" maxlength="18">
-                <input id="mp-card-feat3" class="mp-input" type="text" placeholder="Преимущество 3 (напр: Стильный дизайн)" maxlength="18">
-            </div>
+            <!-- Скрытые поля для генерации -->
+            <input id="mp-card-subtitle" type="hidden" value="">
+            <input id="mp-card-badge" type="hidden" value="">
+            <input id="mp-card-feat1" type="hidden" value="">
+            <input id="mp-card-feat2" type="hidden" value="">
+            <input id="mp-card-feat3" type="hidden" value="">
 
             <div style="padding:16px;">
                 <button class="generate-btn" id="mp-card-generate-btn" onclick="mpCardGenerate()" disabled>
