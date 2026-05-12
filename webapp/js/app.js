@@ -5,6 +5,90 @@ tg.expand();
 // ── API сервер (Replicate через наш сервер) ──
 const API_SERVER = "https://mirageai.duckdns.org";
 
+// ── КАТЕГОРИИ ТОВАРОВ (WB/Ozon) ──
+const CATEGORIES = [
+    {
+        id: "clothing", name: "Одежда", emoji: "👗", scheme: "warm",
+        photoPrompt: "Professional fashion product photography, clothing item worn by an attractive slim model, clean white studio background, soft diffused lighting, full body or 3/4 shot, sharp fabric texture and fit clearly visible, photorealistic, commercial e-commerce quality, 3:4 ratio, no text no logos no watermarks",
+        bgDesc: {
+            dark: "cozy living room interior, warm wooden floor, soft sofa and cushions visible in background, warm amber lamp light glowing, realistic home atmosphere",
+            light: "bright Scandinavian apartment interior, white walls, light wood floor, large window with natural daylight, minimalist home decor"
+        }
+    },
+    {
+        id: "shoes", name: "Обувь", emoji: "👟", scheme: "warm",
+        photoPrompt: "Professional footwear product photography, shoe shown at elegant side angle on white surface, clean white studio background, soft box lighting, sharp texture stitching and sole details, product fills 80% of frame, slight natural shadow underneath, photorealistic, 3:4 ratio",
+        bgDesc: {
+            dark: "elegant dark interior, luxurious wood floor, warm accent lighting, premium home atmosphere",
+            light: "bright minimalist room, light wood floor, large window with natural daylight, clean walls"
+        }
+    },
+    {
+        id: "beauty", name: "Красота", emoji: "💄", scheme: "nature",
+        photoPrompt: "Professional beauty and cosmetics product photography, product centered on clean white marble surface, elegant water droplets or ingredient splash scattered around it, fresh luxurious feel, soft diffused studio lighting, sharp label and packaging details visible, photorealistic, 3:4 ratio",
+        bgDesc: {
+            dark: "luxury bathroom counter, soft ambient candlelight, white marble surfaces, fresh green plants and white towels in background",
+            light: "bright white marble bathroom, natural window daylight, fresh flowers in background, clean minimal styling"
+        }
+    },
+    {
+        id: "home", name: "Дом", emoji: "🏠", scheme: "warm",
+        photoPrompt: "Professional interior lifestyle product photography, home decor item placed naturally in a modern cozy Scandinavian living space, natural daylight, editorial home magazine quality, product is the focal point, styled with minimal neutral props, photorealistic, 3:4 ratio",
+        bgDesc: {
+            dark: "cozy living room interior, warm evening light, stylish furniture and tasteful decor visible in background",
+            light: "bright Scandinavian interior, white walls, light furniture, natural plants, large window with daylight"
+        }
+    },
+    {
+        id: "electronics", name: "Электроника", emoji: "📱", scheme: "tech",
+        photoPrompt: "Professional tech product photography, electronic device shown at 45-degree isometric angle, clean dark background with subtle blue accent lighting, dramatic studio lighting highlighting product design and screen, sharp details of buttons ports and surface finish, sleek modern commercial look, photorealistic, 3:4 ratio",
+        bgDesc: {
+            dark: "modern dark home office setup, desk with subtle RGB lighting glow, monitor screens in background, dark tech workspace atmosphere",
+            light: "clean modern workspace, white desk, large window with natural light, MacBook and minimal tech accessories visible in background"
+        }
+    },
+    {
+        id: "kids", name: "Детские", emoji: "🧸", scheme: "warm",
+        photoPrompt: "Professional children's product photography, item shown with a happy smiling child aged 4-7 in a bright colorful home environment, warm soft lighting, pastel color palette, safe and trustworthy feel, child naturally playing or using the product, photorealistic, 3:4 ratio",
+        bgDesc: {
+            dark: "cozy children's room, soft warm lighting, colorful toys and gentle pastel decor visible in background",
+            light: "bright cheerful children's room, white walls with colorful accents, natural daylight, toys scattered naturally"
+        }
+    },
+    {
+        id: "food", name: "Продукты", emoji: "🍎", scheme: "nature",
+        photoPrompt: "Professional food product photography, item on rustic wooden table or white marble surface, fresh natural ingredients flying and scattered elegantly around the packaging, warm appetizing lighting, condensation water droplets for freshness effect, rich vibrant colors, styled with natural props, photorealistic, 3:4 ratio",
+        bgDesc: {
+            dark: "cozy kitchen counter, fresh herbs and vegetables visible in background, warm evening light, natural wood surfaces",
+            light: "bright kitchen with white marble countertop, fresh plants and colorful fruits in background, natural sunlight streaming in"
+        }
+    },
+    {
+        id: "auto", name: "Автотовары", emoji: "🚗", scheme: "workshop",
+        photoPrompt: "Professional automotive product photography, item shown installed or in use in a modern car interior or garage environment, dramatic directional lighting, product clearly visible in functional context, masculine premium feel, clean professional commercial look, photorealistic, 3:4 ratio",
+        bgDesc: {
+            dark: "industrial garage workshop interior, concrete floor, car partially visible in background, focused dramatic overhead spotlight",
+            light: "bright modern garage, light concrete floor, clean car interior visible in background, professional workshop lighting"
+        }
+    },
+    {
+        id: "sport", name: "Спорт", emoji: "🏋️", scheme: "tech",
+        photoPrompt: "Professional sports product photography, item shown in use by an athletic person in gym or outdoor setting, dynamic energetic composition, bright natural or professional studio lighting, active lifestyle feel, sharp product details clearly visible, photorealistic, 3:4 ratio",
+        bgDesc: {
+            dark: "modern gym interior, dramatic lighting, professional fitness equipment visible in background, dark energetic atmosphere",
+            light: "bright outdoor sports setting, natural daylight, active lifestyle atmosphere, green nature background"
+        }
+    },
+    {
+        id: "accessories", name: "Аксессуары", emoji: "💍", scheme: "dark",
+        photoPrompt: "Professional jewelry and accessories product photography, item worn by an elegant model or placed on neutral stone or velvet surface, macro close-up showing fine details and craftsmanship, soft diffused studio lighting with subtle luxury reflections, premium feel, clean background, photorealistic, 3:4 ratio",
+        bgDesc: {
+            dark: "luxury dark boutique interior, black velvet or dark marble surface, dramatic professional spotlight, elegant dark decor",
+            light: "high-end bright showroom interior, light grey polished surface, clean white walls, professional retail lighting"
+        }
+    }
+];
+
 let selectedTemplate = null;
 let selectedPhotoBase64 = null;
 let userCoins = 0;
@@ -337,6 +421,16 @@ function selectTool(tool) {
 // ── КАРТОЧКИ МАРКЕТПЛЕЙС ──
 let mpSelectedStyle = "model";
 let mpPhotoBase64 = null;
+let mpSelectedCategory = "clothing";
+
+function mpSelectCategory(id, el) {
+    mpSelectedCategory = id;
+    document.querySelectorAll(".mp-cat-chip").forEach(c => c.classList.remove("active"));
+    el.classList.add("active");
+    // Автоматически меняем цветовую схему карточки под категорию
+    const cat = CATEGORIES.find(c => c.id === id);
+    if (cat) mpCardColorScheme = cat.scheme;
+}
 
 function showMarketplace() {
     switchScreen("marketplace");
@@ -1026,9 +1120,20 @@ async function generate() {
         console.log("Step 1: fetching template image...");
         const templateBase64 = await fetchImageAsBase64(selectedTemplate.photo);
         console.log("Step 1 done, size:", templateBase64.length);
-        console.log("Step 2: calling Polza API...");
-        const resultUrl = await callPolzaAPI(templateBase64, selectedPhotoBase64);
-        console.log("Step 2 done, url:", resultUrl);
+        console.log("Step 2: calling faceswap API...");
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 180000);
+        const resp = await fetch(`${API_SERVER}/faceswap`, {
+            signal: controller.signal,
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ template: templateBase64, user_photo: selectedPhotoBase64 })
+        });
+        clearTimeout(timeout);
+        const data = await resp.json();
+        const resultUrl = data?.url;
+        if (!resultUrl) throw new Error(data?.error || "No image in response");
+        console.log("Step 2 done");
 
         // Сохраняем в галерею
         const history = JSON.parse(localStorage.getItem("gallery") || "[]");
