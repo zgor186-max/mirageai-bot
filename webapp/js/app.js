@@ -712,6 +712,7 @@ let mpCardPhotoBase64 = null;
 let mpCardColorScheme = "warm";
 let mpCardBgStyle = "dark";
 let mpSelectedBg = "workshop";
+let mpCardBgPrompt = "";
 
 function mpSelectBg(style, el) {
     mpCardBgStyle = style;
@@ -841,11 +842,12 @@ async function mpCardAnalyze(base64) {
                         { type: "image_url", image_url: { url: "data:image/jpeg;base64," + base64 } },
                         { type: "text", text: `Посмотри на изображение товара. Ответь ТОЛЬКО валидным JSON без markdown и без пояснений:
 {
-  "name": "Название товара по-русски, МАКСИМУМ 2 слова, ЗАГЛАВНЫМИ буквами. Формат: КАТЕГОРИЯ БРЕНД. ЗАПРЕЩЕНО писать модель или серию. Примеры: КРОССОВКИ ASICS, ШУРУПОВЁРТ MAKITA, СМАРТФОН SAMSUNG",
-  "category": "один из: clothing (одежда/обувь/головные уборы), accessories (сумки/часы/очки/украшения/ювелирные изделия), food (продукты/блюда/напитки/упаковка еды), beauty (косметика/уход/парфюм/банки/флаконы/тюбики), gadgets (электроника/гаджеты/инструменты/техника/устройства), home (мебель/декор/свет/интерьер/текстиль/посуда), other (всё остальное что не подошло выше)",
+  "name": "Название товара по-русски, МАКСИМУМ 2 слова, ЗАГЛАВНЫМИ буквами. Формат: КАТЕГОРИЯ БРЕНД. Примеры: КРОССОВКИ ASICS, ШУРУПОВЁРТ MAKITA, СМАРТФОН SAMSUNG",
+  "category": "один из: clothing (одежда/обувь), accessories (сумки/часы/украшения), food (еда/напитки), beauty (косметика/уход/парфюм), gadgets (электроника/инструменты/техника), home (мебель/декор/интерьер), other (всё остальное)",
+  "background_prompt": "Опиши идеальный фон-сцену для этого товара на английском языке. Только окружение без товара. Фотореалистично, коммерческая предметная съёмка. Примеры: 'professional carpenter workshop, wooden workbench, tools on pegboard, warm industrial spotlight' или 'luxury marble surface with water droplets, soft studio lighting'. Максимум 30 слов.",
   "badge": "САМАЯ главная характеристика (2-4 слова, ЗАГЛАВНЫМИ). Примеры: НАТУРАЛЬНАЯ ЗАМША, 100% ХЛОПОК, 18В, WIFI 6",
   "subtitle": "3 характеристики через буллет, строчными. Формат: свойство1 • свойство2 • свойство3",
-  "feat1": "УНИКАЛЬНОЕ преимущество 1, максимум 2 слова. Только конкретика: лёгкий вес, нескользящая подошва",
+  "feat1": "УНИКАЛЬНОЕ преимущество 1, максимум 2 слова. Только конкретика",
   "feat2": "УНИКАЛЬНОЕ преимущество 2, максимум 2 слова. Не повторять feat1",
   "feat3": "УНИКАЛЬНОЕ преимущество 3, максимум 2 слова. Не повторять feat1 и feat2"
 }` }
@@ -875,7 +877,17 @@ async function mpCardAnalyze(base64) {
         const catEl = document.getElementById("mp-card-category");
         if (catEl && data.category) catEl.value = data.category;
 
-        // Применяем категорию к фону
+        // Сохраняем AI-промт фона
+        mpCardBgPrompt = data.background_prompt || "";
+
+        // Цветовая схема по категории
+        const schemeMap = {
+            clothing: "warm", accessories: "dark", food: "nature",
+            beauty: "nature", gadgets: "tech", home: "warm", other: "workshop"
+        };
+        mpCardColorScheme = schemeMap[data.category] || "warm";
+
+        // Синхронизируем select категории
         if (data.category) mpCategoryChange(data.category);
 
         // Заполняем скрытые поля для генерации
@@ -895,19 +907,37 @@ async function mpCardAnalyze(base64) {
     }
 }
 
-// Маппинг пользовательских категорий на фоны BACKGROUNDS_DB
+// Маппинг пользовательских категорий на фоны BACKGROUNDS_DB (3-4 варианта)
 const CATEGORY_TO_BG = {
-    clothing:    "cozy",
-    accessories: "marble",
-    food:        "kitchen",
-    beauty:      "spa",
-    gadgets:     "darktech",
-    home:        "scandinavian",
-    other:       "workshop"
+    clothing:    ["cozy", "scandinavian", "cafe", "kids"],
+    accessories: ["marble", "collector", "spa", "scandinavian"],
+    food:        ["kitchen", "cafe", "cozy", "scandinavian"],
+    beauty:      ["spa", "marble", "scandinavian", "cozy"],
+    gadgets:     ["darktech", "gaming", "workshop", "garage"],
+    home:        ["scandinavian", "cozy", "kitchen", "kids"],
+    other:       ["workshop", "garage", "gym", "pets"]
 };
 
+// Выбор лучшего фона из массива по названию товара
+function pickBestBg(categoryId, productName) {
+    const bgs = CATEGORY_TO_BG[categoryId];
+    if (!bgs) return "workshop";
+    if (!productName) return bgs[0];
+    const pn = productName.toLowerCase();
+    // Ищем фон у которого есть совпадение по ключевым словам продуктов
+    for (const bgId of bgs) {
+        const bg = BACKGROUNDS_DB.find(b => b.id === bgId);
+        if (!bg) continue;
+        for (const p of bg.products) {
+            if (p.k.some(k => pn.includes(k.toLowerCase()))) return bgId;
+        }
+    }
+    return bgs[0]; // по умолчанию первый из массива
+}
+
 function mpCategoryChange(categoryId) {
-    const bgId = CATEGORY_TO_BG[categoryId] || categoryId;
+    const productName = document.getElementById("mp-card-name")?.value || "";
+    const bgId = pickBestBg(categoryId, productName);
     mpSelectedBg = bgId;
     const bg = BACKGROUNDS_DB.find(b => b.id === bgId);
     if (bg) mpCardColorScheme = bg.scheme;
@@ -951,8 +981,8 @@ async function mpCardGenerate() {
     const feat2 = document.getElementById("mp-card-feat2").value.trim();
     const feat3 = document.getElementById("mp-card-feat3").value.trim();
 
-    const bgEntry = BACKGROUNDS_DB.find(b => b.id === mpSelectedBg) || BACKGROUNDS_DB[0];
-    const prompt = `Professional marketplace product photography for Wildberries and Ozon. Place this exact product as the hero subject in a ${bgEntry.prompt}. Three-point studio lighting: key light upper-left at 45 degrees, fill light at 2:1 ratio, rim light separating product from background. Product occupies 65-75% of frame positioned at upper-center, perfectly sharp with accurate color reproduction. Background realistically blurred at f/2.8 bokeh with natural depth. 85mm lens equivalent, 5500K color temperature. Photorealistic, 3:4 aspect ratio. NO text, NO letters, NO watermarks, NO logos.`;
+    const sceneBg = mpCardBgPrompt || "clean professional studio, soft gradient background, neutral tones";
+    const prompt = `Professional marketplace product photography for Wildberries and Ozon. Place this exact product as the hero subject in a ${sceneBg}. Three-point studio lighting: key light upper-left at 45 degrees, fill light at 2:1 ratio, rim light separating product from background. Product occupies 65-75% of frame positioned at upper-center, perfectly sharp with accurate color reproduction. Background realistically blurred at f/2.8 bokeh with natural depth. 85mm lens equivalent, 5500K color temperature. Photorealistic, 3:4 aspect ratio. NO text, NO letters, NO watermarks, NO logos.`;
 
     switchScreen("loading");
     animateSteps();
