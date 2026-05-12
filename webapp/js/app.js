@@ -723,6 +723,17 @@ function mpSelectBackground(bgId, el) {
     mpSelectedBg = bgId;
     document.querySelectorAll(".mp-bg-scene-item").forEach(i => i.classList.remove("active"));
     if (el) el.classList.add("active");
+    else {
+        const row = document.getElementById("mp-bg-scene-row");
+        if (row) {
+            const idx = BACKGROUNDS_DB.findIndex(b => b.id === bgId);
+            if (row.children[idx]) row.children[idx].classList.add("active");
+        }
+    }
+    // Sync dots
+    document.querySelectorAll(".mp-bg-dot").forEach(d => {
+        d.classList.toggle("active", d.dataset.bgid === bgId);
+    });
     const bg = BACKGROUNDS_DB.find(b => b.id === bgId);
     if (bg) {
         mpCardColorScheme = bg.scheme;
@@ -743,6 +754,49 @@ function renderBgSelector() {
             <div class="mp-bg-scene-name">${bg.name}</div>
         </div>`;
     }).join("");
+
+    // Dots
+    const dotsEl = document.getElementById("mp-bg-dots");
+    if (dotsEl) {
+        dotsEl.innerHTML = BACKGROUNDS_DB.map((bg, i) =>
+            `<div class="mp-bg-dot${bg.id === mpSelectedBg ? " active" : ""}" data-bgid="${bg.id}" onclick="mpDotClick('${bg.id}')"></div>`
+        ).join("");
+    }
+
+    // Fades + scroll listener
+    const scroll = document.getElementById("mp-bg-scene-scroll");
+    if (scroll) {
+        const updateFades = () => {
+            const fadeR = document.getElementById("mp-bg-fade-right");
+            const fadeL = document.getElementById("mp-bg-fade-left");
+            if (fadeR) fadeR.style.opacity = scroll.scrollLeft + scroll.clientWidth < scroll.scrollWidth - 4 ? "1" : "0";
+            if (fadeL) fadeL.style.opacity = scroll.scrollLeft > 4 ? "1" : "0";
+        };
+        scroll.removeEventListener("scroll", scroll._fadeHandler);
+        scroll._fadeHandler = updateFades;
+        scroll.addEventListener("scroll", updateFades, { passive: true });
+        updateFades();
+    }
+}
+
+function mpDotClick(bgId) {
+    mpSelectBackground(bgId, null);
+    // Scroll the item into view
+    const scroll = document.getElementById("mp-bg-scene-scroll");
+    const row = document.getElementById("mp-bg-scene-row");
+    if (!scroll || !row) return;
+    const idx = BACKGROUNDS_DB.findIndex(b => b.id === bgId);
+    const item = row.children[idx];
+    if (item) {
+        const itemLeft = item.offsetLeft;
+        const itemW = item.offsetWidth;
+        const scrollW = scroll.clientWidth;
+        scroll.scrollTo({ left: itemLeft - scrollW / 2 + itemW / 2, behavior: "smooth" });
+    }
+    // Update dots active state
+    document.querySelectorAll(".mp-bg-dot").forEach(d => {
+        d.classList.toggle("active", d.dataset.bgid === bgId);
+    });
 }
 
 function mpCardHandlePhoto(input) {

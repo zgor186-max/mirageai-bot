@@ -1045,6 +1045,10 @@ body {
 }
 
 /* Background scene selector */
+.mp-bg-scene-wrap {
+    position: relative;
+    margin: 0;
+}
 .mp-bg-scene-scroll {
     overflow-x: auto;
     padding: 6px 16px 12px;
@@ -1052,6 +1056,44 @@ body {
     scrollbar-width: none;
 }
 .mp-bg-scene-scroll::-webkit-scrollbar { display: none; }
+.mp-bg-scene-fade-right,
+.mp-bg-scene-fade-left {
+    position: absolute;
+    top: 0;
+    bottom: 12px;
+    width: 44px;
+    pointer-events: none;
+    transition: opacity 0.25s;
+}
+.mp-bg-scene-fade-right {
+    right: 0;
+    background: linear-gradient(to left, var(--bg, #0e0e18) 10%, transparent);
+}
+.mp-bg-scene-fade-left {
+    left: 0;
+    background: linear-gradient(to right, var(--bg, #0e0e18) 10%, transparent);
+    opacity: 0;
+}
+.mp-bg-dots {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    padding: 0 0 10px;
+}
+.mp-bg-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s, width 0.2s;
+}
+.mp-bg-dot.active {
+    background: #a78bfa;
+    width: 16px;
+    border-radius: 3px;
+    transform: none;
+}
 .mp-bg-scene-row {
     display: flex;
     gap: 10px;
