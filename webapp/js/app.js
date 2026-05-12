@@ -912,7 +912,8 @@ other: ${LOCATION_SEEDS.other.join(" | ")}
   "name": "Название товара по-русски, МАКСИМУМ 2 слова, ЗАГЛАВНЫМИ буквами. Примеры: КРОССОВКИ ASICS, ШУРУПОВЁРТ MAKITA, СМАРТФОН SAMSUNG",
   "category": "один из: clothing, accessories, food, beauty, gadgets, home, other",
   "location": "скопируй ТОЧНО выбранную локацию из списка выше — ту что лучше всего подходит для этого товара",
-  "background_prompt": "переведи выбранную локацию на английский и дополни деталями для фотореалистичной коммерческой съёмки. Только окружение без товара. Максимум 30 слов.",
+  "props": "перечисли 3-4 предмета которые логично окружают этот товар в реальной жизни. Только предметы через запятую на английском. Примеры: для пижамы — folded linen blanket, wooden tray with pine cones, steaming mug of tea, soft candles. Для шуруповёрта — wooden planks, screws, work gloves, sawdust. Для крема — rolled towel, eucalyptus branches, smooth stones, candles.",
+  "background_prompt": "переведи выбранную локацию на английский, добавь реквизит из поля props и технические параметры съёмки. Только окружение без самого товара. Максимум 40 слов.",
   "badge": "САМАЯ главная характеристика (2-4 слова, ЗАГЛАВНЫМИ). Примеры: НАТУРАЛЬНАЯ ЗАМША, 100% ХЛОПОК, 18В, WIFI 6",
   "subtitle": "3 характеристики через буллет, строчными. Формат: свойство1 • свойство2 • свойство3",
   "feat1": "УНИКАЛЬНОЕ преимущество 1, максимум 2 слова. Только конкретика",
@@ -945,8 +946,11 @@ other: ${LOCATION_SEEDS.other.join(" | ")}
         const catEl = document.getElementById("mp-card-category");
         if (catEl && data.category) catEl.value = data.category;
 
-        // Сохраняем AI-промт фона
-        mpCardBgPrompt = data.background_prompt || "";
+        // Сохраняем AI-промт фона (локация + реквизит)
+        const props = data.props ? `, ${data.props}` : "";
+        mpCardBgPrompt = data.background_prompt
+            ? data.background_prompt + (data.props && !data.background_prompt.includes(data.props.split(",")[0]) ? `, ${data.props}` : "")
+            : "";
 
         // Цветовая схема по категории
         const schemeMap = {
