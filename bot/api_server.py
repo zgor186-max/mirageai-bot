@@ -7,7 +7,7 @@ import os
 
 REPLICATE_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 REPLICATE_MODEL = "black-forest-labs/flux-kontext-pro"
-REPLICATE_TEXT2IMG = "black-forest-labs/flux-1.1-pro"
+REPLICATE_TEXT2IMG = "black-forest-labs/flux-dev"
 FACESWAP_VERSION = "278a81e7ebb22db98bcba54de985d22cc1abeead2754eb1f2af717247be69b34"
 
 # Temp image hosting (fallback when Replicate Files API is unavailable)
