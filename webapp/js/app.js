@@ -2,6 +2,9 @@ const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
 
+// ── API сервер (Replicate через наш сервер) ──
+const API_SERVER = "http://5.42.112.194:8080";
+
 let selectedTemplate = null;
 let selectedPhotoBase64 = null;
 let userCoins = 0;
@@ -517,22 +520,21 @@ async function mpCardGenerate() {
     animateSteps();
 
     try {
-        const POLZA_KEY = "pza_Y_e6drIevLO8ptUDrT2T5srYMGIrIEgP";
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 180000);
-        const resp = await fetch("https://polza.ai/api/v1/media", {
+        const resp = await fetch(`${API_SERVER}/generate`, {
             signal: controller.signal,
             method: "POST",
-            headers: { "Authorization": `Bearer ${POLZA_KEY}`, "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                model: "google/gemini-3.1-flash-image-preview",
-                input: { prompt, images: [{ type: "base64", data: "data:image/jpeg;base64," + mpCardPhotoBase64 }] }
+                photo: mpCardPhotoBase64,
+                prompt
             })
         });
         clearTimeout(timeout);
         const result = await resp.json();
-        const resultUrl = result?.data?.[0]?.url || result?.url || result?.data?.url;
-        if (!resultUrl) throw new Error("No image in response");
+        const resultUrl = result?.url;
+        if (!resultUrl) throw new Error(result?.error || "No image in response");
 
         // Рисуем текст поверх через Canvas
         const finalBase64 = await drawCardOverlay(resultUrl, { name, subtitle, badge, feat1, feat2, feat3 });
@@ -855,29 +857,22 @@ async function mpGenerate() {
     animateSteps();
 
     try {
-        const POLZA_KEY = "pza_Y_e6drIevLO8ptUDrT2T5srYMGIrIEgP";
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 180000);
-        const resp = await fetch("https://polza.ai/api/v1/media", {
+        const resp = await fetch(`${API_SERVER}/generate`, {
             signal: controller.signal,
             method: "POST",
-            headers: {
-                "Authorization": `Bearer ${POLZA_KEY}`,
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                model: "google/gemini-3.1-flash-image-preview",
-                input: {
-                    prompt,
-                    images: [{ type: "base64", data: "data:image/jpeg;base64," + mpPhotoBase64 }]
-                }
+                photo: mpPhotoBase64,
+                prompt
             })
         });
         clearTimeout(timeout);
         const result = await resp.json();
 
-        const resultUrl = result?.data?.[0]?.url || result?.url || result?.data?.url;
-        if (!resultUrl) throw new Error("No image in response");
+        const resultUrl = result?.url;
+        if (!resultUrl) throw new Error(result?.error || "No image in response");
 
         userCoins = Math.max(0, userCoins - 20);
         localStorage.setItem("coins", userCoins);
