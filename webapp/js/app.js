@@ -511,28 +511,54 @@ async function mpCardGenerate() {
     const schemeStyles = bgStylesMap[mpCardColorScheme] || bgStylesMap.warm;
     const bgDesc = mpCardBgStyle === "light" ? schemeStyles.light : schemeStyles.dark;
 
-    const prompt = `Professional product photography: place this exact product in a ${bgDesc}. The background must be a REAL realistic interior scene, NOT a plain solid color or gradient. The product is the main subject, placed naturally in the scene. Background should be visible and recognizable as a real place. NO text, NO letters, NO watermarks. Photorealistic, high quality marketplace photo.`;
+    const prompt = `Professional marketplace product photo. Keep this exact product completely unchanged — same shape, colors, details, brand markings. Only change the background: place the product in a ${bgDesc}. The background must be a realistic interior scene. Product stays sharp and prominent in foreground. NO text, NO letters, NO watermarks. Photorealistic, high quality.`;
 
     switchScreen("loading");
     animateSteps();
 
     try {
-        const POLZA_KEY = "pza_Y_e6drIevLO8ptUDrT2T5srYMGIrIEgP";
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 180000);
-        const resp = await fetch("https://polza.ai/api/v1/media", {
-            signal: controller.signal,
+        const REPLICATE_TOKEN = "r8_ICfz175XRvMNo3etyTdS5AEeCHz0dXB2uaqkx";
+
+        // Шаг 1: создаём предсказание на Replicate (FLUX Kontext Schnell — img2img)
+        const createResp = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-kontext-schnell/predictions", {
             method: "POST",
-            headers: { "Authorization": `Bearer ${POLZA_KEY}`, "Content-Type": "application/json" },
+            headers: {
+                "Authorization": `Bearer ${REPLICATE_TOKEN}`,
+                "Content-Type": "application/json",
+                "Prefer": "wait=55"   // ждём ответа синхронно до 55 сек
+            },
             body: JSON.stringify({
-                model: "google/gemini-3.1-flash-image-preview",
-                input: { prompt, images: [{ type: "base64", data: "data:image/jpeg;base64," + mpCardPhotoBase64 }] }
+                input: {
+                    prompt,
+                    input_image: "data:image/jpeg;base64," + mpCardPhotoBase64,
+                    aspect_ratio: "3:4",
+                    output_format: "jpg",
+                    output_quality: 92,
+                    safety_tolerance: 2,
+                    steps: 4
+                }
             })
         });
-        clearTimeout(timeout);
-        const result = await resp.json();
-        const resultUrl = result?.data?.[0]?.url || result?.url || result?.data?.url;
-        if (!resultUrl) throw new Error("No image in response");
+        let prediction = await createResp.json();
+
+        // Если не успело за 55 сек — поллим
+        if (prediction.status !== "succeeded") {
+            const id = prediction.id;
+            for (let i = 0; i < 40; i++) {
+                await new Promise(r => setTimeout(r, 3000));
+                const poll = await fetch(`https://api.replicate.com/v1/predictions/${id}`, {
+                    headers: { "Authorization": `Bearer ${REPLICATE_TOKEN}` }
+                });
+                prediction = await poll.json();
+                if (prediction.status === "succeeded") break;
+                if (prediction.status === "failed" || prediction.status === "canceled")
+                    throw new Error(prediction.error || "Replicate failed");
+            }
+        }
+
+        const output = prediction.output;
+        const resultUrl = Array.isArray(output) ? output[0] : output;
+        if (!resultUrl) throw new Error("No image in Replicate response");
 
         // Рисуем текст поверх через Canvas
         const finalBase64 = await drawCardOverlay(resultUrl, { name, subtitle, badge, feat1, feat2, feat3 });
