@@ -1044,6 +1044,66 @@ body {
     color: var(--text);
 }
 
+/* Background scene selector */
+.mp-bg-scene-scroll {
+    overflow-x: auto;
+    padding: 6px 16px 12px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.mp-bg-scene-scroll::-webkit-scrollbar { display: none; }
+.mp-bg-scene-row {
+    display: flex;
+    gap: 10px;
+    width: max-content;
+}
+.mp-bg-scene-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+.mp-bg-scene-item:active { transform: scale(0.93); }
+.mp-bg-scene-thumb {
+    width: 70px;
+    height: 70px;
+    border-radius: 12px;
+    border: 2.5px solid rgba(255,255,255,0.12);
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    overflow: hidden;
+    position: relative;
+}
+.mp-bg-scene-item.active .mp-bg-scene-thumb {
+    border-color: #a78bfa;
+    box-shadow: 0 0 0 2px rgba(124,58,237,0.5);
+}
+.mp-bg-scene-emoji {
+    font-size: 22px;
+    line-height: 1;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7));
+}
+.mp-bg-scene-name {
+    font-size: 10px;
+    color: var(--text2);
+    text-align: center;
+    max-width: 70px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.2s;
+}
+.mp-bg-scene-item.active .mp-bg-scene-name {
+    color: #a78bfa;
+    font-weight: 700;
+}
+
 .mp-ai-btn {
     margin-left: auto;
     background: linear-gradient(135deg, #5c35d9, #a78bfa);

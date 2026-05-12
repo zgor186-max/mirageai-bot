@@ -89,6 +89,249 @@ const CATEGORIES = [
     }
 ];
 
+// ── БАЗА ФОНОВ И ПРЕИМУЩЕСТВ ──
+const BACKGROUNDS_DB = [
+    { id:"workshop", name:"Мастерская", emoji:"🔨", scheme:"workshop",
+      image:"img/bg/01_workshop.jpg",
+      prompt:"professional carpenter workshop, wooden workbench with sawdust, tools on pegboard wall blurred in background, warm overhead industrial spotlight, dark concrete floor",
+      products:[
+        {k:["шуруповёрт","шуруп"],       a:["мощность","автономность","удобный хват"]},
+        {k:["дрель"],                    a:["высокая скорость","универсальность","надёжность"]},
+        {k:["болгарк"],                  a:["мощный мотор","точный рез","прочность"]},
+        {k:["перфоратор"],               a:["сила удара","производительность","износостойкость"]},
+        {k:["струбцин"],                 a:["надёжная фиксация","прочность","удобство"]},
+        {k:["ящик","toolbox"],           a:["вместительность","организация","мобильность"]},
+        {k:["перчатк","gloves"],         a:["защита рук","комфорт","износостойкость"]},
+        {k:["уровень","лазерн"],         a:["точность","скорость работы","удобство"]},
+        {k:["рулетк"],                   a:["точность измерений","компактность","прочность"]},
+        {k:["крепёж","крепеж","болт","гайк"], a:["надёжность","прочность","долговечность"]},
+        {k:["фурнитур"],                 a:["качество","эстетика","износостойкость"]},
+        {k:["инструмент"],               a:["универсальность","долговечность","удобство хранения"]},
+      ], def:["надёжность","прочность","долговечность"] },
+
+    { id:"darktech", name:"Dark Tech", emoji:"💻", scheme:"tech",
+      image:"img/bg/02_darktech.jpg",
+      prompt:"dark modern tech workspace, black desk with subtle LED accent glow, premium monitor with interface glow, professional dark home office setup",
+      products:[
+        {k:["смартфон","телефон","iphone","samsung","xiaomi"], a:["производительность","камера","дизайн"]},
+        {k:["ноутбук","laptop","macbook"],                     a:["мощность","мобильность","автономность"]},
+        {k:["powerbank","павербанк","power bank"],             a:["быстрая зарядка","компактность","ёмкость"]},
+        {k:["ssd","жёсткий","накопитель"],                    a:["скорость","надёжность","бесшумность"]},
+        {k:["клавиатур","keyboard"],                          a:["отклик","комфорт","долговечность"]},
+        {k:["мышк","mouse"],                                  a:["точность","эргономика","скорость"]},
+        {k:["наушник","headphone","airpod"],                  a:["звук","шумоподавление","комфорт"]},
+        {k:["микрофон","microphone"],                         a:["чистый звук","чувствительность","качество записи"]},
+        {k:["часы","smartwatch","умные часы","apple watch"],  a:["функциональность","автономность","стиль"]},
+        {k:["камер","camera","веб-камер"],                    a:["качество съёмки","детализация","стабилизация"]},
+        {k:["роутер","router","wifi"],                        a:["скорость интернета","стабильность","покрытие"]},
+      ], def:["производительность","надёжность","стиль"] },
+
+    { id:"gaming", name:"Gaming Room", emoji:"🎮", scheme:"tech",
+      image:"img/bg/03_gaming.jpg",
+      prompt:"RGB gaming room with neon LED strip lighting, gaming setup with colorful atmospheric glow, dark gaming desk with monitor",
+      products:[
+        {k:["мышк","mouse","игровая мышь"],           a:["быстрый отклик","точность","RGB"]},
+        {k:["клавиатур","keyboard","механическая"],   a:["механика","подсветка","скорость"]},
+        {k:["геймпад","gamepad","джойстик"],          a:["удобство","виброотклик","совместимость"]},
+        {k:["кресл","chair","игровое кресло"],        a:["комфорт","поддержка спины","регулировка"]},
+        {k:["микрофон","microphone","стримерск"],     a:["качество записи","шумоподавление","стиль"]},
+        {k:["rgb","лента","подсветк"],                a:["атмосфера","яркость","настройка цветов"]},
+        {k:["headset","гарнитур","наушник"],          a:["объёмный звук","микрофон","комфорт"]},
+        {k:["монитор","monitor","экран"],             a:["высокая герцовка","цветопередача","отклик"]},
+        {k:["пк","pc","системный блок","компьютер"],  a:["производительность","охлаждение","дизайн"]},
+      ], def:["быстрый отклик","производительность","стиль"] },
+
+    { id:"marble", name:"Мрамор + вода", emoji:"💎", scheme:"dark",
+      image:"img/bg/04_marble.jpg",
+      prompt:"luxury white Carrara marble surface with elegant water droplets, premium beauty product photography background",
+      products:[
+        {k:["сыворотк","serum"],         a:["увлажнение","сияние кожи","лёгкая текстура"]},
+        {k:["крем","cream"],             a:["питание","защита","восстановление"]},
+        {k:["косметик","makeup"],        a:["стойкость","качество","эстетика"]},
+        {k:["духи","парфюм","perfume"],  a:["аромат","стойкость","premium-дизайн"]},
+        {k:["патч"],                     a:["увлажнение","снятие отёков","комфорт"]},
+        {k:["масло","oil"],              a:["питание","блеск","восстановление"]},
+        {k:["шампун","shampoo"],         a:["уход","мягкость","блеск"]},
+        {k:["бьюти","beauty","гаджет"], a:["эффективность","удобство","инновации"]},
+        {k:["skincare","уход"],          a:["уход","натуральность","эффективность"]},
+      ], def:["уход","натуральность","эффективность"] },
+
+    { id:"spa", name:"SPA интерьер", emoji:"🧖", scheme:"nature",
+      image:"img/bg/05_spa.jpg",
+      prompt:"luxury spa bathroom interior with white marble, scented candles, eucalyptus branches, soft warm ambient lighting",
+      products:[
+        {k:["крем","cream"],             a:["мягкость кожи","питание","комфорт"]},
+        {k:["свеч","candle"],            a:["атмосфера","аромат","уют"]},
+        {k:["аромамасл","эфирн"],        a:["расслабление","натуральность","стойкость"]},
+        {k:["массажёр","массаж"],        a:["расслабление мышц","удобство","эффективность"]},
+        {k:["косметик"],                 a:["уход","эстетика","качество"]},
+        {k:["халат","robe"],             a:["мягкость","комфорт","premium-ткань"]},
+        {k:["полотенц","towel"],         a:["впитываемость","мягкость","качество"]},
+        {k:["bath","bomb","бомбочк"],    a:["аромат","расслабление","визуальный эффект"]},
+        {k:["набор","set","комплект"],   a:["комплексный уход","стиль","подарок"]},
+      ], def:["натуральность","комфорт","качество"] },
+
+    { id:"scandinavian", name:"Scandinavian", emoji:"🏠", scheme:"warm",
+      image:"img/bg/06_scandinavian.jpg",
+      prompt:"bright minimalist Scandinavian interior, white walls, light oak wood furniture, soft natural daylight from large window, clean Nordic design",
+      products:[
+        {k:["мебел","furniture"],        a:["минимализм","удобство","качество"]},
+        {k:["органайзер","organizer"],   a:["порядок","компактность","функциональность"]},
+        {k:["декор","decor"],            a:["эстетика","уют","современный стиль"]},
+        {k:["текстил","textile"],        a:["мягкость","комфорт","натуральность"]},
+        {k:["ваз","vase"],               a:["минимализм","стиль","универсальность"]},
+        {k:["полк","shelf"],             a:["вместительность","простота","дизайн"]},
+        {k:["лампа","lamp","светильник"],a:["мягкий свет","стиль","уют"]},
+        {k:["часы","clock","watch"],     a:["дизайн","минимализм","практичность"]},
+        {k:["корзин","basket"],          a:["организация","вместительность","эстетика"]},
+      ], def:["минимализм","функциональность","качество"] },
+
+    { id:"cozy", name:"Уютная гостиная", emoji:"🕯", scheme:"warm",
+      image:"img/bg/07_cozy.jpg",
+      prompt:"cozy living room with warm amber lamp light, linen sofa with cushions, oak coffee table, inviting warm home atmosphere",
+      products:[
+        {k:["плед","blanket"],           a:["мягкость","тепло","уют"]},
+        {k:["подушк","pillow","cushion"],a:["комфорт","дизайн","мягкость"]},
+        {k:["свеч","candle"],            a:["атмосфера","аромат","эстетика"]},
+        {k:["лампа","lamp","светильник"],a:["тёплый свет","уют","стиль"]},
+        {k:["книг","book"],              a:["эстетика","развитие","атмосфера"]},
+        {k:["декор","decor"],            a:["уют","стиль","гармония"]},
+        {k:["ковёр","ковр","carpet","rug"],a:["комфорт","тепло","интерьер"]},
+        {k:["столик","table"],           a:["функциональность","дизайн","компактность"]},
+        {k:["увлажнитель","humidifier"], a:["свежесть воздуха","комфорт","здоровье"]},
+      ], def:["комфорт","тепло","уют"] },
+
+    { id:"kids", name:"Детская комната", emoji:"🧸", scheme:"warm",
+      image:"img/bg/08_kids.jpg",
+      prompt:"bright cheerful children's bedroom with pastel colors, natural daylight, wooden toys, safe playful home atmosphere",
+      products:[
+        {k:["игрушк","toy"],             a:["безопасность","яркость","развитие"]},
+        {k:["детск","kids","child"],      a:["мягкость","комфорт","безопасность"]},
+        {k:["развивающ","обучающ"],      a:["обучение","моторика","интерес"]},
+        {k:["конструктор","lego"],       a:["развитие мышления","творчество","качество"]},
+        {k:["книж","book"],              a:["развитие","обучение","иллюстрации"]},
+        {k:["ночник","nightlight"],       a:["мягкий свет","безопасность","уют"]},
+        {k:["мебел","furniture"],        a:["безопасность","удобство","качество"]},
+        {k:["коврик","mat"],             a:["мягкость","тепло","безопасность"]},
+        {k:["montessori","монтессор"],   a:["развитие навыков","натуральность","обучение"]},
+      ], def:["безопасность","развитие","качество"] },
+
+    { id:"gym", name:"Gym Industrial", emoji:"🏋️", scheme:"workshop",
+      image:"img/bg/09_gym.jpg",
+      prompt:"professional industrial gym, dark rubber floor with texture, overhead spotlights, gym equipment blurred in background",
+      products:[
+        {k:["гантел","dumbbell"],        a:["прочность","удобный хват","долговечность"]},
+        {k:["бутылк","bottle","шейкер"], a:["герметичность","удобство","объём"]},
+        {k:["коврик","mat","yoga"],       a:["антискольжение","комфорт","износостойкость"]},
+        {k:["резинк","band","эспандер"], a:["эластичность","универсальность","компактность"]},
+        {k:["протеин","питание","supplement"],a:["эффективность","вкус","состав"]},
+        {k:["перчатк","gloves"],         a:["защита","комфорт","сцепление"]},
+        {k:["спортивн","спорт"],         a:["комфорт","вентиляция","эластичность"]},
+      ], def:["прочность","долговечность","эффективность"] },
+
+    { id:"parking", name:"Парковка ночью", emoji:"🚗", scheme:"tech",
+      image:"img/bg/10_parking.jpg",
+      prompt:"night city parking with wet asphalt reflections, dramatic neon and streetlight atmospheric glow, dark premium automotive atmosphere",
+      products:[
+        {k:["авто","автоакс","car"],      a:["удобство","стиль","функциональность"]},
+        {k:["led","подсветк","лента"],   a:["яркость","атмосфера","энергоэффективность"]},
+        {k:["электроник","electronics"], a:["функциональность","надёжность","технологии"]},
+        {k:["сабвуфер","subwoofer"],     a:["мощный бас","чистый звук","качество"]},
+        {k:["держател","holder","крепл"],a:["фиксация","удобство","универсальность"]},
+        {k:["видеорег","dashcam","регистратор"],a:["качество записи","безопасность","угол обзора"]},
+        {k:["автохими","химия","полирол"],a:["защита","блеск","долговечность"]},
+      ], def:["надёжность","функциональность","долговечность"] },
+
+    { id:"garage", name:"Garage Workshop", emoji:"🔧", scheme:"workshop",
+      image:"img/bg/11_garage.jpg",
+      prompt:"professional garage workshop, grey concrete floor, car lift in background, organized tool wall, dramatic overhead workshop lighting",
+      products:[
+        {k:["домкрат","jack"],           a:["грузоподъёмность","устойчивость","безопасность"]},
+        {k:["компрессор","compressor"],  a:["мощность","производительность","долговечность"]},
+        {k:["автохими","химия"],         a:["защита","очистка","блеск"]},
+        {k:["ключ","wrench","ratchet"],  a:["прочность","точность","износостойкость"]},
+        {k:["масл","oil","синтетик"],    a:["защита двигателя","долговечность","эффективность"]},
+        {k:["шин","tire","резин"],       a:["сцепление","безопасность","износостойкость"]},
+        {k:["аккумулятор","battery"],    a:["мощность","надёжность","срок службы"]},
+        {k:["инструмент"],               a:["прочность","надёжность","удобство"]},
+      ], def:["прочность","надёжность","долговечность"] },
+
+    { id:"kitchen", name:"Rustic Kitchen", emoji:"🍳", scheme:"nature",
+      image:"img/bg/12_kitchen.jpg",
+      prompt:"rustic kitchen interior, warm natural oak wooden countertop, herbs in terracotta pots, morning window sunlight, organic cozy kitchen atmosphere",
+      products:[
+        {k:["кофе","coffee"],            a:["аромат","насыщенность","бодрость"]},
+        {k:["чай","tea"],                a:["вкус","натуральность","расслабление"]},
+        {k:["специ","spice"],            a:["аромат","вкус","натуральность"]},
+        {k:["сладост","десерт","sweet"], a:["вкус","текстура","эстетика"]},
+        {k:["кухонн","утвар","посуда"],  a:["удобство","качество","долговечность"]},
+        {k:["доск","board"],             a:["натуральное дерево","прочность","стиль"]},
+        {k:["нож","knife"],              a:["острота","баланс","качество стали"]},
+        {k:["мёд","honey"],              a:["натуральность","вкус","польза"]},
+        {k:["выпечк","хлеб","bread"],    a:["свежесть","аромат","мягкость"]},
+      ], def:["натуральность","качество","вкус"] },
+
+    { id:"cafe", name:"Кофейня", emoji:"☕", scheme:"warm",
+      image:"img/bg/13_cafe.jpg",
+      prompt:"cozy coffee shop interior, warm ambient ceiling lighting, wooden tables, steaming coffee cup, relaxed cafe atmosphere",
+      products:[
+        {k:["кофе","coffee"],            a:["аромат","энергия","вкус"]},
+        {k:["кружк","чашк","mug","cup"], a:["дизайн","удобство","объём"]},
+        {k:["термос","thermos","tumbler"],a:["сохранение температуры","герметичность","мобильность"]},
+        {k:["десерт","пирожн","cake"],   a:["вкус","эстетика","свежесть"]},
+        {k:["сироп","syrup"],            a:["насыщенный вкус","аромат","разнообразие"]},
+        {k:["ноутбук","laptop"],         a:["мобильность","производительность","стиль"]},
+        {k:["блокнот","notebook"],       a:["удобство","минимализм","качество бумаги"]},
+        {k:["книг","book"],              a:["атмосфера","развитие","эстетика"]},
+      ], def:["уют","стиль","качество"] },
+
+    { id:"pets", name:"Pet Home", emoji:"🐾", scheme:"warm",
+      image:"img/bg/14_pets.jpg",
+      prompt:"cozy home interior with warm natural lighting, comfortable soft home setting, pet-friendly warm atmosphere",
+      products:[
+        {k:["лежанк","lounger","кровать для"],a:["мягкость","комфорт","тепло"]},
+        {k:["игрушк","toy"],             a:["прочность","интерес","безопасность"]},
+        {k:["миск","bowl","кормушк"],    a:["удобство","устойчивость","качество"]},
+        {k:["когтеточк","scratching"],   a:["прочность","защита мебели","долговечность"]},
+        {k:["корм","food","питание"],    a:["натуральный состав","вкус","польза"]},
+        {k:["поводок","leash"],          a:["прочность","комфорт","безопасность"]},
+        {k:["одежд","одежда для"],       a:["тепло","стиль","комфорт"]},
+        {k:["переноск","carrier"],       a:["безопасность","удобство","вентиляция"]},
+      ], def:["безопасность","комфорт","качество"] },
+
+    { id:"collector", name:"Collector Shelf", emoji:"🏆", scheme:"dark",
+      image:"img/bg/15_collector.jpg",
+      prompt:"premium dark display shelf with dramatic spotlights on collectible items, dark luxurious background with subtle ambient accent glow",
+      products:[
+        {k:["фигурк","figure","статуэтк"],a:["детализация","коллекционная ценность","качество"]},
+        {k:["коллекц","collectible"],    a:["редкость","дизайн","ценность"]},
+        {k:["lego","лего"],              a:["сборка","качество","творчество"]},
+        {k:["funko","pop"],              a:["узнаваемость","коллекционность","стиль"]},
+        {k:["merch","мерч"],             a:["fandom","дизайн","уникальность"]},
+        {k:["anime","аниме"],            a:["эстетика","коллекционность","детализация"]},
+        {k:["виниловые","vinyl"],        a:["качество покраски","стиль","коллекционная ценность"]},
+        {k:["комикс","comic"],           a:["иллюстрации","сюжет","коллекционность"]},
+      ], def:["детализация","качество","стиль"] },
+];
+
+function findAdvantages(productName) {
+    const bg = BACKGROUNDS_DB.find(b => b.id === mpSelectedBg) || BACKGROUNDS_DB[0];
+    const pn = (productName || "").toLowerCase();
+    for (const p of bg.products) {
+        if (p.k.some(k => pn.includes(k.toLowerCase()) || k.toLowerCase().split(/\s+/).some(w => pn.includes(w) && w.length > 3))) {
+            return p.a;
+        }
+    }
+    return bg.def;
+}
+
+function autoFillAdvantages(productName) {
+    const advs = findAdvantages(productName);
+    if (advs[0]) document.getElementById("mp-card-feat1").value = advs[0];
+    if (advs[1]) document.getElementById("mp-card-feat2").value = advs[1];
+    if (advs[2]) document.getElementById("mp-card-feat3").value = advs[2];
+}
+
 let selectedTemplate = null;
 let selectedPhotoBase64 = null;
 let userCoins = 0;
@@ -435,6 +678,7 @@ function mpSelectCategory(id, el) {
 function showMarketplace() {
     switchScreen("marketplace");
     setActiveNav("");
+    setTimeout(renderBgSelector, 50);
 }
 
 function mpSwitchTab(tab) {
@@ -466,12 +710,39 @@ function mpSelectStyle(style, el) {
 
 let mpCardPhotoBase64 = null;
 let mpCardColorScheme = "warm";
-let mpCardBgStyle = "dark"; // dark | light | gradient
+let mpCardBgStyle = "dark";
+let mpSelectedBg = "workshop";
 
 function mpSelectBg(style, el) {
     mpCardBgStyle = style;
     document.querySelectorAll(".mp-bg-btn").forEach(b => b.classList.remove("active"));
     el.classList.add("active");
+}
+
+function mpSelectBackground(bgId, el) {
+    mpSelectedBg = bgId;
+    document.querySelectorAll(".mp-bg-scene-item").forEach(i => i.classList.remove("active"));
+    if (el) el.classList.add("active");
+    const bg = BACKGROUNDS_DB.find(b => b.id === bgId);
+    if (bg) {
+        mpCardColorScheme = bg.scheme;
+        const name = document.getElementById("mp-card-name").value.trim();
+        if (name) autoFillAdvantages(name);
+    }
+}
+
+function renderBgSelector() {
+    const row = document.getElementById("mp-bg-scene-row");
+    if (!row) return;
+    const bgColors = { warm:"#1a1100", dark:"#0a0a10", tech:"#060c1e", workshop:"#120e00", nature:"#061006" };
+    row.innerHTML = BACKGROUNDS_DB.map(bg => {
+        const isActive = bg.id === mpSelectedBg ? " active" : "";
+        const fallback = bgColors[bg.scheme] || "#111";
+        return `<div class="mp-bg-scene-item${isActive}" onclick="mpSelectBackground('${bg.id}',this)">
+            <div class="mp-bg-scene-thumb" style="background-color:${fallback};background-image:url('${bg.image}')"><span class="mp-bg-scene-emoji">${bg.emoji}</span></div>
+            <div class="mp-bg-scene-name">${bg.name}</div>
+        </div>`;
+    }).join("");
 }
 
 function mpCardHandlePhoto(input) {
@@ -544,10 +815,13 @@ async function mpCardAnalyze(base64) {
         document.getElementById("mp-card-name").value = data.name || "";
         document.getElementById("mp-card-subtitle").value = data.subtitle || "";
         document.getElementById("mp-card-badge").value = data.badge || "";
-        document.getElementById("mp-card-feat1").value = data.feat1 || "";
-        document.getElementById("mp-card-feat2").value = data.feat2 || "";
-        document.getElementById("mp-card-feat3").value = data.feat3 || "";
-        mpCardColorScheme = data.style || "warm";
+        // Преимущества из базы фонов (приоритет над AI)
+        const dbAdvs = findAdvantages(data.name || "");
+        document.getElementById("mp-card-feat1").value = dbAdvs[0] || data.feat1 || "";
+        document.getElementById("mp-card-feat2").value = dbAdvs[1] || data.feat2 || "";
+        document.getElementById("mp-card-feat3").value = dbAdvs[2] || data.feat3 || "";
+        const bg = BACKGROUNDS_DB.find(b => b.id === mpSelectedBg);
+        mpCardColorScheme = bg ? bg.scheme : (data.style || "warm");
 
     } catch (e) {
         console.warn("Auto-analyze failed:", e.message);
@@ -598,32 +872,8 @@ async function mpCardGenerate() {
     const feat2 = document.getElementById("mp-card-feat2").value.trim();
     const feat3 = document.getElementById("mp-card-feat3").value.trim();
 
-    const bgStylesMap = {
-        warm:     {
-            dark:  "cozy Scandinavian living room, warm oak wooden floor with visible grain, linen sofa with cushions softly blurred at f/2.8 bokeh in background, warm amber table lamp glow creating cozy atmosphere",
-            light: "bright Nordic apartment, white painted walls, light ash wood floor, floor-to-ceiling window with soft natural daylight, minimal Scandinavian furniture blurred at f/2.8 bokeh"
-        },
-        dark:     {
-            dark:  "luxury high-end boutique interior, polished black marble floor with subtle reflection, soft dramatic spotlights creating pools of light from above, dark mahogany shelving blurred at f/2.8 in background",
-            light: "premium bright showroom interior, light grey polished concrete floor with reflection, clean white walls, professional retail spotlighting from above, minimal luxury props blurred at f/2.8"
-        },
-        tech:     {
-            dark:  "modern dark home office, matte black desk surface, subtle RGB underglow with cyan and purple atmospheric glow, dual monitors with UI interface blurred at f/2.8 in background, professional dark tech workspace",
-            light: "clean modern workspace, white birch wood desk, large window with soft natural daylight, minimal MacBook and tech accessories blurred at f/2.8 in background"
-        },
-        workshop: {
-            dark:  "industrial professional garage workshop, grey concrete floor with texture, high-quality power tools on organized pegboard wall blurred at f/2.8 in background, focused overhead spotlight on product",
-            light: "bright professional workshop, light concrete floor, organized tool storage and clean equipment visible blurred at f/2.8 in background, industrial windows with daylight"
-        },
-        nature:   {
-            dark:  "cozy kitchen counter, natural oak wooden surface, fresh herbs in terracotta pots and colorful vegetables blurred at f/2.8 in background, warm under-cabinet evening light",
-            light: "bright kitchen with white Carrara marble countertop, fresh botanical plants and colorful seasonal fruits blurred at f/2.8 in background, natural sunlight streaming in from window"
-        },
-    };
-    const schemeStyles = bgStylesMap[mpCardColorScheme] || bgStylesMap.warm;
-    const bgDesc = mpCardBgStyle === "light" ? schemeStyles.light : schemeStyles.dark;
-
-    const prompt = `Professional marketplace product photography for Wildberries and Ozon. Place this exact product as the hero subject in a ${bgDesc}. Three-point studio lighting applied to the product: key light upper-left at 45 degrees, fill light reducing shadows to 2:1 ratio, subtle rim light separating product from background. Product occupies 65-75% of frame positioned at rule of thirds, perfectly sharp with accurate color reproduction. Background realistically blurred at f/2.8 bokeh creating natural depth separation. 85mm lens equivalent, warm neutral color temperature 5500K, sRGB color profile. The background MUST be a REAL recognizable interior scene with visible depth, NOT a plain solid color or flat gradient. Photorealistic, hero shot quality, 3:4 aspect ratio. NO text, NO letters, NO watermarks, NO logos.`;
+    const bgEntry = BACKGROUNDS_DB.find(b => b.id === mpSelectedBg) || BACKGROUNDS_DB[0];
+    const prompt = `Professional marketplace product photography for Wildberries and Ozon. Place this exact product as the hero subject in a ${bgEntry.prompt}. Three-point studio lighting: key light upper-left at 45 degrees, fill light at 2:1 ratio, rim light separating product from background. Product occupies 65-75% of frame positioned at upper-center, perfectly sharp with accurate color reproduction. Background realistically blurred at f/2.8 bokeh with natural depth. 85mm lens equivalent, 5500K color temperature. Photorealistic, 3:4 aspect ratio. NO text, NO letters, NO watermarks, NO logos.`;
 
     switchScreen("loading");
     animateSteps();
@@ -673,10 +923,100 @@ async function mpCardGenerate() {
     }
 }
 
+function getIconType(feat) {
+    const f = feat.toLowerCase();
+    if (/мощн|скоро|энерги|быстр|сила\s*удар|герцовк/.test(f)) return "bolt";
+    if (/автоном|аккумул|ёмкост|зарядк/.test(f)) return "battery";
+    if (/прочн|долговечн|надёжн|износ|защит|безопасн|стойк|фиксац/.test(f)) return "shield";
+    if (/качест|дизайн|эстетик|стиль|коллекц|ценност|детализац|натур/.test(f)) return "diamond";
+    if (/точн/.test(f)) return "target";
+    if (/звук|шумо|аудио|микрофон/.test(f)) return "sound";
+    if (/комфорт|хват|мягкост|тепло|уют|расслабл|удобств/.test(f)) return "comfort";
+    if (/компактн|мобильн|вместит|органи|порядок/.test(f)) return "box";
+    if (/аромат|натур|органик/.test(f)) return "leaf";
+    if (/развит|обучен|творчест|инновац|функцион|универсальн|эффективн|производительн/.test(f)) return "arrows";
+    return "check";
+}
+
+function drawAdvIcon(ctx, cx, cy, r, type, clr) {
+    ctx.save();
+    ctx.strokeStyle = clr; ctx.fillStyle = clr;
+    ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    const s = r * 0.52;
+    if (type === "bolt") {
+        ctx.beginPath();
+        ctx.moveTo(cx+s*0.4,cy-s*1.1); ctx.lineTo(cx-s*0.6,cy+s*0.2); ctx.lineTo(cx+s*0.1,cy+s*0.1);
+        ctx.lineTo(cx-s*0.4,cy+s*1.1); ctx.lineTo(cx+s*0.6,cy-s*0.2); ctx.lineTo(cx-s*0.1,cy-s*0.1);
+        ctx.closePath(); ctx.fill();
+    } else if (type === "battery") {
+        ctx.beginPath(); ctx.roundRect(cx-s*0.9,cy-s*0.5,s*1.6,s*1.0,s*0.15); ctx.stroke();
+        ctx.fillRect(cx+s*0.7,cy-s*0.28,s*0.22,s*0.56);
+        ctx.fillRect(cx-s*0.8,cy-s*0.38,s*1.05,s*0.76);
+    } else if (type === "shield") {
+        ctx.beginPath();
+        ctx.moveTo(cx,cy-s*1.1); ctx.lineTo(cx+s*0.9,cy-s*0.4);
+        ctx.lineTo(cx+s*0.9,cy+s*0.2);
+        ctx.quadraticCurveTo(cx+s*0.8,cy+s*1.0,cx,cy+s*1.3);
+        ctx.quadraticCurveTo(cx-s*0.8,cy+s*1.0,cx-s*0.9,cy+s*0.2);
+        ctx.lineTo(cx-s*0.9,cy-s*0.4); ctx.closePath(); ctx.stroke();
+        ctx.lineWidth=1.8; ctx.beginPath();
+        ctx.moveTo(cx-s*0.38,cy+s*0.08); ctx.lineTo(cx-s*0.05,cy+s*0.42); ctx.lineTo(cx+s*0.42,cy-s*0.28); ctx.stroke();
+    } else if (type === "diamond") {
+        ctx.beginPath();
+        ctx.moveTo(cx,cy-s*1.1); ctx.lineTo(cx+s*0.9,cy); ctx.lineTo(cx,cy+s*1.1); ctx.lineTo(cx-s*0.9,cy); ctx.closePath(); ctx.stroke();
+        ctx.lineWidth=1; ctx.beginPath();
+        ctx.moveTo(cx-s*0.9,cy); ctx.lineTo(cx-s*0.32,cy-s*1.1);
+        ctx.moveTo(cx+s*0.9,cy); ctx.lineTo(cx+s*0.32,cy-s*1.1);
+        ctx.moveTo(cx-s*0.32,cy-s*1.1); ctx.lineTo(cx,cy+s*0.42); ctx.lineTo(cx+s*0.32,cy-s*1.1); ctx.stroke();
+    } else if (type === "target") {
+        ctx.beginPath(); ctx.arc(cx,cy,s*0.95,0,Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx,cy,s*0.35,0,Math.PI*2); ctx.fill();
+        ctx.lineWidth=1.4; ctx.beginPath();
+        ctx.moveTo(cx,cy-s*0.95); ctx.lineTo(cx,cy-s*0.5);
+        ctx.moveTo(cx,cy+s*0.5);  ctx.lineTo(cx,cy+s*0.95);
+        ctx.moveTo(cx-s*0.95,cy); ctx.lineTo(cx-s*0.5,cy);
+        ctx.moveTo(cx+s*0.5,cy);  ctx.lineTo(cx+s*0.95,cy); ctx.stroke();
+    } else if (type === "sound") {
+        ctx.beginPath();
+        ctx.moveTo(cx-s*0.6,cy-s*0.5); ctx.lineTo(cx-s*0.15,cy-s*0.5);
+        ctx.lineTo(cx+s*0.5,cy-s*1.0); ctx.lineTo(cx+s*0.5,cy+s*1.0);
+        ctx.lineTo(cx-s*0.15,cy+s*0.5); ctx.lineTo(cx-s*0.6,cy+s*0.5); ctx.closePath(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx+s*0.5,cy,s*0.65,-Math.PI*0.4,Math.PI*0.4); ctx.stroke();
+    } else if (type === "comfort") {
+        ctx.beginPath(); ctx.arc(cx,cy,s*0.9,0,Math.PI*2); ctx.stroke();
+        ctx.lineWidth=2.5; ctx.beginPath();
+        ctx.moveTo(cx-s*0.48,cy+s*0.1); ctx.lineTo(cx-s*0.1,cy+s*0.5); ctx.lineTo(cx+s*0.55,cy-s*0.35); ctx.stroke();
+    } else if (type === "box") {
+        ctx.beginPath();
+        ctx.moveTo(cx,cy-s*1.05); ctx.lineTo(cx+s*0.85,cy-s*0.5);
+        ctx.lineTo(cx+s*0.85,cy+s*0.65); ctx.lineTo(cx,cy+s*1.05);
+        ctx.lineTo(cx-s*0.85,cy+s*0.65); ctx.lineTo(cx-s*0.85,cy-s*0.5); ctx.closePath(); ctx.stroke();
+        ctx.lineWidth=1.4; ctx.beginPath();
+        ctx.moveTo(cx-s*0.85,cy-s*0.5); ctx.lineTo(cx,cy); ctx.lineTo(cx+s*0.85,cy-s*0.5);
+        ctx.moveTo(cx,cy); ctx.lineTo(cx,cy+s*1.05); ctx.stroke();
+    } else if (type === "leaf") {
+        ctx.beginPath();
+        ctx.moveTo(cx,cy+s*1.0);
+        ctx.quadraticCurveTo(cx-s*1.0,cy-s*0.2,cx-s*0.2,cy-s*1.0);
+        ctx.quadraticCurveTo(cx+s*1.0,cy-s*0.2,cx,cy+s*1.0); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx-s*0.1,cy-s*0.8); ctx.lineTo(cx-s*0.2,cy+s*0.9); ctx.stroke();
+    } else if (type === "arrows") {
+        ctx.lineWidth=2.3; ctx.beginPath();
+        ctx.moveTo(cx-s*0.9,cy+s*0.7); ctx.lineTo(cx-s*0.3,cy+s*0.1);
+        ctx.lineTo(cx+s*0.2,cy+s*0.5); ctx.lineTo(cx+s*0.9,cy-s*0.7); ctx.stroke();
+        ctx.lineWidth=2; ctx.beginPath();
+        ctx.moveTo(cx+s*0.42,cy-s*0.7); ctx.lineTo(cx+s*0.9,cy-s*0.7); ctx.lineTo(cx+s*0.9,cy-s*0.2); ctx.stroke();
+    } else { // check (default)
+        ctx.beginPath(); ctx.arc(cx,cy,s*0.9,0,Math.PI*2); ctx.stroke();
+        ctx.lineWidth=2.5; ctx.beginPath();
+        ctx.moveTo(cx-s*0.48,cy+s*0.1); ctx.lineTo(cx-s*0.1,cy+s*0.5); ctx.lineTo(cx+s*0.55,cy-s*0.35); ctx.stroke();
+    }
+    ctx.restore();
+}
+
 async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, feat3 }) {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        // crossOrigin не нужен для data URI — убираем чтобы не блокировать iOS Safari
         if (!imageUrl.startsWith("data:")) img.crossOrigin = "anonymous";
         img.onload = async () => {
             try {
@@ -686,230 +1026,123 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             canvas.width = W; canvas.height = H;
             const ctx = canvas.getContext("2d");
             const scheme = mpCardColorScheme || "warm";
-            const isLight = (mpCardBgStyle || "dark") === "light";
-            const PAD = 30;
+            const PAD = 28;
             const feats = [feat1, feat2, feat3].filter(Boolean);
 
-            function rr(x, y, w, h, r, fill, stroke, sw) {
-                ctx.beginPath(); ctx.roundRect(x, y, w, h, r);
-                if (fill) { ctx.fillStyle = fill; ctx.fill(); }
-                if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = sw || 2; ctx.stroke(); }
-            }
-            function autoSize(text, maxW, max, min, font) {
+            const ACCENTS = { warm:"#d4a017", dark:"#c9a84c", tech:"#00c8ff", workshop:"#ffc200", nature:"#4caf50" };
+            const accent = ACCENTS[scheme] || "#d4a017";
+            const TINTS  = { warm:[16,11,3], dark:[6,5,8], tech:[3,9,22], workshop:[12,9,0], nature:[4,14,5] };
+            const [tr,tg,tb] = TINTS[scheme] || [16,11,3];
+
+            // Title bar height; product overlaps it by 5%
+            const TITLE_H = 118;
+            const PROD_Y  = Math.round(TITLE_H * 0.95);
+
+            function autoSz(text, maxW, max, min) {
                 let sz = max;
-                ctx.font = `${font || '700'} ${sz}px 'Oswald', Arial`;
-                while (sz > min && ctx.measureText(text).width > maxW) sz -= 1;
+                ctx.font = `700 ${sz}px 'Oswald', Arial`;
+                while (sz > min && ctx.measureText(text).width > maxW) sz--;
                 return sz;
             }
-            function drawBadge(text, x, y, bg, textColor) {
-                const maxBadgeW = W / 2 - PAD;
-                let sz = 18;
-                ctx.font = `bold ${sz}px Arial`;
-                while (sz > 11 && ctx.measureText(text).width + 28 > maxBadgeW) sz--;
-                ctx.font = `bold ${sz}px Arial`;
-                const bW = Math.min(Math.max(ctx.measureText(text).width + 28, 80), maxBadgeW);
-                rr(x - bW, y, bW, 34, 17, bg);
-                ctx.fillStyle = textColor || "#000";
-                ctx.textAlign = "center";
-                ctx.fillText(text, x - bW / 2, y + 22);
-                ctx.textAlign = "left";
-            }
-            function drawTitle(words, startY, maxY, color, maxW) {
-                let ty = startY;
-                let lastSz = 22;
-                for (const word of words) {
-                    const sz = autoSize(word, maxW || W - PAD * 2, 96, 22);
-                    const lineH = Math.round(sz * 1.1);
-                    if (ty > maxY) break;
-                    ctx.font = `700 ${sz}px 'Oswald', Arial`;
-                    ctx.fillStyle = color;
-                    ctx.fillText(word, PAD, ty);
-                    lastSz = sz;
-                    ty += lineH;
-                }
-                return ty - Math.round(lastSz * 1.1) + Math.round(lastSz * 0.3);
-            }
-            function drawSubtitle(text, y, color, size) {
-                const maxW = W - PAD * 2;
-                let fsz = size || 28;
-                ctx.font = `500 ${fsz}px 'Oswald', Arial`;
-                while (fsz > 15 && ctx.measureText(text).width > maxW) fsz--;
-                ctx.font = `500 ${fsz}px 'Oswald', Arial`;
-                ctx.fillStyle = color;
-                ctx.fillText(text.substring(0, 90), PAD, y);
-                return y;
+
+            // 1. Product image — starts at PROD_Y (5% overlap of title)
+            ctx.drawImage(img, 0, 0, img.width, img.height, 0, PROD_Y, W, H - PROD_Y);
+
+            // 2. Title bar dark gradient
+            const tBg = ctx.createLinearGradient(0, 0, 0, TITLE_H + 18);
+            tBg.addColorStop(0,    `rgba(${tr},${tg},${tb},0.97)`);
+            tBg.addColorStop(0.72, `rgba(${tr},${tg},${tb},0.88)`);
+            tBg.addColorStop(1,    `rgba(${tr},${tg},${tb},0)`);
+            ctx.fillStyle = tBg;
+            ctx.fillRect(0, 0, W, TITLE_H + 18);
+
+            // 3. Badge pill (top-right)
+            if (badge) {
+                const bt = badge.toUpperCase();
+                ctx.font = "bold 12px Arial";
+                const bpx = 13, bpy = 7;
+                const btw = ctx.measureText(bt).width;
+                const bw = btw + bpx*2, bh = 12 + bpy*2;
+                const bx = W - PAD - bw, by = 18;
+                ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, bh/2);
+                ctx.fillStyle = accent; ctx.fill();
+                ctx.fillStyle = "#111"; ctx.textAlign = "left";
+                ctx.fillText(bt, bx + bpx, by + bpy + 11);
             }
 
-            const GRAD_TOP = Math.floor(H * 0.55);
-            const TITLE_Y  = Math.floor(H * 0.72);
-            const PILL_H   = 73;
-            const CHIPS_Y  = H - PAD - PILL_H;
+            // 4. Title text
+            ctx.textAlign = "left";
+            const fullTitle = (name || "").toUpperCase();
+            const tMaxW = W - PAD*2 - (badge ? 175 : 10);
+            const tsz = autoSz(fullTitle, tMaxW, 70, 26);
+            ctx.font = `700 ${tsz}px 'Oswald', Arial`;
+            ctx.fillStyle = "#ffffff";
+            const titleY = Math.min(tsz + 14, 84);
+            ctx.fillText(fullTitle, PAD, titleY);
 
-            function drawFullPhoto() {
-                const srcTop = Math.floor(img.height * 0.05);
-                const srcBot = Math.floor(img.height * 0.97);
-                ctx.drawImage(img, 0, srcTop, img.width, srcBot - srcTop, 0, 0, W, H);
+            // 5. Subtitle in title bar
+            if (subtitle) {
+                let ssz = 17;
+                ctx.font = `400 ${ssz}px Arial`;
+                while (ssz > 11 && ctx.measureText(subtitle).width > W - PAD*2) ssz--;
+                ctx.font = `400 ${ssz}px Arial`;
+                ctx.fillStyle = "rgba(255,255,255,0.65)";
+                ctx.fillText(subtitle.substring(0, 90), PAD, titleY + ssz + 5);
             }
-            function drawOverlay(tintColor) {
-                const g = ctx.createLinearGradient(0, GRAD_TOP, 0, H);
-                g.addColorStop(0,    "rgba(0,0,0,0)");
-                g.addColorStop(0.38, "rgba(0,0,0,0.62)");
-                g.addColorStop(1,    tintColor);
-                ctx.fillStyle = g;
-                ctx.fillRect(0, GRAD_TOP, W, H - GRAD_TOP);
-            }
 
-            if (scheme === "warm") {
-                const accentClr = "#d4a017";
-                const titleClr  = "#fff8e8";
-                const subClr    = "#ddc880";
-                drawFullPhoto();
-                drawOverlay(isLight ? "rgba(50,35,5,0.94)" : "rgba(18,12,2,0.96)");
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, 65, accentClr, "#1a1000");
-                const tY1 = drawTitle((name||"").toUpperCase().split(/\s+/), TITLE_Y, CHIPS_Y - 50, titleClr);
-                if (subtitle) drawSubtitle(subtitle, tY1 + 10, subClr);
-                if (feats.length) {
-                    const gap = 12, colW = (W - PAD*2 - gap*(feats.length-1)) / feats.length;
-                    feats.forEach((f, i) => {
-                        const fx = PAD + i*(colW+gap), fy = CHIPS_Y;
-                        rr(fx, fy, colW, PILL_H, 36, "rgba(40,28,5,0.92)", accentClr, 2);
-                        ctx.beginPath(); ctx.arc(fx+26, fy+PILL_H/2, 11, 0, Math.PI*2);
-                        ctx.fillStyle = accentClr; ctx.fill();
-                        ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.lineCap = "round";
-                        ctx.beginPath(); ctx.moveTo(fx+20, fy+PILL_H/2); ctx.lineTo(fx+25, fy+PILL_H/2+5); ctx.lineTo(fx+32, fy+PILL_H/2-5); ctx.stroke();
-                        ctx.fillStyle = "#fff";
-                        const fw = f.split(" ");
-                        if (fw.length > 1) {
-                            const sz = Math.min(autoSize(fw[0], colW-52, 22, 11), autoSize(fw.slice(1).join(" "), colW-52, 22, 11));
-                            ctx.font = `600 ${sz}px Arial`;
-                            ctx.fillText(fw[0], fx+46, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+46, fy+52);
-                        } else {
-                            ctx.font = `600 ${autoSize(f, colW-52, 22, 11)}px Arial`;
-                            ctx.fillText(f, fx+46, fy+PILL_H/2+8);
-                        }
-                    });
-                }
+            // 6. Left gradient for advantages readability
+            if (feats.length > 0) {
+                const lGrad = ctx.createLinearGradient(0, 0, 275, 0);
+                lGrad.addColorStop(0,   `rgba(${tr},${tg},${tb},0.87)`);
+                lGrad.addColorStop(0.6, `rgba(${tr},${tg},${tb},0.48)`);
+                lGrad.addColorStop(1,   `rgba(${tr},${tg},${tb},0)`);
+                ctx.fillStyle = lGrad;
+                ctx.fillRect(0, PROD_Y, 275, H - PROD_Y);
 
-            } else if (scheme === "dark") {
-                const gold     = "#c9a84c";
-                const titleClr = "#ffffff";
-                drawFullPhoto();
-                drawOverlay(isLight ? "rgba(25,22,14,0.94)" : "rgba(5,5,5,0.96)");
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, 65, gold, "#000");
-                ctx.fillStyle = gold; ctx.font = `22px Arial`;
-                ctx.fillText("◆", PAD, TITLE_Y - 30);
-                const tY2 = drawTitle((name||"").toUpperCase().split(/\s+/), TITLE_Y, CHIPS_Y - 50, titleClr, W - PAD*2 - 20);
-                if (subtitle) drawSubtitle(subtitle, tY2 + 10, "#a08060");
-                if (feats.length) {
-                    const gap = 14, colW = (W - PAD*2 - gap*(feats.length-1)) / feats.length;
-                    feats.forEach((f, i) => {
-                        const fx = PAD + i*(colW+gap), fy = CHIPS_Y;
-                        rr(fx, fy, colW, PILL_H, 6, "rgba(20,15,5,0.88)", gold, 1.5);
-                        ctx.fillStyle = gold; ctx.font = `bold 22px Arial`;
-                        ctx.fillText("◆", fx+14, fy+PILL_H/2+8);
-                        ctx.fillStyle = titleClr;
-                        const fw = f.split(" ");
-                        if (fw.length > 1) {
-                            const sz = Math.min(autoSize(fw[0], colW-52, 22, 11), autoSize(fw.slice(1).join(" "), colW-52, 22, 11));
-                            ctx.font = `600 ${sz}px Arial`;
-                            ctx.fillText(fw[0], fx+46, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+46, fy+52);
-                        } else {
-                            ctx.font = `600 ${autoSize(f, colW-52, 22, 11)}px Arial`;
-                            ctx.fillText(f, fx+46, fy+PILL_H/2+8);
-                        }
-                    });
-                }
+                // 7. Three advantages on left, evenly distributed
+                const availH = H - PROD_Y - 50;
+                const spacing = availH / (feats.length + 1);
+                const ICR = 22, ICX = 50, TXT_X = ICX + ICR + 12, TXT_W = 186;
 
-            } else if (scheme === "tech") {
-                const cyan     = "#00c8ff";
-                const titleClr = "#ffffff";
-                drawFullPhoto();
-                drawOverlay(isLight ? "rgba(0,15,40,0.94)" : "rgba(3,10,20,0.96)");
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, 65, cyan, "#000");
-                const tY3 = drawTitle((name||"").toUpperCase().split(/\s+/), TITLE_Y, CHIPS_Y - 50, titleClr);
-                if (subtitle) drawSubtitle(subtitle, tY3 + 10, "#4ab8d8");
-                if (feats.length) {
-                    const gap = 10, colW = (W - PAD*2 - gap*(feats.length-1)) / feats.length;
-                    feats.forEach((f, i) => {
-                        const fx = PAD + i*(colW+gap), fy = CHIPS_Y;
-                        rr(fx, fy, colW, PILL_H, 8, "rgba(0,30,60,0.88)", cyan, 1.5);
-                        ctx.fillStyle = cyan;
-                        ctx.beginPath(); ctx.moveTo(fx+14, fy+PILL_H/2-9); ctx.lineTo(fx+14, fy+PILL_H/2+9); ctx.lineTo(fx+28, fy+PILL_H/2); ctx.fill();
-                        ctx.fillStyle = titleClr;
-                        const fw = f.split(" ");
-                        if (fw.length > 1) {
-                            const sz = Math.min(autoSize(fw[0], colW-46, 22, 11), autoSize(fw.slice(1).join(" "), colW-46, 22, 11));
-                            ctx.font = `600 ${sz}px Arial`;
-                            ctx.fillText(fw[0], fx+36, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+36, fy+52);
-                        } else {
-                            ctx.font = `600 ${autoSize(f, colW-46, 22, 11)}px Arial`;
-                            ctx.fillText(f, fx+36, fy+PILL_H/2+8);
-                        }
-                    });
-                }
+                feats.forEach((feat, i) => {
+                    const cy = PROD_Y + spacing * (i + 1);
 
-            } else if (scheme === "workshop") {
-                const yellow = "#ffc200";
-                drawFullPhoto();
-                drawOverlay(isLight ? "rgba(15,12,0,0.95)" : "rgba(10,8,0,0.97)");
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, 65, yellow, "#000");
-                const tY4 = drawTitle((name||"").toUpperCase().split(/\s+/), TITLE_Y, CHIPS_Y - 50, "#ffffff");
-                if (subtitle) drawSubtitle(subtitle, tY4 + 10, "#aaaaaa");
-                if (feats.length) {
-                    const gap = 10, colW = (W - PAD*2 - gap*(feats.length-1)) / feats.length;
-                    feats.forEach((f, i) => {
-                        const fx = PAD + i*(colW+gap), fy = CHIPS_Y;
-                        rr(fx, fy, colW, PILL_H, 6, "rgba(30,24,0,0.88)", yellow, 2);
-                        rr(fx, fy, 6, PILL_H, [6,0,0,6], yellow);
-                        ctx.fillStyle = "#fff";
-                        const fw = f.split(" ");
-                        if (fw.length > 1) {
-                            const sz = Math.min(autoSize(fw[0], colW-32, 22, 11), autoSize(fw.slice(1).join(" "), colW-32, 22, 11));
-                            ctx.font = `600 ${sz}px Arial`;
-                            ctx.fillText(fw[0], fx+22, fy+30); ctx.fillText(fw.slice(1).join(" "), fx+22, fy+54);
-                        } else {
-                            ctx.font = `600 ${autoSize(f, colW-32, 22, 11)}px Arial`;
-                            ctx.fillText(f, fx+22, fy+PILL_H/2+8);
-                        }
-                    });
-                }
+                    // Circle background
+                    ctx.beginPath(); ctx.arc(ICX, cy, ICR, 0, Math.PI*2);
+                    ctx.fillStyle = accent + "26"; ctx.fill();
+                    ctx.strokeStyle = accent; ctx.lineWidth = 1.8; ctx.stroke();
 
-            } else {
-                const green    = "#4caf50";
-                const titleClr = "#e8ffe8";
-                drawFullPhoto();
-                drawOverlay(isLight ? "rgba(5,20,5,0.94)" : "rgba(5,14,5,0.97)");
-                if (badge) drawBadge(badge.toUpperCase(), W - PAD, 65, green, "#fff");
-                ctx.font = "24px Arial"; ctx.fillText("🌿", PAD, TITLE_Y - 22);
-                const tY5 = drawTitle((name||"").toUpperCase().split(/\s+/), TITLE_Y, CHIPS_Y - 50, titleClr, W - PAD*2 - 30);
-                if (subtitle) drawSubtitle(subtitle, tY5 + 10, "#7fc87f");
-                if (feats.length) {
-                    const gap = 12, colW = (W - PAD*2 - gap*(feats.length-1)) / feats.length;
-                    feats.forEach((f, i) => {
-                        const fx = PAD + i*(colW+gap), fy = CHIPS_Y;
-                        rr(fx, fy, colW, PILL_H, 36, "rgba(10,35,10,0.88)", green, 2);
-                        ctx.beginPath(); ctx.arc(fx+26, fy+PILL_H/2, 13, 0, Math.PI*2);
-                        ctx.fillStyle = green; ctx.fill();
-                        ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.5; ctx.lineCap = "round";
-                        ctx.beginPath(); ctx.moveTo(fx+20, fy+PILL_H/2); ctx.lineTo(fx+25, fy+PILL_H/2+5); ctx.lineTo(fx+32, fy+PILL_H/2-5); ctx.stroke();
-                        ctx.fillStyle = titleClr;
-                        const fw = f.split(" ");
-                        if (fw.length > 1) {
-                            const sz = Math.min(autoSize(fw[0], colW-56, 22, 11), autoSize(fw.slice(1).join(" "), colW-56, 22, 11));
-                            ctx.font = `600 ${sz}px Arial`;
-                            ctx.fillText(fw[0], fx+46, fy+28); ctx.fillText(fw.slice(1).join(" "), fx+46, fy+52);
-                        } else {
-                            ctx.font = `600 ${autoSize(f, colW-56, 22, 11)}px Arial`;
-                            ctx.fillText(f, fx+46, fy+PILL_H/2+8);
-                        }
-                    });
-                }
+                    // Vector icon
+                    drawAdvIcon(ctx, ICX, cy, ICR, getIconType(feat), accent);
+
+                    // Advantage text
+                    ctx.textAlign = "left";
+                    ctx.fillStyle = "#ffffff";
+                    const words = feat.split(" ");
+                    let fsz = 20;
+                    ctx.font = `600 ${fsz}px Arial`;
+                    while (fsz > 12 && ctx.measureText(feat).width > TXT_W) fsz--;
+                    if (ctx.measureText(feat).width <= TXT_W) {
+                        ctx.font = `600 ${fsz}px Arial`;
+                        ctx.fillText(feat, TXT_X, cy + fsz * 0.36);
+                    } else {
+                        const mid = Math.ceil(words.length / 2);
+                        const l1 = words.slice(0, mid).join(" ");
+                        const l2 = words.slice(mid).join(" ");
+                        let sz2 = 18;
+                        ctx.font = `600 ${sz2}px Arial`;
+                        while (sz2 > 11 && (ctx.measureText(l1).width > TXT_W || ctx.measureText(l2).width > TXT_W)) sz2--;
+                        ctx.font = `600 ${sz2}px Arial`;
+                        ctx.fillText(l1, TXT_X, cy - 4);
+                        ctx.fillText(l2, TXT_X, cy + sz2 + 4);
+                    }
+                });
             }
 
             resolve(canvas.toDataURL("image/jpeg", 0.93));
             } catch(e) { reject(e); }
         };
-        img.onerror = (e) => reject(new Error("Image load failed: " + (e?.message || "unknown")));
+        img.onerror = (e) => reject(new Error("Image load failed"));
         img.src = imageUrl;
     });
 }
