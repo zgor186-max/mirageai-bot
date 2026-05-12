@@ -76,7 +76,7 @@ async def generate_card_handler(request):
         if photo_b64.startswith("data:"):
             photo_b64 = photo_b64.split(",", 1)[1]
 
-        print(f"[Card] Step 1 — generating scene: {scene_prompt[:80]}")
+        print(f"[Card] scene_prompt={scene_prompt[:80]}")
 
         place_prompt = (
             f"Place the {product_name} from the reference image naturally into this scene: {scene_prompt}. "
@@ -96,20 +96,28 @@ async def generate_card_handler(request):
                     print(f"[Card] Step 1 done: {bg_url[:60]}")
                     print(f"[Card] Step 2 — placing product in scene")
 
-                    # Upload product photo
+                    # Try to upload product photo; fall back to data URI if upload fails
                     product_url = await upload_image_to_replicate(session, photo_b64)
+                    if not product_url:
+                        print("[Card] Upload failed, using base64 data URI for product")
+                        product_url = f"data:image/jpeg;base64,{photo_b64}"
 
-                    if product_url:
-                        # Download bg and re-upload for two-image call
-                        bg_b64 = await download_as_b64(session, bg_url)
-                        bg_upload_url = await upload_image_to_replicate(session, bg_b64) if bg_b64 else None
+                    # Download bg and upload (or use data URI fallback)
+                    bg_b64 = await download_as_b64(session, bg_url)
+                    if bg_b64:
+                        bg_upload_url = await upload_image_to_replicate(session, bg_b64)
+                        if not bg_upload_url:
+                            print("[Card] BG upload failed, using base64 data URI")
+                            bg_upload_url = f"data:image/jpeg;base64,{bg_b64}"
+                    else:
+                        bg_upload_url = None
 
-                        result_url = await call_kontext_two_images(session, product_url, bg_upload_url, place_prompt)
+                    result_url = await call_kontext_two_images(session, product_url, bg_upload_url, place_prompt)
 
-                        if result_url:
-                            image_b64 = await download_image_as_base64(result_url)
-                            print(f"[Card] Two-step done ✓")
-                            return web.json_response({"url": image_b64 or result_url}, headers=CORS_HEADERS)
+                    if result_url:
+                        image_b64 = await download_image_as_base64(result_url)
+                        print(f"[Card] Two-step done ✓")
+                        return web.json_response({"url": image_b64 or result_url}, headers=CORS_HEADERS)
 
                 # Fallback: single step
                 print("[Card] Falling back to single-step generation")
@@ -332,6 +340,9 @@ async def download_image_as_base64(url: str) -> str | None:
 
 
 async def upload_image_to_replicate(session: aiohttp.ClientSession, photo_b64: str) -> str | None:
+    # Skip upload if already a data URI
+    if photo_b64.startswith("data:"):
+        return None
     try:
         img_bytes = base64.b64decode(photo_b64)
         headers = {
@@ -344,10 +355,14 @@ async def upload_image_to_replicate(session: aiohttp.ClientSession, photo_b64: s
             data=img_bytes,
         ) as resp:
             raw = await resp.text()
-            print(f"[Replicate] file upload HTTP={resp.status} response={raw[:200]}")
-            result = await resp.json(content_type=None)
+            print(f"[Replicate] file upload HTTP={resp.status} response={raw[:300]}")
+            import json as _json
+            try:
+                result = _json.loads(raw)
+            except Exception:
+                result = {}
             url = result.get("urls", {}).get("get") or result.get("url")
-            print(f"[Replicate] uploaded file: {url}")
+            print(f"[Replicate] uploaded file url={url}")
             return url
     except Exception as e:
         print(f"[Replicate] file upload failed: {e}")
