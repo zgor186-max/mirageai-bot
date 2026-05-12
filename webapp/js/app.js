@@ -1237,9 +1237,9 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             ctx.filter = "none";
 
             // 2. Title bar — semi-transparent gradient overlay on top of image
-            const tBg = ctx.createLinearGradient(0, 0, 0, TITLE_H + 40);
-            tBg.addColorStop(0,    `rgba(${tr},${tg},${tb},0.88)`);
-            tBg.addColorStop(0.65, `rgba(${tr},${tg},${tb},0.72)`);
+            const tBg = ctx.createLinearGradient(0, 0, 0, TITLE_H + 60);
+            tBg.addColorStop(0,    `rgba(${tr},${tg},${tb},0.78)`);
+            tBg.addColorStop(0.5,  `rgba(${tr},${tg},${tb},0.55)`);
             tBg.addColorStop(1,    `rgba(${tr},${tg},${tb},0)`);
             ctx.fillStyle = tBg;
             ctx.fillRect(0, 0, W, TITLE_H + 40);
