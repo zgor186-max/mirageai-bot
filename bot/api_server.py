@@ -1,6 +1,7 @@
 ﻿import asyncio
 import aiohttp
 import base64
+import uuid
 from aiohttp import web
 import os
 
@@ -8,6 +9,11 @@ REPLICATE_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 REPLICATE_MODEL = "black-forest-labs/flux-kontext-pro"
 REPLICATE_TEXT2IMG = "black-forest-labs/flux-1.1-pro"
 FACESWAP_VERSION = "278a81e7ebb22db98bcba54de985d22cc1abeead2754eb1f2af717247be69b34"
+
+# Temp image hosting (fallback when Replicate Files API is unavailable)
+TEMP_DIR = "/tmp/mirageai_imgs"
+os.makedirs(TEMP_DIR, exist_ok=True)
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://mirageai.duckdns.org")
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -96,21 +102,12 @@ async def generate_card_handler(request):
                     print(f"[Card] Step 1 done: {bg_url[:60]}")
                     print(f"[Card] Step 2 — placing product in scene")
 
-                    # Try to upload product photo; fall back to data URI if upload fails
+                    # Upload product photo (Replicate API or local temp server)
                     product_url = await upload_image_to_replicate(session, photo_b64)
-                    if not product_url:
-                        print("[Card] Upload failed, using base64 data URI for product")
-                        product_url = f"data:image/jpeg;base64,{photo_b64}"
 
-                    # Download bg and upload (or use data URI fallback)
+                    # Download bg and upload it too
                     bg_b64 = await download_as_b64(session, bg_url)
-                    if bg_b64:
-                        bg_upload_url = await upload_image_to_replicate(session, bg_b64)
-                        if not bg_upload_url:
-                            print("[Card] BG upload failed, using base64 data URI")
-                            bg_upload_url = f"data:image/jpeg;base64,{bg_b64}"
-                    else:
-                        bg_upload_url = None
+                    bg_upload_url = await upload_image_to_replicate(session, bg_b64) if bg_b64 else None
 
                     result_url = await call_kontext_two_images(session, product_url, bg_upload_url, place_prompt)
 
@@ -339,10 +336,48 @@ async def download_image_as_base64(url: str) -> str | None:
         return None
 
 
-async def upload_image_to_replicate(session: aiohttp.ClientSession, photo_b64: str) -> str | None:
-    # Skip upload if already a data URI
-    if photo_b64.startswith("data:"):
+async def _save_image_locally(photo_b64: str) -> str | None:
+    """Save base64 image to local temp dir and return a public URL."""
+    try:
+        raw_b64 = photo_b64.split(",", 1)[1] if photo_b64.startswith("data:") else photo_b64
+        img_bytes = base64.b64decode(raw_b64)
+        filename = f"{uuid.uuid4().hex}.jpg"
+        filepath = os.path.join(TEMP_DIR, filename)
+        with open(filepath, "wb") as f:
+            f.write(img_bytes)
+        url = f"{PUBLIC_BASE_URL}/img/{filename}"
+        print(f"[Upload] Saved locally → {url}")
+        # Auto-delete after 10 minutes
+        asyncio.create_task(_delete_after(filepath, 600))
+        return url
+    except Exception as e:
+        print(f"[Upload] Local save failed: {e}")
         return None
+
+
+async def _delete_after(filepath: str, delay: int):
+    await asyncio.sleep(delay)
+    try:
+        os.unlink(filepath)
+    except Exception:
+        pass
+
+
+async def serve_temp_image(request):
+    filename = request.match_info["filename"]
+    if "/" in filename or ".." in filename or not filename.endswith(".jpg"):
+        return web.Response(status=404)
+    filepath = os.path.join(TEMP_DIR, filename)
+    if not os.path.exists(filepath):
+        return web.Response(status=404)
+    return web.FileResponse(filepath, headers={"Content-Type": "image/jpeg",
+                                                "Access-Control-Allow-Origin": "*"})
+
+
+async def upload_image_to_replicate(session: aiohttp.ClientSession, photo_b64: str) -> str | None:
+    """Upload image: try Replicate Files API, then fall back to local temp server."""
+    if photo_b64.startswith("data:"):
+        photo_b64 = photo_b64.split(",", 1)[1]
     try:
         img_bytes = base64.b64decode(photo_b64)
         headers = {
@@ -362,11 +397,15 @@ async def upload_image_to_replicate(session: aiohttp.ClientSession, photo_b64: s
             except Exception:
                 result = {}
             url = result.get("urls", {}).get("get") or result.get("url")
-            print(f"[Replicate] uploaded file url={url}")
-            return url
+            if url:
+                print(f"[Replicate] uploaded to Replicate: {url}")
+                return url
     except Exception as e:
-        print(f"[Replicate] file upload failed: {e}")
-        return None
+        print(f"[Replicate] file upload exception: {e}")
+
+    # Fallback: serve from our own server
+    print("[Upload] Replicate upload failed → using local temp server")
+    return await _save_image_locally(photo_b64)
 
 
 async def call_replicate(photo_b64: str, prompt: str) -> str | None:
@@ -459,6 +498,7 @@ async def health_handler(request):
 def create_app() -> web.Application:
     app = web.Application(client_max_size=10 * 1024 * 1024)
     app.router.add_get("/health", health_handler)
+    app.router.add_get("/img/{filename}", serve_temp_image)
     app.router.add_post("/generate", generate_handler)
     app.router.add_route("OPTIONS", "/generate", generate_handler)
     app.router.add_post("/generate-card", generate_card_handler)
