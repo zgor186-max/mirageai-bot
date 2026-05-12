@@ -152,20 +152,19 @@ async def call_text2img(session: aiohttp.ClientSession, prompt: str) -> str | No
         }
     }
     try:
-        async with session.post(
+        result = await _post_with_retry(
+            session,
             f"https://api.replicate.com/v1/models/{REPLICATE_TEXT2IMG}/predictions",
-            headers=api_headers,
-            json=payload,
-        ) as resp:
-            result = await resp.json(content_type=None)
-            status = result.get("status")
-            pred_id = result.get("id")
-            if status == "succeeded":
-                return _extract_output(result)
-            if status in ("starting", "processing"):
-                return await _poll(session, pred_id, api_headers)
-            print(f"[Text2Img] failed: {result.get('error')}")
-            return None
+            api_headers, payload, label="Text2Img"
+        )
+        status = result.get("status")
+        pred_id = result.get("id")
+        if status == "succeeded":
+            return _extract_output(result)
+        if status in ("starting", "processing"):
+            return await _poll(session, pred_id, api_headers)
+        print(f"[Text2Img] failed: {result.get('error')}")
+        return None
     except Exception as e:
         print(f"[Text2Img] error: {e}")
         return None
@@ -178,7 +177,6 @@ async def call_kontext_two_images(session, product_url: str, bg_url: str | None,
         "Content-Type": "application/json",
         "Prefer": "wait",
     }
-    # flux-kontext-pro supports input_images array
     input_images = [product_url]
     if bg_url:
         input_images.append(bg_url)
@@ -194,21 +192,21 @@ async def call_kontext_two_images(session, product_url: str, bg_url: str | None,
         }
     }
     try:
-        async with session.post(
+        result = await _post_with_retry(
+            session,
             f"https://api.replicate.com/v1/models/{REPLICATE_MODEL}/predictions",
-            headers=api_headers,
-            json=payload,
-        ) as resp:
-            raw = await resp.text()
-            print(f"[Kontext2] HTTP={resp.status} raw={raw[:200]}")
-            result = await resp.json(content_type=None)
-            status = result.get("status")
-            pred_id = result.get("id")
-            if status == "succeeded":
-                return _extract_output(result)
-            if status in ("starting", "processing"):
-                return await _poll(session, pred_id, api_headers)
-            return None
+            api_headers, payload, label="Kontext2"
+        )
+        status = result.get("status")
+        pred_id = result.get("id")
+        print(f"[Kontext2] status={status} id={pred_id}")
+        if status == "succeeded":
+            return _extract_output(result)
+        if status in ("starting", "processing"):
+            return await _poll(session, pred_id, api_headers)
+        if status == "failed":
+            print(f"[Kontext2] FAILED: {result.get('error')}")
+        return None
     except Exception as e:
         print(f"[Kontext2] error: {e}")
         return None
@@ -408,6 +406,30 @@ async def upload_image_to_replicate(session: aiohttp.ClientSession, photo_b64: s
     return await _save_image_locally(photo_b64)
 
 
+async def _post_with_retry(session: aiohttp.ClientSession, url: str, headers: dict, payload: dict,
+                           label: str = "Replicate", max_retries: int = 4) -> dict:
+    """POST to Replicate API with automatic retry on 429 rate-limit responses."""
+    import json as _json
+    for attempt in range(max_retries):
+        async with session.post(url, headers=headers, json=payload) as resp:
+            raw = await resp.text()
+            try:
+                result = _json.loads(raw)
+            except Exception:
+                result = {}
+            http_status = resp.status
+            api_status = result.get("status")
+            # Rate-limited — wait and retry
+            if http_status == 429 or api_status == 429:
+                retry_after = int(result.get("retry_after", 10)) + 2
+                print(f"[{label}] 429 rate-limited (attempt {attempt+1}/{max_retries}), waiting {retry_after}s...")
+                await asyncio.sleep(retry_after)
+                continue
+            return result
+    print(f"[{label}] All {max_retries} attempts rate-limited, giving up")
+    return {}
+
+
 async def call_replicate(photo_b64: str, prompt: str) -> str | None:
     api_headers = {
         "Authorization": f"Token {REPLICATE_TOKEN}",
@@ -415,14 +437,10 @@ async def call_replicate(photo_b64: str, prompt: str) -> str | None:
         "Prefer": "wait",
     }
 
-    timeout = aiohttp.ClientTimeout(total=180)
+    timeout = aiohttp.ClientTimeout(total=300)
 
     async with aiohttp.ClientSession(timeout=timeout) as session:
         image_url = await upload_image_to_replicate(session, photo_b64)
-
-        if not image_url:
-            image_url = "data:image/jpeg;base64," + photo_b64
-            print("[Replicate] using base64 fallback")
 
         payload = {
             "input": {
@@ -434,32 +452,26 @@ async def call_replicate(photo_b64: str, prompt: str) -> str | None:
             }
         }
 
-        async with session.post(
+        result = await _post_with_retry(
+            session,
             f"https://api.replicate.com/v1/models/{REPLICATE_MODEL}/predictions",
-            headers=api_headers,
-            json=payload,
-        ) as resp:
-            raw = await resp.text()
-            print(f"[Replicate] HTTP={resp.status} raw={raw[:300]}")
-            try:
-                result = await resp.json(content_type=None)
-            except Exception:
-                import json
-                result = json.loads(raw)
+            api_headers, payload, label="Replicate"
+        )
 
-            status = result.get("status")
-            pred_id = result.get("id")
-            print(f"[Replicate] status={status} id={pred_id}")
+        status = result.get("status")
+        pred_id = result.get("id")
+        print(f"[Replicate] status={status} id={pred_id}")
 
-            if status == "succeeded":
-                return _extract_output(result)
-            if status in ("starting", "processing"):
-                return await _poll(session, pred_id, api_headers)
-            if status == "failed":
-                print(f"[Replicate] FAILED: error={result.get('error')} logs={result.get('logs','')[:200]}")
-                return None
-            print(f"[Replicate] unexpected: {raw[:300]}")
+        if status == "succeeded":
+            return _extract_output(result)
+        if status in ("starting", "processing"):
+            return await _poll(session, pred_id, api_headers)
+        if status == "failed":
+            print(f"[Replicate] FAILED: error={result.get('error')} logs={result.get('logs','')[:200]}")
             return None
+        if result:
+            print(f"[Replicate] unexpected: {result}")
+        return None
 
 
 async def _poll(session, prediction_id: str, headers: dict) -> str | None:
