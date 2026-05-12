@@ -1227,7 +1227,7 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             }
 
             // 1. Product image — full canvas height
-            ctx.filter = "brightness(1.6)";
+            ctx.filter = "brightness(1.1)";
             ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, W, H);
             ctx.filter = "none";
 
