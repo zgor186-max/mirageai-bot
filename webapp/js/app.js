@@ -919,7 +919,7 @@ async function mpCardAnalyze(base64) {
                     role: "user",
                     content: [
                         { type: "image_url", image_url: { url: "data:image/jpeg;base64," + base64 } },
-                        { type: "text", text: `Посмотри на изображение товара. Ответь ТОЛЬКО валидным JSON без markdown и без пояснений.
+                        { type: "text", text: `Посмотри на изображение товара.${(()=>{const s=document.getElementById("mp-card-specs")?.value?.trim();return s?`\nРЕАЛЬНЫЕ ХАРАКТЕРИСТИКИ ТОВАРА (ОБЯЗАТЕЛЬНО использовать в name, badge, subtitle, feat1-3): ${s}`:"";})()}\nОтветь ТОЛЬКО валидным JSON без markdown и без пояснений.
 
 Доступные локации (по одной на каждую категорию, ИСПОЛЬЗУЙ именно эти варианты):
 clothing: ${LOCATION_SEEDS.clothing[Math.floor(Math.random()*LOCATION_SEEDS.clothing.length)]}
