@@ -77,7 +77,13 @@ async def generate_card_handler(request):
         scene_prompt = data.get("scene_prompt", "")
         product_name = data.get("product_name", "product")
         category     = data.get("category", "other")
-        card_data    = data.get("card", {})
+        card_data    = data.get("card", {}) or {}
+        # Ensure category and category_label flow into card rendering
+        if "category" not in card_data:
+            card_data["category"] = category
+        if "category_label" not in card_data:
+            cat_info = CATEGORY_SCHEME.get(category, {})
+            card_data["category_label"] = cat_info.get("label", "")
 
         if not photo_b64 or not scene_prompt:
             return web.json_response({"error": "photo and scene_prompt required"}, status=400, headers=CORS_HEADERS)
@@ -566,6 +572,39 @@ ACCENT_COLORS = {
     "workshop": "#ffc200", "nature": "#4caf50"
 }
 
+# Category display labels and accent colors (auto-selected from category key)
+CATEGORY_SCHEME = {
+    "clothing":    {"label": "ОДЕЖДА",    "accent": "#C8975A"},
+    "accessories": {"label": "АКСЕССУАРЫ","accent": "#A87860"},
+    "food":        {"label": "ЕДА",       "accent": "#D47840"},
+    "beauty":      {"label": "КРАСОТА",   "accent": "#C47890"},
+    "gadgets":     {"label": "ТЕХНИКА",   "accent": "#5890D4"},
+    "home":        {"label": "ДОМ",       "accent": "#78AD78"},
+    "other":       {"label": "ТОВАР",     "accent": "#8878C4"},
+}
+
+# SVG icon paths — Feather Icons style, 24x24 viewBox, white stroke
+SVG_ICON_PATHS = {
+    "leaf":      '<path d="M6 18c0 0 0-7 6-9s8-6 8-6-2 6-6 10S6 18 6 18z" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    "wash":      '<rect x="3" y="5" width="18" height="14" rx="2" stroke="white" stroke-width="1.8" fill="none"/><circle cx="12" cy="13" r="3" stroke="white" stroke-width="1.8" fill="none"/><line x1="6" y1="8" x2="9" y2="8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>',
+    "size":      '<polyline points="5 9 2 12 5 15" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polyline points="19 9 22 12 19 15" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><line x1="2" y1="12" x2="22" y2="12" stroke="white" stroke-width="1.8"/>',
+    "moon":      '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    "heart":     '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    "bolt":      '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    "shield":    '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    "drop":      '<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    "pocket":    '<path d="M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" stroke="white" stroke-width="1.8" fill="none"/><polyline points="16 3 16 10 12 8 8 10 8 3" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    "star":      '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    "snowflake": '<line x1="12" y1="2" x2="12" y2="22" stroke="white" stroke-width="1.6"/><line x1="2" y1="12" x2="22" y2="12" stroke="white" stroke-width="1.6"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" stroke="white" stroke-width="1.6"/><line x1="19.07" y1="4.93" x2="4.93" y2="19.07" stroke="white" stroke-width="1.6"/>',
+    "sun":       '<circle cx="12" cy="12" r="5" stroke="white" stroke-width="1.8" fill="none"/><line x1="12" y1="1" x2="12" y2="3" stroke="white" stroke-width="1.8"/><line x1="12" y1="21" x2="12" y2="23" stroke="white" stroke-width="1.8"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="white" stroke-width="1.6"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="white" stroke-width="1.6"/><line x1="1" y1="12" x2="3" y2="12" stroke="white" stroke-width="1.8"/><line x1="21" y1="12" x2="23" y2="12" stroke="white" stroke-width="1.8"/>',
+    "battery":   '<rect x="2" y="7" width="18" height="10" rx="2" stroke="white" stroke-width="1.8" fill="none"/><line x1="22" y1="11" x2="22" y2="13" stroke="white" stroke-width="2.5" stroke-linecap="round"/><rect x="4" y="9" width="10" height="6" rx="1" fill="white"/>',
+    "wind":      '<path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round"/>',
+    "check":     '<polyline points="20 6 9 17 4 12" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    "flame":     '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    "box":       '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="white" stroke-width="1.8" fill="none"/><polyline points="3.27 6.96 12 12.01 20.73 6.96" stroke="white" stroke-width="1.8" fill="none"/><line x1="12" y1="22.08" x2="12" y2="12" stroke="white" stroke-width="1.8"/>',
+    "ruler":     '<path d="M21.3 8.7L15.3 2.7a1 1 0 0 0-1.4 0L2.7 13.9a1 1 0 0 0 0 1.4l6 6a1 1 0 0 0 1.4 0L21.3 10.1a1 1 0 0 0 0-1.4z" stroke="white" stroke-width="1.8" fill="none"/><line x1="7.5" y1="10.5" x2="9.5" y2="8.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/><line x1="10.5" y1="13.5" x2="12.5" y2="11.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/><line x1="13.5" y1="16.5" x2="15.5" y2="14.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>',
+}
+
 # Text colors that feel native to each scheme's background tone
 TEXT_COLORS = {
     "warm":     {"title": "#3d1800", "subtitle": "#6b3a10", "feat": "#4a2200"},
@@ -683,146 +722,148 @@ def _render_card_cairo_sync(image_b64: str, card: dict) -> str | None:
 
     import io as _io
     from PIL import Image
-    import numpy as np
 
-    scheme    = card.get("scheme", "warm")
-    accent    = ACCENT_COLORS.get(scheme, "#d4a017")
-    raw_bytes = base64.b64decode(image_b64)
+    # Resolve accent color: category takes priority over scheme
+    category = card.get("category", "")
+    cat_info  = CATEGORY_SCHEME.get(category, {})
+    cat_label = _svg_esc(card.get("category_label", cat_info.get("label", "")))
+    accent    = cat_info.get("accent") or ACCENT_COLORS.get(card.get("scheme", "warm"), "#C8975A")
 
-    pil_img = Image.open(_io.BytesIO(raw_bytes)).convert("RGB")
-
-    # Sample background for debug log only (scrims handle readability now)
-    bg_arr  = np.array(pil_img.resize((800, 1100), Image.LANCZOS))
-    left_px = bg_arr[:300, :450, :]
-    avg_v   = (left_px[:, :, 0].mean() + left_px[:, :, 1].mean() + left_px[:, :, 2].mean()) / 3.0
-    print(f"[Cairo] bg avg v={avg_v:.1f} scheme={scheme}")
-
-    badge        = _svg_esc(card.get("badge", ""))
+    raw_bytes    = base64.b64decode(image_b64)
     name         = _svg_esc(card.get("name", "")).upper()
     subtitle_raw = _svg_esc(card.get("subtitle", ""))
-    price_raw    = _svg_esc(card.get("price", "").strip())
+
+    FONT_TITLE = "'Open Sans Condensed', 'Nimbus Sans Narrow', 'Liberation Sans Narrow', 'Ubuntu', sans-serif"
+    FONT_BODY  = "'Open Sans', 'Ubuntu', 'Liberation Sans', 'DejaVu Sans', sans-serif"
 
     feats = []
     for i in range(1, 6):
-        feat = card.get(f"feat{i}", "")
-        icon = card.get(f"icon{i}", "✦")
-        if feat:
-            feats.append({"icon": icon, "text": _svg_esc(feat.upper())})
-
-    # Open Sans Condensed for bold titles (installed via fonts-open-sans)
-    FONT_TITLE = "'Open Sans Condensed', 'Nimbus Sans Narrow', 'Liberation Sans Narrow', 'Ubuntu', sans-serif"
-    FONT_BODY  = "'Open Sans', 'Ubuntu', 'Liberation Sans', 'DejaVu Sans', sans-serif"
-    FONT_EMOJI = "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif"
+        text = card.get(f"feat{i}", "")
+        icon = card.get(f"icon{i}", "check")
+        if text:
+            feats.append({"icon": icon.strip(), "text": _svg_esc(text.upper())})
 
     els = []
 
-    # ── Text shadow filter ───────────────────────────────────────
+    # ── Defs: text drop-shadow ────────────────────────────────────
     els.append(
         '<defs>'
-        '<filter id="ts" x="-20%" y="-20%" width="140%" height="140%">'
-        '<feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="black" flood-opacity="0.75"/>'
+        '<filter id="ts" x="-25%" y="-25%" width="150%" height="150%">'
+        '<feDropShadow dx="0" dy="1" stdDeviation="4" flood-color="black" flood-opacity="0.8"/>'
         '</filter>'
         '</defs>'
     )
 
-    # ── Badge (top-right corner) ──────────────────────────────────
-    if badge:
-        bw  = min(max(int(len(badge) * 8.5 + 32), 90), 380)
-        bh  = 32
-        bx  = 800 - bw - 36
-        by  = 40
-        els.append(f'<rect x="{bx}" y="{by}" width="{bw}" height="{bh}" rx="16" fill="{accent}"/>')
+    # ── Category label (top-left, small caps) ─────────────────────
+    if cat_label:
         els.append(
-            f'<text x="{bx + bw // 2}" y="{by + 22}" text-anchor="middle" '
+            f'<text x="40" y="46" '
             f'font-family="{FONT_BODY}" font-size="13" font-weight="700" '
-            f'fill="#111111" letter-spacing="0.5">{badge}</text>'
+            f'fill="{accent}" letter-spacing="3" filter="url(#ts)">{cat_label}</text>'
         )
 
-    # ── Title (auto-scale font by longest word) ───────────────────
-    words = name.split() if name else []
+    # ── Title (auto-scale by longest word) ────────────────────────
+    words    = name.split() if name else []
     max_wlen = max((len(w) for w in words), default=0)
     if max_wlen > 11:
-        title_fs, title_mc, title_lh = 38, 18, 44
+        title_fs, title_mc, title_lh = 40, 17, 46
     elif max_wlen > 7:
-        title_fs, title_mc, title_lh = 48, 14, 54
+        title_fs, title_mc, title_lh = 52, 13, 58
     else:
-        title_fs, title_mc, title_lh = 58, 11, 65
+        title_fs, title_mc, title_lh = 62, 10, 70
 
-    ty = 76
+    ty = 80 if cat_label else 60
     for line in _svg_wrap(name, max_chars=title_mc):
         els.append(
             f'<text x="40" y="{ty}" '
             f'font-family="{FONT_TITLE}" font-size="{title_fs}" font-weight="900" '
-            f'fill="#ffffff" letter-spacing="1.5" filter="url(#ts)">{line}</text>'
+            f'fill="#ffffff" letter-spacing="1" filter="url(#ts)">{line}</text>'
         )
         ty += title_lh
 
-    # ── Accent line under title ───────────────────────────────────
-    line_y = ty + 6
-    els.append(f'<rect x="40" y="{line_y}" width="54" height="3" rx="1.5" fill="{accent}"/>')
-    sy = line_y + 22
+    # ── Accent underline ──────────────────────────────────────────
+    accent_y = ty + 8
+    els.append(f'<rect x="40" y="{accent_y}" width="52" height="3" rx="1.5" fill="{accent}"/>')
 
-    # ── Subtitle ─────────────────────────────────────────────────
+    # ── Tagline (subtitle, 1 short line) ─────────────────────────
+    tag_y = accent_y + 28
     if subtitle_raw:
-        for sline in _svg_wrap(subtitle_raw, max_chars=26):
-            sline = sline.strip("• ").strip()
-            if not sline:
-                continue
+        tagline = subtitle_raw.replace("•", "·").strip()
+        lines = _svg_wrap(tagline, max_chars=28)[:2]
+        for tl in lines:
             els.append(
-                f'<text x="40" y="{sy}" '
-                f'font-family="{FONT_BODY}" font-size="18" fill="#dddddd" '
-                f'letter-spacing="0.2" filter="url(#ts)">{sline}</text>'
+                f'<text x="40" y="{tag_y}" '
+                f'font-family="{FONT_BODY}" font-size="16" fill="rgba(255,255,255,0.85)" '
+                f'filter="url(#ts)">{tl}</text>'
             )
-            sy += 26
+            tag_y += 22
 
-    # ── Price (optional, prominent) ───────────────────────────────
-    if price_raw:
-        price_y = sy + 24
-        els.append(
-            f'<text x="40" y="{price_y}" '
-            f'font-family="{FONT_TITLE}" font-size="46" font-weight="900" '
-            f'fill="{accent}" filter="url(#ts)">{price_raw}</text>'
-        )
-
-    # ── Features (bottom-left) ────────────────────────────────────
+    # ── Features with separator lines ────────────────────────────
     if feats:
-        feat_h   = 74
-        feat_r   = 22
-        feat_cx  = 63
-        feat_tx  = 96
-        feat_fs  = 13
-        feat_lh  = 17
-        feat_ico = 18
-        fz_bot   = 1032
-        fz_top   = max(fz_bot - len(feats) * feat_h, 530)
+        n          = len(feats)
+        feat_top   = max(tag_y + 36, 310)
+        feat_bot   = 1060
+        slot_h     = (feat_bot - feat_top) / n
+        icon_r     = 26
+        icon_cx    = 63
+        text_x     = 104
+        feat_fs    = 15
+        feat_lh    = 19
+        sep_color  = "rgba(255,255,255,0.18)"
 
         for idx, feat in enumerate(feats):
-            cy = fz_top + idx * feat_h + 22
-            els.append(f'<circle cx="{feat_cx}" cy="{cy}" r="{feat_r}" fill="{accent}" opacity="0.92"/>')
+            slot_top = feat_top + idx * slot_h
+            cy       = int(slot_top + slot_h / 2)
+
+            # Separator line above each feature
+            sep_y = int(slot_top)
             els.append(
-                f'<text x="{feat_cx}" y="{cy + 7}" text-anchor="middle" '
-                f'font-family="{FONT_EMOJI}" font-size="{feat_ico}">{feat["icon"]}</text>'
+                f'<line x1="40" y1="{sep_y}" x2="350" y2="{sep_y}" '
+                f'stroke="{sep_color}" stroke-width="1"/>'
             )
-            flines = _svg_wrap(feat["text"], max_chars=14)[:3]
-            n = len(flines)
-            start_y = cy - (n - 1) * feat_lh // 2
+
+            # Icon circle
+            els.append(f'<circle cx="{icon_cx}" cy="{cy}" r="{icon_r}" fill="{accent}"/>')
+
+            # SVG icon (scale 24×24 → ~28px inside circle)
+            icon_type  = feat["icon"] if feat["icon"] in SVG_ICON_PATHS else "check"
+            icon_svg   = SVG_ICON_PATHS[icon_type]
+            icon_size  = 28
+            tx         = icon_cx - icon_size // 2
+            tiy        = cy - icon_size // 2
+            scale      = icon_size / 24
+            els.append(
+                f'<g transform="translate({tx},{tiy}) scale({scale:.4f})">'
+                f'{icon_svg}'
+                f'</g>'
+            )
+
+            # Feature text
+            flines = _svg_wrap(feat["text"], max_chars=16)[:2]
+            nf     = len(flines)
+            start_y = cy - int((nf - 1) * feat_lh / 2) + 5
             for li, fl in enumerate(flines):
                 els.append(
-                    f'<text x="{feat_tx}" y="{start_y + li * feat_lh}" '
+                    f'<text x="{text_x}" y="{start_y + li * feat_lh}" '
                     f'font-family="{FONT_BODY}" font-size="{feat_fs}" font-weight="700" '
                     f'fill="#ffffff" filter="url(#ts)">{fl}</text>'
                 )
 
+        # Final separator
+        final_sep = int(feat_top + n * slot_h)
+        els.append(
+            f'<line x1="40" y1="{final_sep}" x2="350" y2="{final_sep}" '
+            f'stroke="{sep_color}" stroke-width="1"/>'
+        )
+
     svg = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<svg xmlns="http://www.w3.org/2000/svg" '
-        'xmlns:xlink="http://www.w3.org/1999/xlink" '
-        'width="800" height="1100">\n'
+        '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1100">\n'
         + "\n".join(els)
         + "\n</svg>"
     )
 
-    print(f"[Cairo] SVG size={len(svg)//1024}KB feats={len(feats)} price={bool(price_raw)}")
+    print(f"[Cairo] SVG size={len(svg)//1024}KB feats={len(feats)} category={category}")
 
     try:
         overlay_png = cairosvg.svg2png(
@@ -835,14 +876,14 @@ def _render_card_cairo_sync(image_b64: str, card: dict) -> str | None:
         import traceback; traceback.print_exc()
         return None
 
-    bg = Image.open(_io.BytesIO(raw_bytes)).convert("RGBA")
-    bg = bg.resize((800, 1100), Image.LANCZOS)
+    bg      = Image.open(_io.BytesIO(raw_bytes)).convert("RGBA")
+    bg      = bg.resize((800, 1100), Image.LANCZOS)
     overlay = Image.open(_io.BytesIO(overlay_png)).convert("RGBA")
     bg.paste(overlay, (0, 0), overlay)
     out = _io.BytesIO()
     bg.convert("RGB").save(out, format="JPEG", quality=93)
     b64 = base64.b64encode(out.getvalue()).decode()
-    print(f"[Cairo] Composited OK ({len(out.getvalue()) // 1024}KB)")
+    print(f"[Cairo] Composited OK ({len(out.getvalue())//1024}KB)")
     return f"data:image/jpeg;base64,{b64}"
 
 

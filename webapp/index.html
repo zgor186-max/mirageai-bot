@@ -229,75 +229,61 @@
 
         </div><!-- конец mp-tab-photo -->
 
-        <!-- Контент таба Карточка -->
+        <!-- Таб Карточка — минималистичный -->
         <div id="mp-tab-card" style="display:none">
 
-            <div class="mp-section">
-                <div class="mp-section-num">01</div>
-                <div class="mp-section-title">Фото товара</div>
-            </div>
-            <div class="mp-upload-area" id="mp-card-upload-area" onclick="document.getElementById('mp-card-photo-input').click()">
-                <div class="mp-upload-icon">🏷</div>
-                <div class="mp-upload-text">Нажми чтобы загрузить фото товара</div>
-                <div class="mp-upload-hint">Лучше на белом или прозрачном фоне</div>
-                <input type="file" id="mp-card-photo-input" accept="image/*" style="display:none" onchange="mpCardHandlePhoto(this)">
-            </div>
-            <div id="mp-card-preview-container" style="display:none;padding:0 16px;">
-                <img id="mp-card-photo-preview" style="width:100%;border-radius:14px;max-height:180px;object-fit:cover;">
-                <button class="change-photo-btn" onclick="document.getElementById('mp-card-photo-input').click()">Изменить фото</button>
+            <!-- Зона загрузки фото -->
+            <div class="mc-upload-zone" id="mc-upload-zone" onclick="document.getElementById('mc-photo-input').click()">
+                <div class="mc-upload-plus">+</div>
+                <div class="mc-upload-label">Загрузи фото товара</div>
+                <div class="mc-upload-hint">Любой товар — пижама, пылесос, крем...</div>
+                <input type="file" id="mc-photo-input" accept="image/*" style="display:none" onchange="mcHandlePhoto(this)">
             </div>
 
-            <!-- Название и категория — всегда видны -->
-            <div id="mp-card-base-fields" class="mp-analysis-cell" style="display:none;">
-                <div id="mp-analysis-loading" class="mp-analysis-loading">
-                    <div class="mp-analysis-spinner"></div>
-                    <span>Определяю товар...</span>
-                </div>
-                <div id="mp-analysis-result" class="mp-analysis-result" style="display:none;">
-                    <input id="mp-card-name" class="mp-input" type="text" placeholder="Название товара" maxlength="25">
-                    <input id="mp-card-specs" class="mp-input" type="text" placeholder="Характеристики: 100% хлопок, р-р 42-54, машинная стирка" maxlength="120" style="margin-top:8px;">
-                    <input id="mp-card-price" class="mp-input" type="text" placeholder="Цена: от 1 490 ₽ (необязательно)" maxlength="20" style="margin-top:8px;">
-                    <select id="mp-card-category" class="mp-select" onchange="mpCategoryChange(this.value)">
-                        <option value="">Категория</option>
-                        <option value="clothing">👕 Одежда и обувь</option>
-                        <option value="accessories">👜 Аксессуары</option>
-                        <option value="food">🍽 Еда и напитки</option>
-                        <option value="beauty">💄 Косметика и уход</option>
-                        <option value="gadgets">📱 Гаджеты и техника</option>
-                        <option value="home">🏠 Дом и мебель</option>
-                        <option value="other">📦 Прочее</option>
-                    </select>
+            <!-- Превью фото -->
+            <div id="mc-preview-wrap" style="display:none; padding:0 16px;">
+                <div class="mc-preview-box">
+                    <img id="mc-preview-img" class="mc-preview-img">
+                    <button class="mc-change-btn" onclick="document.getElementById('mc-photo-input').click()">Изменить</button>
                 </div>
             </div>
 
-            <!-- Переключатель С текстом / Без текста -->
-            <div id="mp-text-toggle-wrap" style="display:none;padding:0 16px 12px;">
-                <div class="mp-text-toggle">
-                    <button class="mp-tt-btn active" id="mp-tt-with" onclick="mpSetTextMode(true)">📝 С текстом</button>
-                    <button class="mp-tt-btn" id="mp-tt-without" onclick="mpSetTextMode(false)">🖼 Без текста</button>
+            <!-- Загрузка AI анализа -->
+            <div id="mc-analyzing" style="display:none; padding:20px 16px;">
+                <div class="mc-analyzing-row">
+                    <div class="mc-spinner"></div>
+                    <span class="mc-analyzing-text">AI анализирует товар...</span>
                 </div>
             </div>
 
-            <!-- Описание — только для режима "С текстом" -->
-            <div id="mp-card-analysis-cell" class="mp-analysis-cell" style="display:none;">
-                <div class="mp-desc-section" style="padding:14px;">
-                    <div class="mp-desc-header">
-                        <span class="mp-desc-label">Описание</span>
-                        <button class="mp-ai-idea-btn" id="mp-ai-idea-btn" onclick="mpCardAiIdea()">✦ AI идея</button>
-                    </div>
-                    <textarea id="mp-card-description" class="mp-textarea" placeholder="Опиши товар — что хочешь написать на карточке..." rows="3"></textarea>
-                </div>
+            <!-- Результат анализа -->
+            <div id="mc-analyzed" style="display:none; padding:0 16px;">
+
+                <!-- Название товара (редактируемое) -->
+                <div class="mc-field-label">Заголовок карточки</div>
+                <input id="mc-name" class="mc-name-input" type="text" placeholder="Название" maxlength="30">
+
+                <!-- Категория -->
+                <div class="mc-field-label" style="margin-top:14px;">Категория</div>
+                <select id="mc-category-select" class="mc-category-select" onchange="mcCategoryChange(this.value)">
+                    <option value="clothing">Одежда и обувь</option>
+                    <option value="accessories">Аксессуары</option>
+                    <option value="food">Еда и напитки</option>
+                    <option value="beauty">Косметика и уход</option>
+                    <option value="gadgets">Гаджеты и техника</option>
+                    <option value="home">Дом и мебель</option>
+                    <option value="other">Прочее</option>
+                </select>
+
+                <!-- Ключевые слова (чипы) -->
+                <div class="mc-field-label" style="margin-top:14px;">Ключевые свойства</div>
+                <div id="mc-chips" class="mc-chips-wrap"></div>
+
             </div>
 
-            <!-- Скрытые поля для генерации -->
-            <input id="mp-card-subtitle" type="hidden" value="">
-            <input id="mp-card-badge" type="hidden" value="">
-            <input id="mp-card-feat1" type="hidden" value="">
-            <input id="mp-card-feat2" type="hidden" value="">
-            <input id="mp-card-feat3" type="hidden" value="">
-
-            <div style="padding:16px;">
-                <button class="generate-btn" id="mp-card-generate-btn" onclick="mpCardGenerate()" disabled>
+            <!-- Кнопка генерации -->
+            <div style="padding:20px 16px 32px;">
+                <button class="generate-btn" id="mc-generate-btn" onclick="mcGenerate()" disabled>
                     ⚡ Создать карточку
                     <span class="generate-price">🪙 20</span>
                 </button>
@@ -342,7 +328,7 @@
         </div>
     </div>
 
-    <script src="js/templates.js?v=20260514b"></script>
-    <script src="js/app.js?v=20260514b"></script>
+    <script src="js/templates.js?v=20260515a"></script>
+    <script src="js/app.js?v=20260515a"></script>
 </body>
 </html>
