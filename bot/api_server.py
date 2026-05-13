@@ -719,31 +719,31 @@ def _render_card_cairo_sync(image_b64: str, card: dict) -> str | None:
     # ── Triple scrim: ensures text readability on any image ──────
     els.append(
         '<defs>'
-        # Left column gradient (full height) — protects entire text zone
+        # Left column gradient — only covers text zone (left 45% of image)
         '<linearGradient id="scrimX" x1="0" y1="0" x2="1" y2="0">'
-        '<stop offset="0%"   stop-color="black" stop-opacity="0.72"/>'
-        '<stop offset="35%"  stop-color="black" stop-opacity="0.42"/>'
-        '<stop offset="58%"  stop-color="black" stop-opacity="0.14"/>'
-        '<stop offset="78%"  stop-color="black" stop-opacity="0.04"/>'
+        '<stop offset="0%"   stop-color="black" stop-opacity="0.65"/>'
+        '<stop offset="40%"  stop-color="black" stop-opacity="0.30"/>'
+        '<stop offset="65%"  stop-color="black" stop-opacity="0.08"/>'
+        '<stop offset="85%"  stop-color="black" stop-opacity="0.01"/>'
         '<stop offset="100%" stop-color="black" stop-opacity="0"/>'
         '</linearGradient>'
-        # Top gradient (title area)
+        # Top gradient — only title row, lighter
         '<linearGradient id="scrimY" x1="0" y1="0" x2="0" y2="1">'
-        '<stop offset="0%"   stop-color="black" stop-opacity="0.48"/>'
-        '<stop offset="55%"  stop-color="black" stop-opacity="0.08"/>'
+        '<stop offset="0%"   stop-color="black" stop-opacity="0.30"/>'
+        '<stop offset="45%"  stop-color="black" stop-opacity="0.05"/>'
         '<stop offset="100%" stop-color="black" stop-opacity="0"/>'
         '</linearGradient>'
-        # Bottom gradient (features area)
+        # Bottom gradient — features zone
         '<linearGradient id="scrimB" x1="0" y1="0" x2="0" y2="1">'
         '<stop offset="0%"   stop-color="black" stop-opacity="0"/>'
-        '<stop offset="45%"  stop-color="black" stop-opacity="0.22"/>'
-        '<stop offset="100%" stop-color="black" stop-opacity="0.52"/>'
+        '<stop offset="40%"  stop-color="black" stop-opacity="0.18"/>'
+        '<stop offset="100%" stop-color="black" stop-opacity="0.45"/>'
         '</linearGradient>'
         '</defs>'
     )
-    els.append('<rect x="0" y="0" width="530" height="1100" fill="url(#scrimX)"/>')
-    els.append('<rect x="0" y="0" width="800" height="520" fill="url(#scrimY)"/>')
-    els.append('<rect x="0" y="760" width="530" height="340" fill="url(#scrimB)"/>')
+    els.append('<rect x="0" y="0" width="370" height="1100" fill="url(#scrimX)"/>')
+    els.append('<rect x="0" y="0" width="800" height="400" fill="url(#scrimY)"/>')
+    els.append('<rect x="0" y="780" width="800" height="320" fill="url(#scrimB)"/>')
 
     # ── Badge (top-right corner) ──────────────────────────────────
     if badge:
