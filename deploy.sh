@@ -9,6 +9,7 @@ REMOTE=$(git rev-parse origin/main)
 if [ "$LOCAL" != "$REMOTE" ]; then
     echo "[deploy $(date)] New version detected, updating..."
     git reset --hard origin/main
+    pip3 install -r requirements.txt -q
     fuser -k 8080/tcp 2>/dev/null || true
     sleep 2
     nohup python3 -m bot.main >> /root/mirageai_bot/bot.log 2>&1 &

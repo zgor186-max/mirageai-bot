@@ -547,11 +547,14 @@ def _extract_output(result: dict) -> str | None:
 
 
 async def _apply_card_overlay(image_b64: str | None, card_data: dict) -> str:
-    """Try Playwright render; fall back to raw image if unavailable."""
+    """Render text overlay: Cairo first, Playwright fallback, raw image last."""
     if not image_b64:
         return image_b64
     raw_b64 = image_b64.split(",", 1)[1] if image_b64.startswith("data:") else image_b64
     if card_data:
+        rendered = await render_card_cairo(raw_b64, card_data)
+        if rendered:
+            return rendered
         rendered = await render_card_playwright(raw_b64, card_data)
         if rendered:
             return rendered
@@ -644,6 +647,173 @@ html, body {{ width:800px; height:1100px; overflow:hidden; background:transparen
 </div>
 <div class="texture"></div>
 </body></html>"""
+
+
+def _svg_esc(text: str) -> str:
+    import html
+    return html.escape(str(text))
+
+
+def _svg_wrap(text: str, max_chars: int = 12) -> list:
+    """Split text into lines of at most max_chars characters."""
+    words = str(text).split()
+    if not words:
+        return [""]
+    lines, current = [], ""
+    for word in words:
+        candidate = (current + " " + word).strip()
+        if len(candidate) <= max_chars:
+            current = candidate
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines or [""]
+
+
+async def render_card_cairo(image_b64: str, card: dict) -> str | None:
+    """Render card text overlay via CairoSVG — zero alpha/darkening artifacts."""
+    try:
+        import cairosvg
+    except ImportError:
+        print("[Cairo] cairosvg not installed, will fall back to Playwright")
+        return None
+
+    import io as _io
+    from PIL import Image
+
+    scheme   = card.get("scheme", "warm")
+    accent   = ACCENT_COLORS.get(scheme, "#d4a017")
+    raw_bytes = base64.b64decode(image_b64)
+
+    # Save product image for SVG <image> thumbnail reference
+    img_filename = f"{uuid.uuid4().hex}.jpg"
+    img_path = os.path.join(TEMP_DIR, img_filename)
+    with open(img_path, "wb") as f:
+        f.write(raw_bytes)
+    asyncio.create_task(_delete_after(img_path, 120))
+
+    badge        = _svg_esc(card.get("badge", ""))
+    name         = _svg_esc(card.get("name", "")).upper()
+    subtitle_raw = _svg_esc(card.get("subtitle", ""))
+
+    feats = []
+    for i in range(1, 6):
+        feat = card.get(f"feat{i}", "")
+        icon = card.get(f"icon{i}", "✦")
+        if feat:
+            feats.append({"icon": icon, "text": _svg_esc(feat.upper())})
+
+    els = []
+
+    # ── Badge ──────────────────────────────────────────────
+    if badge:
+        bw = min(max(len(badge) * 9 + 28, 80), 380)
+        els.append(f'<rect x="40" y="44" width="{bw}" height="28" rx="14" fill="{accent}"/>')
+        els.append(
+            f'<text x="{40 + bw // 2}" y="63" text-anchor="middle" '
+            f'font-family="Arial, Liberation Sans, sans-serif" '
+            f'font-size="12" font-weight="700" fill="#111">{badge}</text>'
+        )
+
+    # ── Title ──────────────────────────────────────────────
+    title_lines = _svg_wrap(name, max_chars=11)
+    ty = 108
+    for line in title_lines:
+        els.append(
+            f'<text x="40" y="{ty}" '
+            f'font-family="Impact, Arial Black, Liberation Sans, sans-serif" '
+            f'font-size="64" font-weight="900" fill="white">{line}</text>'
+        )
+        ty += 66
+
+    # ── Subtitle ───────────────────────────────────────────
+    if subtitle_raw:
+        sy = ty + 16
+        for line in _svg_wrap(subtitle_raw, max_chars=40):
+            els.append(
+                f'<text x="40" y="{sy}" '
+                f'font-family="Arial, Liberation Sans, sans-serif" '
+                f'font-size="15" fill="white">{line}</text>'
+            )
+            sy += 22
+
+    # ── Features ───────────────────────────────────────────
+    # 5 rows × 58px, anchored above thumbnail (top of thumbnail = 974, gap 36)
+    if feats:
+        fz_bottom = 938
+        fz_top    = max(fz_bottom - len(feats) * 58, 560)
+        for idx, feat in enumerate(feats):
+            cy = fz_top + idx * 58 + 21
+            # Circle
+            els.append(
+                f'<circle cx="61" cy="{cy}" r="21" '
+                f'fill="white" fill-opacity="0.15" '
+                f'stroke="{accent}" stroke-width="1.5"/>'
+            )
+            # Emoji
+            els.append(
+                f'<text x="61" y="{cy + 7}" text-anchor="middle" '
+                f'font-family="Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif" '
+                f'font-size="17">{feat["icon"]}</text>'
+            )
+            # Feature text
+            els.append(
+                f'<text x="92" y="{cy + 5}" '
+                f'font-family="Arial, Liberation Sans, sans-serif" '
+                f'font-size="13" font-weight="700" fill="white">{feat["text"]}</text>'
+            )
+
+    # ── Thumbnail circle ───────────────────────────────────
+    els.append(
+        '<defs><clipPath id="tc">'
+        '<circle cx="81" cy="1018" r="44"/>'
+        '</clipPath></defs>'
+    )
+    els.append(
+        f'<image href="file://{img_path}" '
+        f'x="37" y="974" width="88" height="88" '
+        f'clip-path="url(#tc)" preserveAspectRatio="xMidYMid slice"/>'
+    )
+    els.append(
+        f'<circle cx="81" cy="1018" r="44" fill="none" '
+        f'stroke="{accent}" stroke-width="2.5"/>'
+    )
+
+    svg = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<svg xmlns="http://www.w3.org/2000/svg" '
+        'xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'width="800" height="1100">\n'
+        + "\n".join(els)
+        + "\n</svg>"
+    )
+
+    print(f"[Cairo] SVG size={len(svg)//1024}KB feats={len(feats)} scheme={scheme}")
+
+    try:
+        overlay_png = cairosvg.svg2png(
+            bytestring=svg.encode("utf-8"),
+            output_width=800,
+            output_height=1100,
+        )
+    except Exception as e:
+        print(f"[Cairo] svg2png error: {e}")
+        import traceback; traceback.print_exc()
+        return None
+
+    # Composite: background photo + SVG overlay
+    bg = Image.open(_io.BytesIO(raw_bytes)).convert("RGBA")
+    bg = bg.resize((800, 1100), Image.LANCZOS)
+    overlay = Image.open(_io.BytesIO(overlay_png)).convert("RGBA")
+    bg.paste(overlay, (0, 0), overlay)
+    out = _io.BytesIO()
+    bg.convert("RGB").save(out, format="JPEG", quality=93)
+    b64 = base64.b64encode(out.getvalue()).decode()
+    print(f"[Cairo] Composited OK ({len(out.getvalue()) // 1024}KB)")
+    return f"data:image/jpeg;base64,{b64}"
 
 
 async def render_card_playwright(image_b64: str, card: dict) -> str | None:
