@@ -576,15 +576,7 @@ CARD_HTML_TEMPLATE = """<!DOCTYPE html>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&display=swap');
 * {{ margin:0; padding:0; box-sizing:border-box; }}
-html, body {{ width:800px; height:1100px; overflow:hidden; }}
-body {{ font-family: Arial, sans-serif; position:relative; background:#111; }}
-.bg {{
-    position:absolute; inset:0;
-    background-image: url('{image_url}');
-    background-size: cover;
-    background-position: center right;
-    filter: brightness(1.1);
-}}
+html, body {{ width:800px; height:1100px; overflow:hidden; background:transparent; }}
 .content {{
     position:absolute; inset:0;
     padding: 44px 40px 160px 40px;
@@ -639,7 +631,6 @@ body {{ font-family: Arial, sans-serif; position:relative; background:#111; }}
 }}
 </style></head>
 <body>
-<div class="bg"></div>
 <div class="content">
     {badge_html}
     <div class="title">{name}</div>
@@ -662,23 +653,14 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
     accent = ACCENT_COLORS.get(scheme, "#d4a017")
     tc = TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])
 
-    # Save image to temp file — strip ICC profile via PIL so Chromium doesn't darken it
+    import io as _io
+    raw_bytes = base64.b64decode(image_b64)
+
+    # Save texture image for the circle (file:// for HTML)
     img_filename = f"{uuid.uuid4().hex}.jpg"
     img_path = os.path.join(TEMP_DIR, img_filename)
-    raw_bytes = base64.b64decode(image_b64)
-    try:
-        from PIL import Image, ImageEnhance
-        import io as _io
-        img = Image.open(_io.BytesIO(raw_bytes)).convert("RGB")
-        out = _io.BytesIO()
-        img.save(out, format="JPEG", quality=93)
-        with open(img_path, "wb") as f:
-            f.write(out.getvalue())
-        print("[Playwright] ICC stripped via PIL")
-    except Exception as pil_err:
-        print(f"[Playwright] PIL unavailable ({pil_err}), saving raw")
-        with open(img_path, "wb") as f:
-            f.write(raw_bytes)
+    with open(img_path, "wb") as f:
+        f.write(raw_bytes)
     asyncio.create_task(_delete_after(img_path, 120))
     image_url = f"file://{img_path}"
 
@@ -715,21 +697,29 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
             browser = await p.chromium.launch(args=[
                 "--no-sandbox", "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage", "--disable-gpu",
-                "--force-color-profile=srgb",
-                "--disable-color-correct-rendering",
             ])
             page = await browser.new_page(viewport={"width": 800, "height": 1100})
-            # No external resources — block fonts to be safe
             await page.route("**://fonts.googleapis.com/**", lambda route: route.abort())
             await page.route("**://fonts.gstatic.com/**", lambda route: route.abort())
             await page.set_content(html, wait_until="domcontentloaded", timeout=15000)
             await page.wait_for_timeout(500)
-            screenshot = await page.screenshot(type="jpeg", quality=92,
-                                               clip={"x":0,"y":0,"width":800,"height":1100})
+            # Render text-only as transparent PNG
+            overlay_png = await page.screenshot(
+                type="png", omit_background=True,
+                clip={"x": 0, "y": 0, "width": 800, "height": 1100}
+            )
             await browser.close()
 
-        b64 = base64.b64encode(screenshot).decode()
-        print(f"[Playwright] Card rendered successfully ({len(screenshot)//1024}KB)")
+        # Composite: original photo + transparent text overlay via PIL
+        from PIL import Image
+        bg = Image.open(_io.BytesIO(raw_bytes)).convert("RGBA")
+        bg = bg.resize((800, 1100), Image.LANCZOS)
+        overlay = Image.open(_io.BytesIO(overlay_png)).convert("RGBA")
+        bg.paste(overlay, (0, 0), overlay)
+        out = _io.BytesIO()
+        bg.convert("RGB").save(out, format="JPEG", quality=93)
+        b64 = base64.b64encode(out.getvalue()).decode()
+        print(f"[Playwright] Card composited successfully ({len(out.getvalue())//1024}KB)")
         return f"data:image/jpeg;base64,{b64}"
     except Exception as e:
         print(f"[Playwright] Render error: {e}")
