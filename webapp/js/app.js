@@ -713,6 +713,22 @@ let mpCardColorScheme = "warm";
 let mpCardBgStyle = "dark";
 let mpSelectedBg = "workshop";
 let mpCardBgPrompt = "";
+let mpCardCategory = "clothing";
+let mpCardIcon1 = "✦";
+let mpCardIcon2 = "✦";
+let mpCardIcon3 = "✦";
+let mpCardWithText = true;  // режим: с текстом или без
+let mpCardSlogan = "";      // слоган (заголовок карточки)
+let mpCardTagline = "";     // подзаголовок
+let mpCardFeatures = [];    // [{icon, text}, ...]
+
+function mpSetTextMode(withText) {
+    mpCardWithText = withText;
+    document.getElementById("mp-tt-with").classList.toggle("active", withText);
+    document.getElementById("mp-tt-without").classList.toggle("active", !withText);
+    const descCell = document.getElementById("mp-card-analysis-cell");
+    if (descCell) descCell.style.display = withText ? "block" : "none";
+}
 
 function mpSelectBg(style, el) {
     mpCardBgStyle = style;
@@ -810,13 +826,19 @@ function mpCardHandlePhoto(input) {
         document.getElementById("mp-card-upload-area").style.display = "none";
         document.getElementById("mp-card-preview-container").style.display = "block";
         document.getElementById("mp-card-generate-btn").disabled = false;
-        // Показываем ячейку и запускаем анализ
-        const cell = document.getElementById("mp-card-analysis-cell");
+        // Показываем переключатель режима
+        document.getElementById("mp-text-toggle-wrap").style.display = "block";
+        // Показываем ячейку анализа и запускаем анализ (если режим "с текстом")
+        // Всегда показываем базовые поля (название + категория)
+        const baseFields = document.getElementById("mp-card-base-fields");
         const loading = document.getElementById("mp-analysis-loading");
         const result = document.getElementById("mp-analysis-result");
-        if (cell) cell.style.display = "block";
+        if (baseFields) baseFields.style.display = "block";
         if (loading) loading.style.display = "flex";
         if (result) result.style.display = "none";
+        // Показываем описание только для режима "С текстом"
+        const descCell = document.getElementById("mp-card-analysis-cell");
+        if (descCell) descCell.style.display = mpCardWithText ? "block" : "none";
         mpCardAnalyze(mpCardPhotoBase64);
     };
     reader.readAsDataURL(file);
@@ -918,7 +940,10 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
   "subtitle": "3 характеристики через буллет, строчными. Формат: свойство1 • свойство2 • свойство3",
   "feat1": "УНИКАЛЬНОЕ преимущество 1, максимум 2 слова. Только конкретика",
   "feat2": "УНИКАЛЬНОЕ преимущество 2, максимум 2 слова. Не повторять feat1",
-  "feat3": "УНИКАЛЬНОЕ преимущество 3, максимум 2 слова. Не повторять feat1 и feat2"
+  "feat3": "УНИКАЛЬНОЕ преимущество 3, максимум 2 слова. Не повторять feat1 и feat2",
+  "icon1": "одна emoji иконка подходящая к feat1. Примеры: ☁️🌙✂️🔥💧⚡🎯🛡️🌿",
+  "icon2": "одна emoji иконка подходящая к feat2",
+  "icon3": "одна emoji иконка подходящая к feat3"
 }` }
                     ]
                 }]
@@ -952,6 +977,12 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
             ? data.background_prompt + (data.props && !data.background_prompt.includes(data.props.split(",")[0]) ? `, ${data.props}` : "")
             : "";
 
+        // Сохраняем категорию и иконки для generate-card запроса
+        mpCardCategory = data.category || "clothing";
+        mpCardIcon1 = data.icon1 || "✦";
+        mpCardIcon2 = data.icon2 || "✦";
+        mpCardIcon3 = data.icon3 || "✦";
+
         // Цветовая схема по категории
         const schemeMap = {
             clothing: "warm", accessories: "dark", food: "nature",
@@ -970,6 +1001,7 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
         setVal("mp-card-feat1",    dbAdvs[0] || data.feat1 || "");
         setVal("mp-card-feat2",    dbAdvs[1] || data.feat2 || "");
         setVal("mp-card-feat3",    dbAdvs[2] || data.feat3 || "");
+
 
     } catch (e) {
         console.warn("Auto-analyze failed:", e.message);
@@ -1035,24 +1067,74 @@ function mpToggleAiIdea() {
     }
 }
 
-function mpCardAiIdea() {
+async function mpCardAiIdea() {
     if (!mpCardPhotoBase64) {
         tg.showAlert("Сначала загрузи фото товара!");
         return;
     }
-    mpCardAnalyze(mpCardPhotoBase64);
+    const btn = document.getElementById("mp-ai-idea-btn");
+    const descEl = document.getElementById("mp-card-description");
+    if (btn) { btn.textContent = "⏳ Думаю..."; btn.disabled = true; }
+    try {
+        const name = document.getElementById("mp-card-name")?.value || "товар";
+        const POLZA_KEY = "pza_Y_e6drIevLO8ptUDrT2T5srYMGIrIEgP";
+        const resp = await fetch("https://polza.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${POLZA_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+                model: "google/gemini-3.1-flash-lite",
+                messages: [{
+                    role: "user",
+                    content: [
+                        { type: "image_url", image_url: { url: "data:image/jpeg;base64," + mpCardPhotoBase64 } },
+                        { type: "text", text: `Ты копирайтер для маркетплейса (WB/Ozon). Товар: "${name}". Посмотри на фото и ответь ТОЛЬКО валидным JSON без markdown. ОБЯЗАТЕЛЬНО ровно 5 элементов в features — не меньше, не больше:\n{\n  "slogan": "короткий эмоциональный слоган 2-4 слова (НЕ название товара, пример: ДЛЯ УЮТНЫХ ВЕЧЕРОВ)",\n  "tagline": "продающая фраза 5-8 слов с ключевыми словами для поиска",\n  "features": [\n    {"icon": "эмодзи1", "text": "преимущество 1, 3-5 слов"},\n    {"icon": "эмодзи2", "text": "преимущество 2, 3-5 слов"},\n    {"icon": "эмодзи3", "text": "преимущество 3, 3-5 слов"},\n    {"icon": "эмодзи4", "text": "преимущество 4, 3-5 слов"},\n    {"icon": "эмодзи5", "text": "преимущество 5, 3-5 слов"}\n  ]\n}\nВ features СТРОГО 5 объектов. Всё на русском.` }
+                    ]
+                }]
+            })
+        });
+        const data = await resp.json();
+        const raw = data.choices?.[0]?.message?.content || "";
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("No JSON");
+        const parsed = JSON.parse(jsonMatch[0]);
+
+        mpCardSlogan = parsed.slogan || "";
+        mpCardTagline = parsed.tagline || "";
+        mpCardFeatures = parsed.features || [];
+
+        // Показываем в поле описания
+        if (descEl) {
+            const lines = mpCardFeatures.map(f => `${f.icon} ${f.text}`).join("\n");
+            descEl.value = `${mpCardSlogan}\n${mpCardTagline}\n\n${lines}`;
+        }
+    } catch(e) {
+        console.error("AI idea error:", e);
+        tg.showAlert("Не удалось получить идею, попробуй ещё раз");
+    } finally {
+        if (btn) { btn.textContent = "✦ AI идея"; btn.disabled = false; }
+    }
 }
 
 async function mpCardGenerate() {
     if (!mpCardPhotoBase64) return;
 
     const name = document.getElementById("mp-card-name").value.trim();
-    const subtitle = document.getElementById("mp-card-subtitle").value.trim();
-    const badge = document.getElementById("mp-card-badge").value.trim();
-    const feat1 = document.getElementById("mp-card-feat1").value.trim();
-    const feat2 = document.getElementById("mp-card-feat2").value.trim();
-    const feat3 = document.getElementById("mp-card-feat3").value.trim();
 
+    // Если AI идея была нажата — используем слоган и фичи
+    // Иначе fallback на скрытые поля от автоанализа
+    const useAiIdea = mpCardSlogan && mpCardFeatures.length > 0;
+    const cardTitle   = useAiIdea ? mpCardSlogan : name;
+    const cardSubtitle = useAiIdea ? mpCardTagline : document.getElementById("mp-card-subtitle").value.trim();
+    const badge = useAiIdea ? name : (document.getElementById("mp-card-badge").value.trim() || name);
+    const features = useAiIdea
+        ? mpCardFeatures
+        : [
+            { icon: "✦", text: document.getElementById("mp-card-feat1").value.trim() },
+            { icon: "✦", text: document.getElementById("mp-card-feat2").value.trim() },
+            { icon: "✦", text: document.getElementById("mp-card-feat3").value.trim() },
+          ].filter(f => f.text);
+
+    console.log("[Card] useAiIdea:", useAiIdea, "features:", JSON.stringify(features));
     const sceneBg = mpCardBgPrompt || "clean professional studio, soft gradient background, neutral tones";
     const scenePrompt = `${sceneBg}. Photorealistic commercial photography scene, cinematic lighting, high detail, 3:4 aspect ratio. NO text, NO watermarks.`;
 
@@ -1069,7 +1151,16 @@ async function mpCardGenerate() {
             body: JSON.stringify({
                 photo: mpCardPhotoBase64,
                 scene_prompt: scenePrompt,
-                product_name: name || "product"
+                product_name: name || "product",
+                category: mpCardCategory || "clothing",
+                card: mpCardWithText ? (() => {
+                    const c = { name: cardTitle, subtitle: cardSubtitle, badge, scheme: mpCardColorScheme || "warm" };
+                    features.forEach((f, i) => {
+                        c[`feat${i+1}`] = String(f.text || "");
+                        c[`icon${i+1}`] = String(f.icon || "✦");
+                    });
+                    return c;
+                })() : null
             })
         });
         clearTimeout(timeout);
@@ -1077,14 +1168,8 @@ async function mpCardGenerate() {
         const resultUrl = result?.url;
         if (!resultUrl) throw new Error(result?.error || "No image in response");
 
-        // Рисуем текст поверх через Canvas
-        let finalBase64;
-        try {
-            finalBase64 = await drawCardOverlay(resultUrl, { name, subtitle, badge, feat1, feat2, feat3 });
-        } catch (overlayErr) {
-            console.warn("drawCardOverlay failed, using raw image:", overlayErr);
-            finalBase64 = resultUrl; // fallback: показываем картинку без текста
-        }
+        // Сервер уже вернул готовую карточку с текстом
+        const finalBase64 = resultUrl;
 
         userCoins = Math.max(0, userCoins - 20);
         localStorage.setItem("coins", userCoins);
@@ -1227,17 +1312,11 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             }
 
             // 1. Product image — full canvas height
-            ctx.filter = "brightness(1.6)";
+            ctx.filter = "brightness(1.1)";
             ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, W, H);
             ctx.filter = "none";
 
-            // 2. Title bar — semi-transparent gradient overlay on top of image
-            const tBg = ctx.createLinearGradient(0, 0, 0, TITLE_H + 40);
-            tBg.addColorStop(0,    `rgba(${tr},${tg},${tb},0.88)`);
-            tBg.addColorStop(0.65, `rgba(${tr},${tg},${tb},0.72)`);
-            tBg.addColorStop(1,    `rgba(${tr},${tg},${tb},0)`);
-            ctx.fillStyle = tBg;
-            ctx.fillRect(0, 0, W, TITLE_H + 40);
+            // 2. No gradient — text shadow ensures readability on any background
 
             // 3. Badge pill (top-right)
             if (badge) {
@@ -1260,6 +1339,10 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
             const tsz = autoSz(fullTitle, tMaxW, 70, 26);
             ctx.font = `700 ${tsz}px 'Oswald', Arial`;
             ctx.fillStyle = "#ffffff";
+            ctx.shadowColor = "rgba(0,0,0,0.85)";
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetX = 1;
+            ctx.shadowOffsetY = 1;
             const titleY = PAD_TOP + tsz;
             ctx.fillText(fullTitle, PAD, titleY);
 
@@ -1269,9 +1352,14 @@ async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, 
                 ctx.font = `400 ${ssz}px Arial`;
                 while (ssz > 11 && ctx.measureText(subtitle).width > W - PAD*2) ssz--;
                 ctx.font = `400 ${ssz}px Arial`;
-                ctx.fillStyle = "rgba(255,255,255,0.72)";
+                ctx.fillStyle = "rgba(255,255,255,0.9)";
+                ctx.shadowBlur = 8;
                 ctx.fillText(subtitle.substring(0, 90), PAD, titleY + ssz + 6);
             }
+            ctx.shadowColor = "transparent";
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
 
             // 6. Left gradient for advantages readability (full height)
             if (feats.length > 0) {
