@@ -561,6 +561,15 @@ ACCENT_COLORS = {
     "workshop": "#ffc200", "nature": "#4caf50"
 }
 
+# Text colors that feel native to each scheme's background tone
+TEXT_COLORS = {
+    "warm":     {"title": "#3d1800", "subtitle": "#6b3a10", "feat": "#4a2200"},
+    "dark":     {"title": "#f0e0c0", "subtitle": "#c8b898", "feat": "#e0d0b0"},
+    "tech":     {"title": "#c8eeff", "subtitle": "#7ec8e8", "feat": "#a0d8f0"},
+    "workshop": {"title": "#3a2200", "subtitle": "#6b4400", "feat": "#4a2e00"},
+    "nature":   {"title": "#0f2d0a", "subtitle": "#2a5220", "feat": "#1a3d10"},
+}
+
 CARD_HTML_TEMPLATE = """<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
@@ -574,19 +583,13 @@ body {{ font-family: Arial, sans-serif; position:relative; background:#111; }}
     background-image: url('{image_url}');
     background-size: cover;
     background-position: center right;
-    filter: brightness(1.15);
+    filter: brightness(1.1);
 }}
 .content {{
     position:absolute; inset:0;
     padding: 44px 40px 160px 40px;
     display:flex; flex-direction:column;
     width:450px;
-    background: linear-gradient(
-        to right,
-        rgba(0,0,0,0.52) 0%,
-        rgba(0,0,0,0.38) 60%,
-        transparent 100%
-    );
 }}
 .badge {{
     display:inline-flex; align-items:center;
@@ -598,13 +601,13 @@ body {{ font-family: Arial, sans-serif; position:relative; background:#111; }}
 }}
 .title {{
     font-family:'Oswald', 'Arial Black', 'Impact', Arial, sans-serif;
-    font-size:64px; font-weight:700; color:#fff;
-    line-height:1.0; text-shadow: 2px 3px 14px rgba(0,0,0,0.95);
+    font-size:64px; font-weight:700; color:{title_color};
+    line-height:1.0;
     text-transform:uppercase; margin-bottom:12px;
 }}
 .subtitle {{
-    font-size:15px; color:rgba(255,255,255,0.72);
-    line-height:1.5; text-shadow:1px 1px 6px rgba(0,0,0,0.9);
+    font-size:15px; color:{subtitle_color};
+    line-height:1.5;
     margin-bottom:auto;
 }}
 .features {{
@@ -616,25 +619,23 @@ body {{ font-family: Arial, sans-serif; position:relative; background:#111; }}
 }}
 .feat-icon {{
     width:48px; height:48px; border-radius:50%;
-    background:rgba(255,255,255,0.1);
-    border:1.5px solid rgba(255,255,255,0.25);
+    background:rgba(255,255,255,0.15);
+    border:1.5px solid {accent};
     display:flex; align-items:center; justify-content:center;
     font-size:22px; flex-shrink:0;
 }}
 .feat-text {{
-    font-size:15px; font-weight:700; color:#fff;
-    text-shadow:1px 1px 6px rgba(0,0,0,0.9);
+    font-size:15px; font-weight:700; color:{feat_color};
     text-transform:uppercase; letter-spacing:0.4px;
 }}
 .texture {{
     position:absolute; bottom:36px; left:40px;
     width:92px; height:92px; border-radius:50%;
     overflow:hidden;
-    border:2.5px solid rgba(255,255,255,0.35);
-    box-shadow:0 4px 20px rgba(0,0,0,0.5);
+    border:2.5px solid {accent};
+    box-shadow:0 4px 20px rgba(0,0,0,0.3);
     background-image:url('{image_url}');
     background-size:320%; background-position:center;
-    filter:brightness(1.15) contrast(1.1);
 }}
 </style></head>
 <body>
@@ -659,8 +660,7 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
 
     scheme = card.get("scheme", "warm")
     accent = ACCENT_COLORS.get(scheme, "#d4a017")
-    tints = {"warm":(16,11,3),"dark":(6,5,8),"tech":(3,9,22),"workshop":(12,9,0),"nature":(4,14,5)}
-    tr, tg, tb = tints.get(scheme, (16,11,3))
+    tc = TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])
 
     # Save image to temp file and use file:// URL — reliable, no HTTP needed
     img_filename = f"{uuid.uuid4().hex}.jpg"
@@ -686,7 +686,10 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
 
     html = CARD_HTML_TEMPLATE.format(
         image_url=image_url,
-        accent=accent, tr=tr, tg=tg, tb=tb,
+        accent=accent,
+        title_color=tc["title"],
+        subtitle_color=tc["subtitle"],
+        feat_color=tc["feat"],
         name=card.get("name", "").upper(),
         badge_html=badge_html,
         subtitle_html=subtitle_html,
