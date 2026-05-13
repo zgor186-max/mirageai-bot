@@ -718,9 +718,16 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
 
         # Composite: original photo + transparent text overlay via PIL
         from PIL import Image
+        import numpy as np
         bg = Image.open(_io.BytesIO(raw_bytes)).convert("RGBA")
         bg = bg.resize((800, 1100), Image.LANCZOS)
         overlay = Image.open(_io.BytesIO(overlay_png)).convert("RGBA")
+        # Remove anti-aliasing artifact pixels: near-transparent dark pixels
+        # created by Chromium text rendering on transparent background.
+        # Real text pixels have alpha > 200; artifact pixels have alpha < 30.
+        arr = np.array(overlay)
+        arr[arr[:, :, 3] < 30, 3] = 0
+        overlay = Image.fromarray(arr, 'RGBA')
         bg.paste(overlay, (0, 0), overlay)
         out = _io.BytesIO()
         bg.convert("RGB").save(out, format="JPEG", quality=93)
