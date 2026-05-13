@@ -688,12 +688,8 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     accent   = ACCENT_COLORS.get(scheme, "#d4a017")
     raw_bytes = base64.b64decode(image_b64)
 
-    # Save product image for SVG <image> thumbnail reference
-    img_filename = f"{uuid.uuid4().hex}.jpg"
-    img_path = os.path.join(TEMP_DIR, img_filename)
-    with open(img_path, "wb") as f:
-        f.write(raw_bytes)
-    asyncio.create_task(_delete_after(img_path, 120))
+    # Embed product image as base64 data URI — cairosvg doesn't support file:// URLs
+    thumb_uri = f"data:image/jpeg;base64,{image_b64}"
 
     badge        = _svg_esc(card.get("badge", ""))
     name         = _svg_esc(card.get("name", "")).upper()
@@ -773,7 +769,7 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         '</clipPath></defs>'
     )
     els.append(
-        f'<image href="file://{img_path}" '
+        f'<image href="{thumb_uri}" '
         f'x="37" y="974" width="88" height="88" '
         f'clip-path="url(#tc)" preserveAspectRatio="xMidYMid slice"/>'
     )
