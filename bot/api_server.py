@@ -124,9 +124,11 @@ async def generate_card_handler(request):
         placement_instruction = PLACEMENT.get(category, PLACEMENT["other"])
 
         place_prompt = (
-            f"Take the {product_name} from the reference image and integrate it into this scene: {scene_prompt}. "
-            f"The {product_name} {placement_instruction} "
-            f"Preserve the exact colors, pattern and details of the original {product_name}. "
+            f"Take the COMPLETE product shown in the reference image (every part, every component, the entire item as shown) "
+            f"and integrate it fully into this scene: {scene_prompt}. "
+            f"The product {placement_instruction} "
+            f"IMPORTANT: reproduce ALL parts of the product from the reference — do not omit any component. "
+            f"Preserve the exact colors, patterns, textures and details of the original product. "
             f"The props from the scene (cup, candles, books etc.) remain visible around the product. "
             f"Photorealistic commercial product photography, warm cinematic lighting. NO text, NO watermarks."
         )
