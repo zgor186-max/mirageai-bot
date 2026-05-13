@@ -668,8 +668,13 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
     tints = {"warm":(16,11,3),"dark":(6,5,8),"tech":(3,9,22),"workshop":(12,9,0),"nature":(4,14,5)}
     tr, tg, tb = tints.get(scheme, (16,11,3))
 
-    # Embed image as data URI — no HTTP requests needed inside Playwright
-    image_url = f"data:image/jpeg;base64,{image_b64}"
+    # Save image to temp file and use file:// URL — reliable, no HTTP needed
+    img_filename = f"{uuid.uuid4().hex}.jpg"
+    img_path = os.path.join(TEMP_DIR, img_filename)
+    with open(img_path, "wb") as f:
+        f.write(base64.b64decode(image_b64))
+    asyncio.create_task(_delete_after(img_path, 120))
+    image_url = f"file://{img_path}"
 
     # Build HTML parts
     badge = card.get("badge", "")
@@ -725,9 +730,28 @@ async def health_handler(request):
     return web.Response(text="OK", headers=CORS_HEADERS)
 
 
+async def test_playwright_handler(request):
+    """Quick Playwright smoke test — open in browser to check if it works."""
+    try:
+        from playwright.async_api import async_playwright
+    except ImportError:
+        return web.Response(text="ERROR: playwright not installed", headers=CORS_HEADERS)
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(args=["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--disable-gpu"])
+            page = await browser.new_page()
+            await page.set_content("<h1>Playwright OK</h1>", wait_until="domcontentloaded")
+            await browser.close()
+        return web.Response(text="OK: Playwright works", headers=CORS_HEADERS)
+    except Exception as e:
+        import traceback
+        return web.Response(text=f"ERROR: {e}\n{traceback.format_exc()}", headers=CORS_HEADERS)
+
+
 def create_app() -> web.Application:
     app = web.Application(client_max_size=10 * 1024 * 1024)
     app.router.add_get("/health", health_handler)
+    app.router.add_get("/test-playwright", test_playwright_handler)
     app.router.add_get("/img/{filename}", serve_temp_image)
     app.router.add_post("/generate", generate_handler)
     app.router.add_route("OPTIONS", "/generate", generate_handler)
