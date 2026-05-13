@@ -1157,7 +1157,7 @@ async function mpCardGenerate() {
                     name: cardTitle,
                     subtitle: cardSubtitle,
                     badge,
-                    features,
+                    features: features.map(f => ({ icon: String(f.icon || "✦"), text: String(f.text || "") })).filter(f => f.text),
                     scheme: mpCardColorScheme || "warm"
                 } : null
             })
