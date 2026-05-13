@@ -785,7 +785,10 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
 
     # ── Subtitle ─────────────────────────────────────────────────
     if subtitle_raw:
-        for sline in _svg_wrap(subtitle_raw, max_chars=24):
+        for sline in _svg_wrap(subtitle_raw, max_chars=26):
+            sline = sline.lstrip("• ").strip()
+            if not sline:
+                continue
             els.append(
                 f'<text x="40" y="{sy}" '
                 f'font-family="{FONT_BODY}" font-size="18" fill="#dddddd" '
