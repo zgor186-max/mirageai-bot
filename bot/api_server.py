@@ -673,8 +673,8 @@ def _svg_wrap(text: str, max_chars: int = 12) -> list:
     return lines or [""]
 
 
-async def render_card_cairo(image_b64: str, card: dict) -> str | None:
-    """Render card text overlay via CairoSVG — zero alpha/darkening artifacts."""
+def _render_card_cairo_sync(image_b64: str, card: dict) -> str | None:
+    """Synchronous Cairo card rendering — called via run_in_executor to avoid blocking the event loop."""
     try:
         import cairosvg
     except ImportError:
@@ -864,6 +864,12 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     b64 = base64.b64encode(out.getvalue()).decode()
     print(f"[Cairo] Composited OK ({len(out.getvalue()) // 1024}KB)")
     return f"data:image/jpeg;base64,{b64}"
+
+
+async def render_card_cairo(image_b64: str, card: dict) -> str | None:
+    """Async wrapper: runs blocking Cairo rendering in thread executor to free the event loop."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, _render_card_cairo_sync, image_b64, card)
 
 
 async def render_card_playwright(image_b64: str, card: dict) -> str | None:

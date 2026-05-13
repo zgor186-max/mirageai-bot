@@ -2,6 +2,7 @@ import asyncio
 import logging
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
+from aiogram.exceptions import TelegramNetworkError
 from bot.config import BOT_TOKEN
 from bot.database import init_db
 from bot.handlers import start, generate, balance
@@ -12,8 +13,6 @@ logging.basicConfig(level=logging.INFO)
 
 async def main():
     await init_db()
-
-    # Запускаем API сервер для webapp
     await start_api_server()
 
     bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode="Markdown"))
@@ -24,7 +23,15 @@ async def main():
     dp.include_router(balance.router)
 
     print("Bot started!")
-    await dp.start_polling(bot)
+    while True:
+        try:
+            await dp.start_polling(bot)
+        except TelegramNetworkError as e:
+            logging.warning(f"Telegram network error, retrying in 5s: {e}")
+            await asyncio.sleep(5)
+        except Exception as e:
+            logging.error(f"Polling error, retrying in 10s: {e}")
+            await asyncio.sleep(10)
 
 
 if __name__ == "__main__":
