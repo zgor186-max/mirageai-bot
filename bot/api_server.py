@@ -598,15 +598,13 @@ html, body {{ width:800px; height:1100px; overflow:hidden; background:transparen
     font-size:64px; font-weight:700; color:#fff;
     line-height:1.0;
     text-transform:uppercase; margin-bottom:12px;
-    -webkit-text-stroke: 1.5px rgba(0,0,0,0.6);
+    -webkit-text-stroke: 2px rgba(255,255,255,0.15);
     paint-order: stroke fill;
 }}
 .subtitle {{
     font-size:15px; color:#fff;
     line-height:1.5;
     margin-bottom:auto;
-    -webkit-text-stroke: 0.5px rgba(0,0,0,0.5);
-    paint-order: stroke fill;
 }}
 .features {{
     display:flex; flex-direction:column; gap:12px;
@@ -625,8 +623,6 @@ html, body {{ width:800px; height:1100px; overflow:hidden; background:transparen
 .feat-text {{
     font-size:13px; font-weight:700; color:#fff;
     text-transform:uppercase; letter-spacing:0.4px;
-    -webkit-text-stroke: 0.8px rgba(0,0,0,0.7);
-    paint-order: stroke fill;
 }}
 .texture {{
     position:absolute; bottom:36px; left:40px;
