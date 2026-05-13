@@ -714,6 +714,9 @@ let mpCardBgStyle = "dark";
 let mpSelectedBg = "workshop";
 let mpCardBgPrompt = "";
 let mpCardCategory = "clothing";
+let mpCardIcon1 = "✦";
+let mpCardIcon2 = "✦";
+let mpCardIcon3 = "✦";
 
 function mpSelectBg(style, el) {
     mpCardBgStyle = style;
@@ -919,7 +922,10 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
   "subtitle": "3 характеристики через буллет, строчными. Формат: свойство1 • свойство2 • свойство3",
   "feat1": "УНИКАЛЬНОЕ преимущество 1, максимум 2 слова. Только конкретика",
   "feat2": "УНИКАЛЬНОЕ преимущество 2, максимум 2 слова. Не повторять feat1",
-  "feat3": "УНИКАЛЬНОЕ преимущество 3, максимум 2 слова. Не повторять feat1 и feat2"
+  "feat3": "УНИКАЛЬНОЕ преимущество 3, максимум 2 слова. Не повторять feat1 и feat2",
+  "icon1": "одна emoji иконка подходящая к feat1. Примеры: ☁️🌙✂️🔥💧⚡🎯🛡️🌿",
+  "icon2": "одна emoji иконка подходящая к feat2",
+  "icon3": "одна emoji иконка подходящая к feat3"
 }` }
                     ]
                 }]
@@ -953,8 +959,11 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
             ? data.background_prompt + (data.props && !data.background_prompt.includes(data.props.split(",")[0]) ? `, ${data.props}` : "")
             : "";
 
-        // Сохраняем категорию для generate-card запроса
+        // Сохраняем категорию и иконки для generate-card запроса
         mpCardCategory = data.category || "clothing";
+        mpCardIcon1 = data.icon1 || "✦";
+        mpCardIcon2 = data.icon2 || "✦";
+        mpCardIcon3 = data.icon3 || "✦";
 
         // Цветовая схема по категории
         const schemeMap = {
@@ -1074,7 +1083,16 @@ async function mpCardGenerate() {
                 photo: mpCardPhotoBase64,
                 scene_prompt: scenePrompt,
                 product_name: name || "product",
-                category: mpCardCategory || "clothing"
+                category: mpCardCategory || "clothing",
+                // Данные для рендера карточки (Playwright на сервере)
+                card: {
+                    name, subtitle, badge,
+                    feat1, feat2, feat3,
+                    icon1: mpCardIcon1,
+                    icon2: mpCardIcon2,
+                    icon3: mpCardIcon3,
+                    scheme: mpCardColorScheme || "warm"
+                }
             })
         });
         clearTimeout(timeout);
@@ -1082,14 +1100,8 @@ async function mpCardGenerate() {
         const resultUrl = result?.url;
         if (!resultUrl) throw new Error(result?.error || "No image in response");
 
-        // Рисуем текст поверх через Canvas
-        let finalBase64;
-        try {
-            finalBase64 = await drawCardOverlay(resultUrl, { name, subtitle, badge, feat1, feat2, feat3 });
-        } catch (overlayErr) {
-            console.warn("drawCardOverlay failed, using raw image:", overlayErr);
-            finalBase64 = resultUrl; // fallback: показываем картинку без текста
-        }
+        // Сервер уже вернул готовую карточку с текстом
+        const finalBase64 = resultUrl;
 
         userCoins = Math.max(0, userCoins - 20);
         localStorage.setItem("coins", userCoins);

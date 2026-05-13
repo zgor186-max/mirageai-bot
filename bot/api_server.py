@@ -2,6 +2,7 @@
 import aiohttp
 import base64
 import uuid
+import json as _json
 from aiohttp import web
 import os
 
@@ -76,6 +77,7 @@ async def generate_card_handler(request):
         scene_prompt = data.get("scene_prompt", "")
         product_name = data.get("product_name", "product")
         category     = data.get("category", "other")
+        card_data    = data.get("card", {})
 
         if not photo_b64 or not scene_prompt:
             return web.json_response({"error": "photo and scene_prompt required"}, status=400, headers=CORS_HEADERS)
@@ -151,7 +153,8 @@ async def generate_card_handler(request):
                     if result_url:
                         image_b64 = await download_image_as_base64(result_url)
                         print(f"[Card] Two-step done ✓")
-                        return web.json_response({"url": image_b64 or result_url}, headers=CORS_HEADERS)
+                        final = await _apply_card_overlay(image_b64, card_data)
+                        return web.json_response({"url": final}, headers=CORS_HEADERS)
 
                 # Fallback: single step
                 print("[Card] Falling back to single-step generation")
@@ -166,7 +169,8 @@ async def generate_card_handler(request):
 
         image_b64 = await download_image_as_base64(result_url)
         print(f"[Card] Single-step fallback done ✓")
-        return web.json_response({"url": image_b64 or result_url}, headers=CORS_HEADERS)
+        final = await _apply_card_overlay(image_b64, card_data)
+        return web.json_response({"url": final}, headers=CORS_HEADERS)
 
     except Exception as e:
         import traceback
@@ -538,6 +542,179 @@ def _extract_output(result: dict) -> str | None:
     if isinstance(output, str):
         return output
     return None
+
+
+async def _apply_card_overlay(image_b64: str | None, card_data: dict) -> str:
+    """Try Playwright render; fall back to raw image if unavailable."""
+    if not image_b64:
+        return image_b64
+    raw_b64 = image_b64.split(",", 1)[1] if image_b64.startswith("data:") else image_b64
+    if card_data:
+        rendered = await render_card_playwright(raw_b64, card_data)
+        if rendered:
+            return rendered
+    return image_b64
+
+
+ACCENT_COLORS = {
+    "warm": "#d4a017", "dark": "#c9a84c", "tech": "#00c8ff",
+    "workshop": "#ffc200", "nature": "#4caf50"
+}
+
+CARD_HTML_TEMPLATE = """<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&display=swap" rel="stylesheet">
+<style>
+* {{ margin:0; padding:0; box-sizing:border-box; }}
+html, body {{ width:800px; height:1100px; overflow:hidden; }}
+body {{ font-family: Arial, sans-serif; position:relative; background:#111; }}
+.bg {{
+    position:absolute; inset:0;
+    background-image: url('{image_url}');
+    background-size: cover;
+    background-position: center right;
+    filter: brightness(1.05);
+}}
+.overlay {{
+    position:absolute; inset:0;
+    background: linear-gradient(
+        105deg,
+        rgba({tr},{tg},{tb},0.96) 0%,
+        rgba({tr},{tg},{tb},0.88) 30%,
+        rgba({tr},{tg},{tb},0.55) 50%,
+        rgba({tr},{tg},{tb},0.1) 68%,
+        transparent 82%
+    );
+}}
+.content {{
+    position:absolute; inset:0;
+    padding: 44px 40px 160px 40px;
+    display:flex; flex-direction:column;
+    width:450px;
+}}
+.badge {{
+    display:inline-flex; align-items:center;
+    background:{accent}; color:#111;
+    font-size:12px; font-weight:700;
+    padding:5px 14px; border-radius:20px;
+    text-transform:uppercase; letter-spacing:0.8px;
+    margin-bottom:16px; align-self:flex-start;
+}}
+.title {{
+    font-family:'Oswald', Arial, sans-serif;
+    font-size:64px; font-weight:700; color:#fff;
+    line-height:1.0; text-shadow: 2px 3px 14px rgba(0,0,0,0.95);
+    text-transform:uppercase; margin-bottom:12px;
+}}
+.subtitle {{
+    font-size:15px; color:rgba(255,255,255,0.72);
+    line-height:1.5; text-shadow:1px 1px 6px rgba(0,0,0,0.9);
+    margin-bottom:auto;
+}}
+.features {{
+    display:flex; flex-direction:column; gap:18px;
+    margin-top:36px;
+}}
+.feat {{
+    display:flex; align-items:center; gap:14px;
+}}
+.feat-icon {{
+    width:48px; height:48px; border-radius:50%;
+    background:rgba(255,255,255,0.1);
+    border:1.5px solid rgba(255,255,255,0.25);
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; flex-shrink:0;
+}}
+.feat-text {{
+    font-size:15px; font-weight:700; color:#fff;
+    text-shadow:1px 1px 6px rgba(0,0,0,0.9);
+    text-transform:uppercase; letter-spacing:0.4px;
+}}
+.texture {{
+    position:absolute; bottom:36px; left:40px;
+    width:92px; height:92px; border-radius:50%;
+    overflow:hidden;
+    border:2.5px solid rgba(255,255,255,0.35);
+    box-shadow:0 4px 20px rgba(0,0,0,0.5);
+    background-image:url('{image_url}');
+    background-size:320%; background-position:center;
+    filter:brightness(1.15) contrast(1.1);
+}}
+</style></head>
+<body>
+<div class="bg"></div>
+<div class="overlay"></div>
+<div class="content">
+    {badge_html}
+    <div class="title">{name}</div>
+    {subtitle_html}
+    <div class="features">{features_html}</div>
+</div>
+<div class="texture"></div>
+</body></html>"""
+
+
+async def render_card_playwright(image_b64: str, card: dict) -> str | None:
+    """Render card HTML with Playwright and return base64 JPEG."""
+    try:
+        from playwright.async_api import async_playwright
+    except ImportError:
+        print("[Playwright] Not installed, skipping render")
+        return None
+
+    scheme = card.get("scheme", "warm")
+    accent = ACCENT_COLORS.get(scheme, "#d4a017")
+    tints = {"warm":(16,11,3),"dark":(6,5,8),"tech":(3,9,22),"workshop":(12,9,0),"nature":(4,14,5)}
+    tr, tg, tb = tints.get(scheme, (16,11,3))
+
+    # Save image to temp file for HTML to load
+    img_filename = f"{uuid.uuid4().hex}.jpg"
+    img_path = os.path.join(TEMP_DIR, img_filename)
+    with open(img_path, "wb") as f:
+        f.write(base64.b64decode(image_b64))
+    asyncio.create_task(_delete_after(img_path, 120))
+
+    image_url = f"{PUBLIC_BASE_URL}/img/{img_filename}"
+
+    # Build HTML parts
+    badge = card.get("badge", "")
+    badge_html = f'<div class="badge">{badge}</div>' if badge else ""
+    subtitle = card.get("subtitle", "")
+    subtitle_html = f'<div class="subtitle">{subtitle}</div>' if subtitle else ""
+
+    feats = []
+    for i in range(1, 4):
+        feat = card.get(f"feat{i}", "")
+        icon = card.get(f"icon{i}", "✦")
+        if feat:
+            feats.append(f'<div class="feat"><div class="feat-icon">{icon}</div><div class="feat-text">{feat}</div></div>')
+    features_html = "\n".join(feats)
+
+    html = CARD_HTML_TEMPLATE.format(
+        image_url=image_url,
+        accent=accent, tr=tr, tg=tg, tb=tb,
+        name=card.get("name", "").upper(),
+        badge_html=badge_html,
+        subtitle_html=subtitle_html,
+        features_html=features_html,
+    )
+
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(args=["--no-sandbox", "--disable-setuid-sandbox"])
+            page = await browser.new_page(viewport={"width": 800, "height": 1100})
+            await page.set_content(html, wait_until="networkidle")
+            screenshot = await page.screenshot(type="jpeg", quality=92,
+                                               clip={"x":0,"y":0,"width":800,"height":1100})
+            await browser.close()
+
+        b64 = base64.b64encode(screenshot).decode()
+        print(f"[Playwright] Card rendered successfully ({len(screenshot)//1024}KB)")
+        return f"data:image/jpeg;base64,{b64}"
+    except Exception as e:
+        print(f"[Playwright] Render error: {e}")
+        return None
 
 
 async def health_handler(request):
