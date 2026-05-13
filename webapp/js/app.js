@@ -1084,7 +1084,7 @@ async function mpCardAiIdea() {
                     role: "user",
                     content: [
                         { type: "image_url", image_url: { url: "data:image/jpeg;base64," + mpCardPhotoBase64 } },
-                        { type: "text", text: `Ты копирайтер для маркетплейса. Товар: "${name}". Напиши продающее описание для карточки: одна цепляющая фраза, затем 3 ключевых преимущества через " • ". Только текст на русском, без лишних слов.` }
+                        { type: "text", text: `Ты SEO-копирайтер для маркетплейса (Wildberries/Ozon). Товар: "${name}". Посмотри на фото и напиши продающее описание для карточки товара. Требования: максимум 2 строки, включи ключевые слова по которым ищут этот товар, без воды, только суть и выгода для покупателя. Только текст на русском, никаких списков и символов.` }
                     ]
                 }]
             })
@@ -1103,11 +1103,13 @@ async function mpCardGenerate() {
     if (!mpCardPhotoBase64) return;
 
     const name = document.getElementById("mp-card-name").value.trim();
-    const subtitle = document.getElementById("mp-card-subtitle").value.trim();
     const badge = document.getElementById("mp-card-badge").value.trim();
     const feat1 = document.getElementById("mp-card-feat1").value.trim();
     const feat2 = document.getElementById("mp-card-feat2").value.trim();
     const feat3 = document.getElementById("mp-card-feat3").value.trim();
+    // Берём описание из видимого поля если заполнено, иначе из скрытого subtitle
+    const descField = document.getElementById("mp-card-description")?.value.trim();
+    const subtitle = descField || document.getElementById("mp-card-subtitle").value.trim();
 
     const sceneBg = mpCardBgPrompt || "clean professional studio, soft gradient background, neutral tones";
     const scenePrompt = `${sceneBg}. Photorealistic commercial photography scene, cinematic lighting, high detail, 3:4 aspect ratio. NO text, NO watermarks.`;
