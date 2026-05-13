@@ -1178,6 +1178,65 @@ body {
     gap: 10px;
     padding: 14px;
 }
+
+/* Text mode toggle */
+.mp-text-toggle {
+    display: flex;
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+}
+.mp-tt-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    color: var(--text2);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.mp-tt-btn.active {
+    background: var(--accent2);
+    color: #fff;
+}
+
+/* Description section */
+.mp-desc-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.mp-desc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.mp-desc-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.mp-ai-idea-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--accent2);
+    background: transparent;
+    color: var(--accent2);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.mp-ai-idea-btn:active {
+    background: var(--accent2);
+    color: #fff;
+}
 .mp-select {
     width: 100%;
     padding: 13px 14px;

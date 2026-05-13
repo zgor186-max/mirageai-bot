@@ -247,7 +247,15 @@
                 <button class="change-photo-btn" onclick="document.getElementById('mp-card-photo-input').click()">Изменить фото</button>
             </div>
 
-            <!-- Ячейка анализа -->
+            <!-- Переключатель С текстом / Без текста -->
+            <div id="mp-text-toggle-wrap" style="display:none;padding:0 16px 12px;">
+                <div class="mp-text-toggle">
+                    <button class="mp-tt-btn active" id="mp-tt-with" onclick="mpSetTextMode(true)">📝 С текстом</button>
+                    <button class="mp-tt-btn" id="mp-tt-without" onclick="mpSetTextMode(false)">🖼 Без текста</button>
+                </div>
+            </div>
+
+            <!-- Ячейка анализа (только для режима "С текстом") -->
             <div id="mp-card-analysis-cell" class="mp-analysis-cell" style="display:none;">
                 <div id="mp-analysis-loading" class="mp-analysis-loading">
                     <div class="mp-analysis-spinner"></div>
@@ -265,6 +273,15 @@
                         <option value="home">🏠 Дом и мебель</option>
                         <option value="other">📦 Прочее</option>
                     </select>
+
+                    <!-- Описание -->
+                    <div class="mp-desc-section">
+                        <div class="mp-desc-header">
+                            <span class="mp-desc-label">Описание</span>
+                            <button class="mp-ai-idea-btn" onclick="mpCardAiIdea()">✦ AI идея</button>
+                        </div>
+                        <textarea id="mp-card-description" class="mp-textarea" placeholder="Опиши товар — что хочешь написать на карточке..." rows="3"></textarea>
+                    </div>
                 </div>
             </div>
 

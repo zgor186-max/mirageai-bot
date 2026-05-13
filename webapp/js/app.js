@@ -717,6 +717,14 @@ let mpCardCategory = "clothing";
 let mpCardIcon1 = "✦";
 let mpCardIcon2 = "✦";
 let mpCardIcon3 = "✦";
+let mpCardWithText = true;  // режим: с текстом или без
+
+function mpSetTextMode(withText) {
+    mpCardWithText = withText;
+    document.getElementById("mp-tt-with").classList.toggle("active", withText);
+    document.getElementById("mp-tt-without").classList.toggle("active", !withText);
+    document.getElementById("mp-card-analysis-cell").style.display = withText ? "" : "none";
+}
 
 function mpSelectBg(style, el) {
     mpCardBgStyle = style;
@@ -814,14 +822,18 @@ function mpCardHandlePhoto(input) {
         document.getElementById("mp-card-upload-area").style.display = "none";
         document.getElementById("mp-card-preview-container").style.display = "block";
         document.getElementById("mp-card-generate-btn").disabled = false;
-        // Показываем ячейку и запускаем анализ
-        const cell = document.getElementById("mp-card-analysis-cell");
-        const loading = document.getElementById("mp-analysis-loading");
-        const result = document.getElementById("mp-analysis-result");
-        if (cell) cell.style.display = "block";
-        if (loading) loading.style.display = "flex";
-        if (result) result.style.display = "none";
-        mpCardAnalyze(mpCardPhotoBase64);
+        // Показываем переключатель режима
+        document.getElementById("mp-text-toggle-wrap").style.display = "block";
+        // Показываем ячейку анализа и запускаем анализ (если режим "с текстом")
+        if (mpCardWithText) {
+            const cell = document.getElementById("mp-card-analysis-cell");
+            const loading = document.getElementById("mp-analysis-loading");
+            const result = document.getElementById("mp-analysis-result");
+            if (cell) cell.style.display = "block";
+            if (loading) loading.style.display = "flex";
+            if (result) result.style.display = "none";
+            mpCardAnalyze(mpCardPhotoBase64);
+        }
     };
     reader.readAsDataURL(file);
 }
@@ -1084,15 +1096,14 @@ async function mpCardGenerate() {
                 scene_prompt: scenePrompt,
                 product_name: name || "product",
                 category: mpCardCategory || "clothing",
-                // Данные для рендера карточки (Playwright на сервере)
-                card: {
+                card: mpCardWithText ? {
                     name, subtitle, badge,
                     feat1, feat2, feat3,
                     icon1: mpCardIcon1,
                     icon2: mpCardIcon2,
                     icon3: mpCardIcon3,
                     scheme: mpCardColorScheme || "warm"
-                }
+                } : null
             })
         });
         clearTimeout(timeout);
