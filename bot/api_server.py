@@ -676,6 +676,7 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
     feats = []
     # Поддержка нового формата: массив features [{icon, text}]
     features_list = card.get("features", [])
+    print(f"[Card] features_list received: {features_list}")
     if features_list:
         for f in features_list[:5]:
             icon = f.get("icon", "✦")

@@ -1134,6 +1134,7 @@ async function mpCardGenerate() {
             { icon: "✦", text: document.getElementById("mp-card-feat3").value.trim() },
           ].filter(f => f.text);
 
+    console.log("[Card] useAiIdea:", useAiIdea, "features:", JSON.stringify(features));
     const sceneBg = mpCardBgPrompt || "clean professional studio, soft gradient background, neutral tones";
     const scenePrompt = `${sceneBg}. Photorealistic commercial photography scene, cinematic lighting, high detail, 3:4 aspect ratio. NO text, NO watermarks.`;
 
