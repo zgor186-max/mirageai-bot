@@ -695,6 +695,14 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     name         = _svg_esc(card.get("name", "")).upper()
     subtitle_raw = _svg_esc(card.get("subtitle", ""))
 
+    # Dark-background schemes → white text; light-background schemes → dark text
+    LIGHT_SCHEMES = {"warm", "workshop", "nature"}
+    is_light = scheme in LIGHT_SCHEMES
+    title_color   = TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])["title"] if is_light else "#ffffff"
+    sub_color     = TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])["subtitle"] if is_light else "#ffffffcc"
+    feat_color    = TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])["feat"] if is_light else "#ffffff"
+    badge_text_c  = "#111111" if is_light else "#111111"
+
     feats = []
     for i in range(1, 6):
         feat = card.get(f"feat{i}", "")
@@ -711,7 +719,7 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         els.append(
             f'<text x="{40 + bw // 2}" y="63" text-anchor="middle" '
             f'font-family="Arial, Liberation Sans, sans-serif" '
-            f'font-size="12" font-weight="700" fill="#111">{badge}</text>'
+            f'font-size="12" font-weight="700" fill="{badge_text_c}">{badge}</text>'
         )
 
     # ── Title ──────────────────────────────────────────────
@@ -720,47 +728,73 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     for line in title_lines:
         els.append(
             f'<text x="40" y="{ty}" '
-            f'font-family="Impact, Arial Black, Liberation Sans, sans-serif" '
-            f'font-size="64" font-weight="900" fill="white">{line}</text>'
+            f'font-family="\'Arial Black\', \'Liberation Sans\', \'DejaVu Sans\', sans-serif" '
+            f'font-size="62" font-weight="900" fill="{title_color}">{line}</text>'
         )
-        ty += 66
+        ty += 68
 
     # ── Subtitle ───────────────────────────────────────────
     if subtitle_raw:
-        sy = ty + 16
-        for line in _svg_wrap(subtitle_raw, max_chars=40):
+        # Decorative accent line above subtitle
+        els.append(
+            f'<line x1="40" y1="{ty + 10}" x2="140" y2="{ty + 10}" '
+            f'stroke="{accent}" stroke-width="2.5"/>'
+        )
+        sy = ty + 28
+        for line in _svg_wrap(subtitle_raw, max_chars=38):
             els.append(
                 f'<text x="40" y="{sy}" '
                 f'font-family="Arial, Liberation Sans, sans-serif" '
-                f'font-size="15" fill="white">{line}</text>'
+                f'font-size="15" fill="{sub_color}">{line}</text>'
             )
             sy += 22
 
     # ── Features ───────────────────────────────────────────
-    # 5 rows × 58px, anchored above thumbnail (top of thumbnail = 974, gap 36)
+    # 5 rows × 62px, anchored above thumbnail (top of thumbnail = 974, gap 36)
     if feats:
+        feat_h    = 62
         fz_bottom = 938
-        fz_top    = max(fz_bottom - len(feats) * 58, 560)
+        fz_top    = max(fz_bottom - len(feats) * feat_h, 550)
+
         for idx, feat in enumerate(feats):
-            cy = fz_top + idx * 58 + 21
-            # Circle
-            els.append(
-                f'<circle cx="61" cy="{cy}" r="21" '
-                f'fill="white" fill-opacity="0.15" '
-                f'stroke="{accent}" stroke-width="1.5"/>'
-            )
-            # Emoji
+            cy = fz_top + idx * feat_h + 21
+
+            # Separator line between features (not before first)
+            if idx > 0:
+                els.append(
+                    f'<line x1="40" y1="{cy - 27}" x2="420" y2="{cy - 27}" '
+                    f'stroke="white" stroke-opacity="0.2" stroke-width="1"/>'
+                )
+
+            # Filled icon circle (solid accent color)
+            els.append(f'<circle cx="61" cy="{cy}" r="21" fill="{accent}"/>')
+
+            # Emoji inside circle
             els.append(
                 f'<text x="61" y="{cy + 7}" text-anchor="middle" '
                 f'font-family="Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif" '
                 f'font-size="17">{feat["icon"]}</text>'
             )
-            # Feature text
-            els.append(
-                f'<text x="92" y="{cy + 5}" '
-                f'font-family="Arial, Liberation Sans, sans-serif" '
-                f'font-size="13" font-weight="700" fill="white">{feat["text"]}</text>'
-            )
+
+            # Feature text — up to 2 lines
+            flines = _svg_wrap(feat["text"], max_chars=24)
+            if len(flines) == 1:
+                els.append(
+                    f'<text x="92" y="{cy + 6}" '
+                    f'font-family="Arial, Liberation Sans, sans-serif" '
+                    f'font-size="14" font-weight="700" fill="{feat_color}">{flines[0]}</text>'
+                )
+            else:
+                els.append(
+                    f'<text x="92" y="{cy - 4}" '
+                    f'font-family="Arial, Liberation Sans, sans-serif" '
+                    f'font-size="14" font-weight="700" fill="{feat_color}">{flines[0]}</text>'
+                )
+                els.append(
+                    f'<text x="92" y="{cy + 13}" '
+                    f'font-family="Arial, Liberation Sans, sans-serif" '
+                    f'font-size="14" font-weight="700" fill="{feat_color}">{flines[1]}</text>'
+                )
 
     # ── Thumbnail circle ───────────────────────────────────
     els.append(
