@@ -716,34 +716,14 @@ def _render_card_cairo_sync(image_b64: str, card: dict) -> str | None:
 
     els = []
 
-    # ── Triple scrim: ensures text readability on any image ──────
+    # ── Text shadow filter ───────────────────────────────────────
     els.append(
         '<defs>'
-        # Left column gradient — only covers text zone (left 45% of image)
-        '<linearGradient id="scrimX" x1="0" y1="0" x2="1" y2="0">'
-        '<stop offset="0%"   stop-color="black" stop-opacity="0.65"/>'
-        '<stop offset="40%"  stop-color="black" stop-opacity="0.30"/>'
-        '<stop offset="65%"  stop-color="black" stop-opacity="0.08"/>'
-        '<stop offset="85%"  stop-color="black" stop-opacity="0.01"/>'
-        '<stop offset="100%" stop-color="black" stop-opacity="0"/>'
-        '</linearGradient>'
-        # Top gradient — only title row, lighter
-        '<linearGradient id="scrimY" x1="0" y1="0" x2="0" y2="1">'
-        '<stop offset="0%"   stop-color="black" stop-opacity="0.30"/>'
-        '<stop offset="45%"  stop-color="black" stop-opacity="0.05"/>'
-        '<stop offset="100%" stop-color="black" stop-opacity="0"/>'
-        '</linearGradient>'
-        # Bottom gradient — features zone
-        '<linearGradient id="scrimB" x1="0" y1="0" x2="0" y2="1">'
-        '<stop offset="0%"   stop-color="black" stop-opacity="0"/>'
-        '<stop offset="40%"  stop-color="black" stop-opacity="0.18"/>'
-        '<stop offset="100%" stop-color="black" stop-opacity="0.45"/>'
-        '</linearGradient>'
+        '<filter id="ts" x="-20%" y="-20%" width="140%" height="140%">'
+        '<feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="black" flood-opacity="0.75"/>'
+        '</filter>'
         '</defs>'
     )
-    els.append('<rect x="0" y="0" width="370" height="1100" fill="url(#scrimX)"/>')
-    els.append('<rect x="0" y="0" width="800" height="400" fill="url(#scrimY)"/>')
-    els.append('<rect x="0" y="780" width="800" height="320" fill="url(#scrimB)"/>')
 
     # ── Badge (top-right corner) ──────────────────────────────────
     if badge:
@@ -773,7 +753,7 @@ def _render_card_cairo_sync(image_b64: str, card: dict) -> str | None:
         els.append(
             f'<text x="40" y="{ty}" '
             f'font-family="{FONT_TITLE}" font-size="{title_fs}" font-weight="900" '
-            f'fill="#ffffff" letter-spacing="1.5">{line}</text>'
+            f'fill="#ffffff" letter-spacing="1.5" filter="url(#ts)">{line}</text>'
         )
         ty += title_lh
 
@@ -791,7 +771,7 @@ def _render_card_cairo_sync(image_b64: str, card: dict) -> str | None:
             els.append(
                 f'<text x="40" y="{sy}" '
                 f'font-family="{FONT_BODY}" font-size="18" fill="#dddddd" '
-                f'letter-spacing="0.2">{sline}</text>'
+                f'letter-spacing="0.2" filter="url(#ts)">{sline}</text>'
             )
             sy += 26
 
@@ -801,7 +781,7 @@ def _render_card_cairo_sync(image_b64: str, card: dict) -> str | None:
         els.append(
             f'<text x="40" y="{price_y}" '
             f'font-family="{FONT_TITLE}" font-size="46" font-weight="900" '
-            f'fill="{accent}">{price_raw}</text>'
+            f'fill="{accent}" filter="url(#ts)">{price_raw}</text>'
         )
 
     # ── Features (bottom-left) ────────────────────────────────────
@@ -830,7 +810,7 @@ def _render_card_cairo_sync(image_b64: str, card: dict) -> str | None:
                 els.append(
                     f'<text x="{feat_tx}" y="{start_y + li * feat_lh}" '
                     f'font-family="{FONT_BODY}" font-size="{feat_fs}" font-weight="700" '
-                    f'fill="#ffffff">{fl}</text>'
+                    f'fill="#ffffff" filter="url(#ts)">{fl}</text>'
                 )
 
     svg = (
