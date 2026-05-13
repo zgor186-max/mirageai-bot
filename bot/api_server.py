@@ -90,48 +90,46 @@ async def generate_card_handler(request):
         # Category-specific placement instructions
         PLACEMENT = {
             "clothing": (
-                "is unfolded and laid completely flat on the surface in a flat lay arrangement, "
-                "positioned in the RIGHT half of the frame, filling 55% of the total frame. "
-                "The top and bottom parts are separated and displayed together, fully visible. "
-                "Every part of the fabric is touching the surface — NO parts floating or hanging. "
-                "NO hanger anywhere. Viewed from slightly above (40-degree angle). "
-                "The LEFT third of the frame remains open with scene background for text overlay."
+                "is neatly folded or laid as a SINGLE UNIFIED item on the surface in the RIGHT half of the frame, "
+                "filling 55% of the total frame. Keep it as ONE piece — do NOT separate top and bottom apart. "
+                "Lay it naturally as it would look folded in a store. NO scattered fabric pieces anywhere. "
+                "Every thread belongs to the single folded item. The LEFT 40% stays clean background."
             ),
             "accessories": (
-                "is placed upright on the RIGHT side of the frame, filling 50% of the total frame. "
-                "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
+                "is placed as a single item upright or flat on the RIGHT side of the frame, filling 50% of the total frame. "
+                "ONE product only, no duplicates. Firmly on the surface. The LEFT 40% stays open with clean background."
             ),
             "food": (
-                "is placed on the RIGHT side of the frame, filling 50% of the total frame. "
-                "Firmly on the surface. The LEFT third stays open with scene background."
+                "is placed as a single item on the RIGHT side of the frame, filling 50% of the total frame. "
+                "ONE product only. Firmly on the surface. The LEFT 40% stays open with clean background."
             ),
             "beauty": (
-                "is standing upright on the RIGHT side of the frame, filling 50% of the total frame. "
-                "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
+                "is standing upright as a single item on the RIGHT side of the frame, filling 50% of the total frame. "
+                "ONE product only, no duplicates. Firmly on the surface. The LEFT 40% stays open with clean background."
             ),
             "gadgets": (
-                "is placed at a hero angle on the RIGHT side of the frame, filling 50% of the total frame. "
-                "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
+                "is placed as a single item at a hero angle on the RIGHT side of the frame, filling 50% of the total frame. "
+                "ONE product only. Firmly on the surface. The LEFT 40% stays open with clean background."
             ),
             "home": (
-                "is placed naturally on the RIGHT side of the frame as it would be used, filling 50% of the total frame. "
-                "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
+                "is placed as a single item naturally on the RIGHT side of the frame as it would be used, "
+                "filling 50% of the total frame. ONE product only. Firmly on the surface. The LEFT 40% stays open."
             ),
             "other": (
-                "is placed prominently on the RIGHT side of the frame, filling 50% of the total frame. "
-                "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
+                "is placed as a single item prominently on the RIGHT side of the frame, filling 50% of the total frame. "
+                "ONE product only, no duplicates or fragments. Firmly on the surface. The LEFT 40% stays open."
             ),
         }
         placement_instruction = PLACEMENT.get(category, PLACEMENT["other"])
 
         place_prompt = (
-            f"Take the COMPLETE product shown in the reference image (every part, every component, the entire item as shown) "
-            f"and integrate it fully into this scene: {scene_prompt}. "
+            f"Take the product shown in the reference image and place it as ONE SINGLE UNIFIED item "
+            f"into this scene: {scene_prompt}. "
             f"The product {placement_instruction} "
-            f"CRITICAL COMPOSITION: the product must be in the RIGHT half of the frame — "
-            f"the left 40% of the image must remain as clean scene background (no product there). "
-            f"IMPORTANT: reproduce ALL parts of the product — do not crop or cut any component. "
-            f"Preserve exact colors, patterns, textures of the original product. "
+            f"CRITICAL: show the product as ONE whole item — absolutely NO duplicate copies, NO scattered fragments, "
+            f"NO extra pieces of the product anywhere else in the frame. Just one clean product placement. "
+            f"CRITICAL COMPOSITION: product in the RIGHT half — left 40% must be clean scene background. "
+            f"Preserve exact colors, patterns, textures of the original. "
             f"Photorealistic commercial product photography, warm cinematic lighting. NO text, NO watermarks."
         )
 
