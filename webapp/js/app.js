@@ -1153,13 +1153,14 @@ async function mpCardGenerate() {
                 scene_prompt: scenePrompt,
                 product_name: name || "product",
                 category: mpCardCategory || "clothing",
-                card: mpCardWithText ? {
-                    name: cardTitle,
-                    subtitle: cardSubtitle,
-                    badge,
-                    features: features.map(f => ({ icon: String(f.icon || "✦"), text: String(f.text || "") })).filter(f => f.text),
-                    scheme: mpCardColorScheme || "warm"
-                } : null
+                card: mpCardWithText ? (() => {
+                    const c = { name: cardTitle, subtitle: cardSubtitle, badge, scheme: mpCardColorScheme || "warm" };
+                    features.forEach((f, i) => {
+                        c[`feat${i+1}`] = String(f.text || "");
+                        c[`icon${i+1}`] = String(f.icon || "✦");
+                    });
+                    return c;
+                })() : null
             })
         });
         clearTimeout(timeout);

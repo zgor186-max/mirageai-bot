@@ -675,27 +675,12 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
 
     feats = []
     # Поддержка нового формата: массив features [{icon, text}]
-    features_list = card.get("features") or []
-    print(f"[Card] features_list type={type(features_list)} len={len(features_list)} val={features_list}")
-    if features_list and isinstance(features_list, list):
-        for f in features_list[:5]:
-            if isinstance(f, dict):
-                icon = f.get("icon") or f.get("emoji") or "✦"
-                text = f.get("text") or f.get("feature") or f.get("name") or ""
-            elif isinstance(f, str):
-                parts = f.split(" ", 1)
-                icon, text = (parts[0], parts[1]) if len(parts) == 2 else ("✦", f)
-            else:
-                continue
-            if text:
-                feats.append(f'<div class="feat"><div class="feat-icon">{icon}</div><div class="feat-text">{text.upper()}</div></div>')
-    # Fallback: старый формат feat1-3
-    if not feats:
-        for i in range(1, 4):
-            feat = card.get(f"feat{i}", "")
-            icon = card.get(f"icon{i}", "✦")
-            if feat:
-                feats.append(f'<div class="feat"><div class="feat-icon">{icon}</div><div class="feat-text">{feat}</div></div>')
+    for i in range(1, 6):
+        feat = card.get(f"feat{i}", "")
+        icon = card.get(f"icon{i}", "✦")
+        if feat:
+            feats.append(f'<div class="feat"><div class="feat-icon">{icon}</div><div class="feat-text">{feat.upper()}</div></div>')
+    print(f"[Card] feats built: {len(feats)} items")
     features_html = "\n".join(feats)
 
     html = CARD_HTML_TEMPLATE.format(
