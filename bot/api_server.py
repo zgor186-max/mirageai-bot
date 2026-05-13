@@ -697,9 +697,9 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
 
     pil_img = Image.open(_io.BytesIO(raw_bytes)).convert("RGB")
 
-    # ── Sample background color from left text area, derive harmonious text color ──
+    # ── Sample background color from upper-left zone (behind title, no product) ──
     bg_arr   = np.array(pil_img.resize((800, 1100), Image.LANCZOS))
-    left_px  = bg_arr[:, :450, :]          # left 450px — where text goes
+    left_px  = bg_arr[:300, :450, :]       # top 300px of left 450px — sky/background area
     avg_r    = int(left_px[:, :, 0].mean())
     avg_g    = int(left_px[:, :, 1].mean())
     avg_b    = int(left_px[:, :, 2].mean())
@@ -774,11 +774,11 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             f'font-size="13" font-weight="700" fill="{badge_text_c}">{badge}</text>'
         )
 
-    # ── Title (−15% size, serif) ───────────────────────────
+    # ── Title (−30% from original, serif, higher position) ───
     title_lines = _svg_wrap(name, max_chars=12)
-    title_fs = 53    # 62 × 0.85
-    title_lh = 58    # proportional line height
-    ty = 108
+    title_fs = 45    # 62 × 0.85 × 0.85
+    title_lh = 50    # proportional line height
+    ty = 75          # moved up from 108
     for line in title_lines:
         els.append(
             f'<text x="40" y="{ty}" '
@@ -787,37 +787,31 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         )
         ty += title_lh
 
-    # ── Subtitle (right after title, +20% size, same font) ─
+    # ── Subtitle (tight after title, max 2 words/line, +10% size) ─
     if subtitle_raw:
-        sy = ty + 14
-        for line in _svg_wrap(subtitle_raw, max_chars=32):
+        sy = ty + 6
+        for line in _svg_wrap(subtitle_raw, max_chars=11):
             els.append(
                 f'<text x="40" y="{sy}" '
                 f'font-family="{FONT}" '
-                f'font-size="18" fill="{sub_color}">{line}</text>'
+                f'font-size="20" fill="{sub_color}">{line}</text>'
             )
-            sy += 26
+            sy += 28
 
-    # ── Features (bottom-left corner, +10% scale) ──────────
+    # ── Features (bottom-left, pushed lower, no separator lines) ─
     if feats:
         feat_h    = 75   # 68 × 1.1
         feat_r    = 23   # 21 × 1.1
-        feat_cx   = 67   # circle centre x (bigger radius → shift right)
-        feat_tx   = 100  # text x
+        feat_cx   = 67
+        feat_tx   = 100
         feat_fs   = 14   # 13 × 1.1
         feat_lh   = 18   # 16 × 1.1
         feat_icon = 19   # 17 × 1.1
-        fz_bottom = 980
+        fz_bottom = 1030
         fz_top    = max(fz_bottom - len(feats) * feat_h, 520)
 
         for idx, feat in enumerate(feats):
             cy = fz_top + idx * feat_h + 24
-
-            if idx > 0:
-                els.append(
-                    f'<line x1="40" y1="{cy - 33}" x2="374" y2="{cy - 33}" '
-                    f'stroke="{feat_color}" stroke-opacity="0.25" stroke-width="1"/>'
-                )
 
             els.append(f'<circle cx="{feat_cx}" cy="{cy}" r="{feat_r}" fill="{accent}"/>')
 
