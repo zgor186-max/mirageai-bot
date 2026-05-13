@@ -685,63 +685,24 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
 
     import io as _io
     from PIL import Image
-
-    scheme   = card.get("scheme", "warm")
-    accent   = ACCENT_COLORS.get(scheme, "#d4a017")
-    raw_bytes = base64.b64decode(image_b64)
-
-    import io as _io2
-    from PIL import ImageDraw as _ImageDraw
     import numpy as np
-    import colorsys
+
+    scheme    = card.get("scheme", "warm")
+    accent    = ACCENT_COLORS.get(scheme, "#d4a017")
+    raw_bytes = base64.b64decode(image_b64)
 
     pil_img = Image.open(_io.BytesIO(raw_bytes)).convert("RGB")
 
-    # ── Sample background color from upper-left zone (behind title, no product) ──
-    bg_arr   = np.array(pil_img.resize((800, 1100), Image.LANCZOS))
-    left_px  = bg_arr[:300, :450, :]       # top 300px of left 450px — sky/background area
-    avg_r    = int(left_px[:, :, 0].mean())
-    avg_g    = int(left_px[:, :, 1].mean())
-    avg_b    = int(left_px[:, :, 2].mean())
-    avg_v    = (avg_r + avg_g + avg_b) / 3.0
-    is_dark_bg = avg_v < 140
-
-    # Convert avg color to HSV, then derive readable text color in same hue family
-    h, s, v = colorsys.rgb_to_hsv(avg_r / 255, avg_g / 255, avg_b / 255)
-    if is_dark_bg:
-        # Dark background → light text: same hue, low saturation, high brightness
-        t_r, t_g, t_b = colorsys.hsv_to_rgb(h, max(s * 0.4, 0.08), 0.95)
-    else:
-        # Light background → dark text: same hue, higher saturation, low brightness
-        t_r, t_g, t_b = colorsys.hsv_to_rgb(h, min(s * 1.8 + 0.3, 0.85), 0.22)
-
-    def _hex(r, g, b):
-        return "#{:02x}{:02x}{:02x}".format(int(r * 255), int(g * 255), int(b * 255))
-
-    # Scrim always darkens title/subtitle area → force light text there
-    title_color = _hex(t_r, t_g, t_b) if is_dark_bg else "#ffffff"
-    sub_color   = "#e8e8e8" if not is_dark_bg else _hex(
-        *colorsys.hsv_to_rgb(h, max(s * 0.25, 0.05), 0.88))
-    # Features sit below scrim — keep adaptive color
-    feat_color  = _hex(t_r, t_g, t_b)
-    badge_text_c = "#111111"
-
-    print(f"[Cairo] bg avg=({avg_r},{avg_g},{avg_b}) v={avg_v:.1f} "
-          f"{'dark' if is_dark_bg else 'light'} → text={title_color}")
-
-    # ── Circular thumbnail: pre-crop in PIL (more reliable than SVG clip-path) ──
-    thumb_size = 88
-    thumb = pil_img.resize((thumb_size, thumb_size), Image.LANCZOS).convert("RGBA")
-    mask  = Image.new("L", (thumb_size, thumb_size), 0)
-    _ImageDraw.Draw(mask).ellipse((0, 0, thumb_size - 1, thumb_size - 1), fill=255)
-    thumb.putalpha(mask)
-    _tbuf = _io2.BytesIO()
-    thumb.save(_tbuf, format="PNG")
-    thumb_uri = "data:image/png;base64," + base64.b64encode(_tbuf.getvalue()).decode()
+    # Sample background for debug log only (scrims handle readability now)
+    bg_arr  = np.array(pil_img.resize((800, 1100), Image.LANCZOS))
+    left_px = bg_arr[:300, :450, :]
+    avg_v   = (left_px[:, :, 0].mean() + left_px[:, :, 1].mean() + left_px[:, :, 2].mean()) / 3.0
+    print(f"[Cairo] bg avg v={avg_v:.1f} scheme={scheme}")
 
     badge        = _svg_esc(card.get("badge", ""))
     name         = _svg_esc(card.get("name", "")).upper()
     subtitle_raw = _svg_esc(card.get("subtitle", ""))
+    price_raw    = _svg_esc(card.get("price", "").strip())
 
     feats = []
     for i in range(1, 6):
@@ -750,98 +711,125 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         if feat:
             feats.append({"icon": icon, "text": _svg_esc(feat.upper())})
 
-    # Single font family used everywhere for visual consistency
-    FONT       = "'Georgia', 'Liberation Serif', 'DejaVu Serif', serif"
+    # Open Sans Condensed for bold titles (installed via fonts-open-sans)
+    FONT_TITLE = "'Open Sans Condensed', 'Nimbus Sans Narrow', 'Liberation Sans Narrow', 'Ubuntu', sans-serif"
+    FONT_BODY  = "'Open Sans', 'Ubuntu', 'Liberation Sans', 'DejaVu Sans', sans-serif"
     FONT_EMOJI = "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif"
 
     els = []
 
-    # ── Scrim: dark gradient behind title/subtitle for readability ──
+    # ── Triple scrim: ensures text readability on any image ──────
     els.append(
         '<defs>'
-        '<linearGradient id="scrim" x1="0" y1="0" x2="0" y2="1">'
-        '<stop offset="0%" stop-color="black" stop-opacity="0.55"/>'
-        '<stop offset="75%" stop-color="black" stop-opacity="0.15"/>'
+        # Left column gradient (full height) — protects entire text zone
+        '<linearGradient id="scrimX" x1="0" y1="0" x2="1" y2="0">'
+        '<stop offset="0%"   stop-color="black" stop-opacity="0.72"/>'
+        '<stop offset="42%"  stop-color="black" stop-opacity="0.38"/>'
+        '<stop offset="62%"  stop-color="black" stop-opacity="0.10"/>'
         '<stop offset="100%" stop-color="black" stop-opacity="0"/>'
+        '</linearGradient>'
+        # Top gradient (title area)
+        '<linearGradient id="scrimY" x1="0" y1="0" x2="0" y2="1">'
+        '<stop offset="0%"   stop-color="black" stop-opacity="0.48"/>'
+        '<stop offset="55%"  stop-color="black" stop-opacity="0.08"/>'
+        '<stop offset="100%" stop-color="black" stop-opacity="0"/>'
+        '</linearGradient>'
+        # Bottom gradient (features area)
+        '<linearGradient id="scrimB" x1="0" y1="0" x2="0" y2="1">'
+        '<stop offset="0%"   stop-color="black" stop-opacity="0"/>'
+        '<stop offset="45%"  stop-color="black" stop-opacity="0.22"/>'
+        '<stop offset="100%" stop-color="black" stop-opacity="0.52"/>'
         '</linearGradient>'
         '</defs>'
     )
-    els.append('<rect x="0" y="0" width="800" height="460" fill="url(#scrim)"/>')
+    els.append('<rect x="0" y="0" width="530" height="1100" fill="url(#scrimX)"/>')
+    els.append('<rect x="0" y="0" width="800" height="520" fill="url(#scrimY)"/>')
+    els.append('<rect x="0" y="760" width="530" height="340" fill="url(#scrimB)"/>')
 
-    # ── Badge (top-right corner, +10% size) ────────────────
+    # ── Badge (top-right corner) ──────────────────────────────────
     if badge:
-        bw  = min(max(int((len(badge) * 9 + 28) * 1.1), 88), 418)
-        bh  = 31          # 28 × 1.1
-        brx = 15          # 14 × 1.1
-        bx  = 800 - bw - 40
-        by  = 44
+        bw  = min(max(int(len(badge) * 8.5 + 32), 90), 380)
+        bh  = 32
+        bx  = 800 - bw - 36
+        by  = 40
+        els.append(f'<rect x="{bx}" y="{by}" width="{bw}" height="{bh}" rx="16" fill="{accent}"/>')
         els.append(
-            f'<rect x="{bx}" y="{by}" width="{bw}" height="{bh}" rx="{brx}" fill="{accent}"/>'
-        )
-        els.append(
-            f'<text x="{bx + bw // 2}" y="{by + 21}" text-anchor="middle" '
-            f'font-family="{FONT}" '
-            f'font-size="13" font-weight="700" fill="{badge_text_c}">{badge}</text>'
+            f'<text x="{bx + bw // 2}" y="{by + 22}" text-anchor="middle" '
+            f'font-family="{FONT_BODY}" font-size="13" font-weight="700" '
+            f'fill="#111111" letter-spacing="0.5">{badge}</text>'
         )
 
-    # ── Title (−30% from original, serif, higher position) ───
-    title_lines = _svg_wrap(name, max_chars=12)
-    title_fs = 45    # 62 × 0.85 × 0.85
-    title_lh = 50    # proportional line height
-    ty = 75          # moved up from 108
-    for line in title_lines:
+    # ── Title (auto-scale font by longest word) ───────────────────
+    words = name.split() if name else []
+    max_wlen = max((len(w) for w in words), default=0)
+    if max_wlen > 11:
+        title_fs, title_mc, title_lh = 38, 18, 44
+    elif max_wlen > 7:
+        title_fs, title_mc, title_lh = 48, 14, 54
+    else:
+        title_fs, title_mc, title_lh = 58, 11, 65
+
+    ty = 76
+    for line in _svg_wrap(name, max_chars=title_mc):
         els.append(
             f'<text x="40" y="{ty}" '
-            f'font-family="{FONT}" '
-            f'font-size="{title_fs}" font-weight="900" fill="{title_color}">{line}</text>'
+            f'font-family="{FONT_TITLE}" font-size="{title_fs}" font-weight="900" '
+            f'fill="#ffffff" letter-spacing="1.5">{line}</text>'
         )
         ty += title_lh
 
-    # ── Subtitle (tight after title, max 2 words/line, +10% size) ─
+    # ── Accent line under title ───────────────────────────────────
+    line_y = ty + 6
+    els.append(f'<rect x="40" y="{line_y}" width="54" height="3" rx="1.5" fill="{accent}"/>')
+    sy = line_y + 22
+
+    # ── Subtitle ─────────────────────────────────────────────────
     if subtitle_raw:
-        sy = ty + 6
-        for line in _svg_wrap(subtitle_raw, max_chars=19):
+        for sline in _svg_wrap(subtitle_raw, max_chars=24):
             els.append(
                 f'<text x="40" y="{sy}" '
-                f'font-family="{FONT}" '
-                f'font-size="20" fill="{sub_color}">{line}</text>'
+                f'font-family="{FONT_BODY}" font-size="18" fill="#dddddd" '
+                f'letter-spacing="0.2">{sline}</text>'
             )
-            sy += 28
+            sy += 26
 
-    # ── Features (bottom-left, pushed lower, no separator lines) ─
+    # ── Price (optional, prominent) ───────────────────────────────
+    if price_raw:
+        price_y = sy + 24
+        els.append(
+            f'<text x="40" y="{price_y}" '
+            f'font-family="{FONT_TITLE}" font-size="46" font-weight="900" '
+            f'fill="{accent}">{price_raw}</text>'
+        )
+
+    # ── Features (bottom-left) ────────────────────────────────────
     if feats:
-        feat_h    = 75   # 68 × 1.1
-        feat_r    = 23   # 21 × 1.1
-        feat_cx   = 67
-        feat_tx   = 100
-        feat_fs   = 14   # 13 × 1.1
-        feat_lh   = 18   # 16 × 1.1
-        feat_icon = 19   # 17 × 1.1
-        fz_bottom = 1030
-        fz_top    = max(fz_bottom - len(feats) * feat_h, 520)
+        feat_h   = 74
+        feat_r   = 22
+        feat_cx  = 63
+        feat_tx  = 96
+        feat_fs  = 13
+        feat_lh  = 17
+        feat_ico = 18
+        fz_bot   = 1032
+        fz_top   = max(fz_bot - len(feats) * feat_h, 530)
 
         for idx, feat in enumerate(feats):
-            cy = fz_top + idx * feat_h + 24
-
-            els.append(f'<circle cx="{feat_cx}" cy="{cy}" r="{feat_r}" fill="{accent}"/>')
-
+            cy = fz_top + idx * feat_h + 22
+            els.append(f'<circle cx="{feat_cx}" cy="{cy}" r="{feat_r}" fill="{accent}" opacity="0.92"/>')
             els.append(
                 f'<text x="{feat_cx}" y="{cy + 7}" text-anchor="middle" '
-                f'font-family="{FONT_EMOJI}" '
-                f'font-size="{feat_icon}">{feat["icon"]}</text>'
+                f'font-family="{FONT_EMOJI}" font-size="{feat_ico}">{feat["icon"]}</text>'
             )
-
-            flines = _svg_wrap(feat["text"], max_chars=13)[:3]
+            flines = _svg_wrap(feat["text"], max_chars=14)[:3]
             n = len(flines)
             start_y = cy - (n - 1) * feat_lh // 2
             for li, fl in enumerate(flines):
                 els.append(
                     f'<text x="{feat_tx}" y="{start_y + li * feat_lh}" '
-                    f'font-family="{FONT}" '
-                    f'font-size="{feat_fs}" font-weight="700" fill="{feat_color}">{fl}</text>'
+                    f'font-family="{FONT_BODY}" font-size="{feat_fs}" font-weight="700" '
+                    f'fill="#ffffff">{fl}</text>'
                 )
-
-    # Thumbnail removed — product is already visible in the background image
 
     svg = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -852,7 +840,7 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         + "\n</svg>"
     )
 
-    print(f"[Cairo] SVG size={len(svg)//1024}KB feats={len(feats)} scheme={scheme}")
+    print(f"[Cairo] SVG size={len(svg)//1024}KB feats={len(feats)} price={bool(price_raw)}")
 
     try:
         overlay_png = cairosvg.svg2png(
@@ -865,7 +853,6 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         import traceback; traceback.print_exc()
         return None
 
-    # Composite: background photo + SVG overlay
     bg = Image.open(_io.BytesIO(raw_bytes)).convert("RGBA")
     bg = bg.resize((800, 1100), Image.LANCZOS)
     overlay = Image.open(_io.BytesIO(overlay_png)).convert("RGBA")

@@ -1154,7 +1154,8 @@ async function mpCardGenerate() {
                 product_name: name || "product",
                 category: mpCardCategory || "clothing",
                 card: mpCardWithText ? (() => {
-                    const c = { name: cardTitle, subtitle: cardSubtitle, badge, scheme: mpCardColorScheme || "warm" };
+                    const price = document.getElementById("mp-card-price")?.value?.trim() || "";
+                    const c = { name: cardTitle, subtitle: cardSubtitle, badge, scheme: mpCardColorScheme || "warm", price };
                     features.forEach((f, i) => {
                         c[`feat${i+1}`] = String(f.text || "");
                         c[`icon${i+1}`] = String(f.icon || "✦");
