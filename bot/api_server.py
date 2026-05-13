@@ -708,26 +708,56 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
             await page.route("**://fonts.googleapis.com/**", lambda route: route.abort())
             await page.route("**://fonts.gstatic.com/**", lambda route: route.abort())
             await page.set_content(html, wait_until="domcontentloaded", timeout=15000)
-            await page.wait_for_timeout(500)
-            # Render text-only as transparent PNG
-            overlay_png = await page.screenshot(
-                type="png", omit_background=True,
-                clip={"x": 0, "y": 0, "width": 800, "height": 1100}
+            await page.wait_for_timeout(400)
+
+            # Two-render alpha extraction: render on black, then white background.
+            # This gives mathematically exact alpha with zero dark-halo artifacts.
+            await page.evaluate(
+                "document.documentElement.style.background='#000';"
+                "document.body.style.background='#000';"
             )
+            await page.wait_for_timeout(100)
+            black_png = await page.screenshot(
+                type="png", clip={"x": 0, "y": 0, "width": 800, "height": 1100}
+            )
+
+            await page.evaluate(
+                "document.documentElement.style.background='#fff';"
+                "document.body.style.background='#fff';"
+            )
+            await page.wait_for_timeout(100)
+            white_png = await page.screenshot(
+                type="png", clip={"x": 0, "y": 0, "width": 800, "height": 1100}
+            )
+
             await browser.close()
 
-        # Composite: original photo + transparent text overlay via PIL
+        # Extract true RGBA overlay from two renders:
+        #   alpha = 1 - (white_render - black_render) / 255
+        #   color = black_render / alpha
         from PIL import Image
         import numpy as np
+        b_img = np.array(Image.open(_io.BytesIO(black_png)).convert("RGB")).astype(np.float32)
+        w_img = np.array(Image.open(_io.BytesIO(white_png)).convert("RGB")).astype(np.float32)
+
+        diff = np.clip(w_img - b_img, 0, 255)           # white - black per channel
+        alpha = np.max(1.0 - diff / 255.0, axis=2)      # alpha = max across R,G,B
+        alpha = np.clip(alpha, 0.0, 1.0)
+
+        alpha_safe = np.where(alpha > 1e-3, alpha, 1.0)
+        r_ch = np.clip(b_img[:, :, 0] / alpha_safe, 0, 255)
+        g_ch = np.clip(b_img[:, :, 1] / alpha_safe, 0, 255)
+        b_ch = np.clip(b_img[:, :, 2] / alpha_safe, 0, 255)
+        a_ch = np.clip(alpha * 255, 0, 255)
+        a_ch[alpha <= 1e-3] = 0  # fully transparent where no content
+
+        overlay = Image.fromarray(
+            np.stack([r_ch, g_ch, b_ch, a_ch], axis=2).astype(np.uint8), "RGBA"
+        )
+
+        # Composite onto background photo
         bg = Image.open(_io.BytesIO(raw_bytes)).convert("RGBA")
         bg = bg.resize((800, 1100), Image.LANCZOS)
-        overlay = Image.open(_io.BytesIO(overlay_png)).convert("RGBA")
-        # Remove anti-aliasing artifact pixels: near-transparent dark pixels
-        # created by Chromium text rendering on transparent background.
-        # Real text pixels have alpha > 200; artifact pixels have alpha < 30.
-        arr = np.array(overlay)
-        arr[arr[:, :, 3] < 30, 3] = 0
-        overlay = Image.fromarray(arr, 'RGBA')
         bg.paste(overlay, (0, 0), overlay)
         out = _io.BytesIO()
         bg.convert("RGB").save(out, format="JPEG", quality=93)
