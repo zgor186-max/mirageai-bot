@@ -668,14 +668,8 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
     tints = {"warm":(16,11,3),"dark":(6,5,8),"tech":(3,9,22),"workshop":(12,9,0),"nature":(4,14,5)}
     tr, tg, tb = tints.get(scheme, (16,11,3))
 
-    # Save image to temp file for HTML to load
-    img_filename = f"{uuid.uuid4().hex}.jpg"
-    img_path = os.path.join(TEMP_DIR, img_filename)
-    with open(img_path, "wb") as f:
-        f.write(base64.b64decode(image_b64))
-    asyncio.create_task(_delete_after(img_path, 120))
-
-    image_url = f"{PUBLIC_BASE_URL}/img/{img_filename}"
+    # Embed image as data URI — no HTTP requests needed inside Playwright
+    image_url = f"data:image/jpeg;base64,{image_b64}"
 
     # Build HTML parts
     badge = card.get("badge", "")
@@ -700,6 +694,8 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
         features_html=features_html,
     )
 
+    print(f"[Playwright] HTML size={len(html)//1024}KB, scheme={scheme}")
+
     try:
         async with async_playwright() as p:
             browser = await p.chromium.launch(args=[
@@ -707,11 +703,11 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
                 "--disable-dev-shm-usage", "--disable-gpu"
             ])
             page = await browser.new_page(viewport={"width": 800, "height": 1100})
-            # block Google Fonts to avoid networkidle hang; font fallback to Arial Black
+            # No external resources — block fonts to be safe
             await page.route("**://fonts.googleapis.com/**", lambda route: route.abort())
             await page.route("**://fonts.gstatic.com/**", lambda route: route.abort())
             await page.set_content(html, wait_until="domcontentloaded", timeout=15000)
-            await page.wait_for_timeout(600)  # let CSS/layout settle
+            await page.wait_for_timeout(500)
             screenshot = await page.screenshot(type="jpeg", quality=92,
                                                clip={"x":0,"y":0,"width":800,"height":1100})
             await browser.close()
