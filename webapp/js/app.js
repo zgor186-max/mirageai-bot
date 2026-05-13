@@ -999,12 +999,6 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
         setVal("mp-card-feat2",    dbAdvs[1] || data.feat2 || "");
         setVal("mp-card-feat3",    dbAdvs[2] || data.feat3 || "");
 
-        // Заполняем видимое поле описания (subtitle + feats)
-        const descEl = document.getElementById("mp-card-description");
-        if (descEl) {
-            const feats = [dbAdvs[0] || data.feat1, dbAdvs[1] || data.feat2, dbAdvs[2] || data.feat3].filter(Boolean);
-            descEl.value = (data.subtitle ? data.subtitle + "\n" : "") + feats.join(" • ");
-        }
 
     } catch (e) {
         console.warn("Auto-analyze failed:", e.message);
@@ -1070,12 +1064,39 @@ function mpToggleAiIdea() {
     }
 }
 
-function mpCardAiIdea() {
+async function mpCardAiIdea() {
     if (!mpCardPhotoBase64) {
         tg.showAlert("Сначала загрузи фото товара!");
         return;
     }
-    mpCardAnalyze(mpCardPhotoBase64);
+    const btn = document.getElementById("mp-ai-idea-btn");
+    const descEl = document.getElementById("mp-card-description");
+    if (btn) { btn.textContent = "⏳ Думаю..."; btn.disabled = true; }
+    try {
+        const name = document.getElementById("mp-card-name")?.value || "товар";
+        const POLZA_KEY = "pza_Y_e6drIevLO8ptUDrT2T5srYMGIrIEgP";
+        const resp = await fetch("https://polza.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${POLZA_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+                model: "google/gemini-3.1-flash-lite",
+                messages: [{
+                    role: "user",
+                    content: [
+                        { type: "image_url", image_url: { url: "data:image/jpeg;base64," + mpCardPhotoBase64 } },
+                        { type: "text", text: `Ты копирайтер для маркетплейса. Товар: "${name}". Напиши продающее описание для карточки: одна цепляющая фраза, затем 3 ключевых преимущества через " • ". Только текст на русском, без лишних слов.` }
+                    ]
+                }]
+            })
+        });
+        const data = await resp.json();
+        const text = data.choices?.[0]?.message?.content || "";
+        if (descEl && text) descEl.value = text.trim();
+    } catch(e) {
+        tg.showAlert("Не удалось получить идею, попробуй ещё раз");
+    } finally {
+        if (btn) { btn.textContent = "✦ AI идея"; btn.disabled = false; }
+    }
 }
 
 async function mpCardGenerate() {
