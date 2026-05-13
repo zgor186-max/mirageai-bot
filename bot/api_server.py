@@ -603,21 +603,21 @@ html, body {{ width:800px; height:1100px; overflow:hidden; background:transparen
     margin-bottom:auto;
 }}
 .features {{
-    display:flex; flex-direction:column; gap:18px;
-    margin-top:36px;
+    display:flex; flex-direction:column; gap:12px;
+    margin-top:24px;
 }}
 .feat {{
     display:flex; align-items:center; gap:14px;
 }}
 .feat-icon {{
-    width:48px; height:48px; border-radius:50%;
+    width:42px; height:42px; border-radius:50%;
     background:rgba(255,255,255,0.15);
     border:1.5px solid {accent};
     display:flex; align-items:center; justify-content:center;
-    font-size:22px; flex-shrink:0;
+    font-size:19px; flex-shrink:0;
 }}
 .feat-text {{
-    font-size:15px; font-weight:700; color:{feat_color};
+    font-size:13px; font-weight:700; color:{feat_color};
     text-transform:uppercase; letter-spacing:0.4px;
 }}
 .texture {{
@@ -671,11 +671,21 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
     subtitle_html = f'<div class="subtitle">{subtitle}</div>' if subtitle else ""
 
     feats = []
-    for i in range(1, 4):
-        feat = card.get(f"feat{i}", "")
-        icon = card.get(f"icon{i}", "✦")
-        if feat:
-            feats.append(f'<div class="feat"><div class="feat-icon">{icon}</div><div class="feat-text">{feat}</div></div>')
+    # Поддержка нового формата: массив features [{icon, text}]
+    features_list = card.get("features", [])
+    if features_list:
+        for f in features_list[:5]:
+            icon = f.get("icon", "✦")
+            text = f.get("text", "")
+            if text:
+                feats.append(f'<div class="feat"><div class="feat-icon">{icon}</div><div class="feat-text">{text}</div></div>')
+    else:
+        # Fallback: старый формат feat1-3
+        for i in range(1, 4):
+            feat = card.get(f"feat{i}", "")
+            icon = card.get(f"icon{i}", "✦")
+            if feat:
+                feats.append(f'<div class="feat"><div class="feat-icon">{icon}</div><div class="feat-text">{feat}</div></div>')
     features_html = "\n".join(feats)
 
     html = CARD_HTML_TEMPLATE.format(

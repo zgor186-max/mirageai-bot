@@ -718,6 +718,9 @@ let mpCardIcon1 = "✦";
 let mpCardIcon2 = "✦";
 let mpCardIcon3 = "✦";
 let mpCardWithText = true;  // режим: с текстом или без
+let mpCardSlogan = "";      // слоган (заголовок карточки)
+let mpCardTagline = "";     // подзаголовок
+let mpCardFeatures = [];    // [{icon, text}, ...]
 
 function mpSetTextMode(withText) {
     mpCardWithText = withText;
@@ -1084,15 +1087,28 @@ async function mpCardAiIdea() {
                     role: "user",
                     content: [
                         { type: "image_url", image_url: { url: "data:image/jpeg;base64," + mpCardPhotoBase64 } },
-                        { type: "text", text: `Ты SEO-копирайтер для маркетплейса (Wildberries/Ozon). Товар: "${name}". Посмотри на фото и напиши продающее описание для карточки товара. Требования: максимум 2 строки, включи ключевые слова по которым ищут этот товар, без воды, только суть и выгода для покупателя. Только текст на русском, никаких списков и символов.` }
+                        { type: "text", text: `Ты копирайтер для маркетплейса (WB/Ozon). Товар: "${name}". Посмотри на фото и ответь ТОЛЬКО валидным JSON без markdown:\n{\n  "slogan": "короткий эмоциональный слоган 2-4 слова (для заголовка карточки, НЕ название товара, пример: ДЛЯ УЮТНЫХ ВЕЧЕРОВ)",\n  "tagline": "продающая фраза 5-8 слов с ключевыми словами",\n  "features": [\n    {"icon": "эмодзи", "text": "ключевое преимущество 3-5 слов"},\n    {"icon": "эмодзи", "text": "ключевое преимущество 3-5 слов"},\n    {"icon": "эмодзи", "text": "ключевое преимущество 3-5 слов"},\n    {"icon": "эмодзи", "text": "ключевое преимущество 3-5 слов"},\n    {"icon": "эмодзи", "text": "ключевое преимущество 3-5 слов"}\n  ]\n}\nВсё на русском, без лишних слов.` }
                     ]
                 }]
             })
         });
         const data = await resp.json();
-        const text = data.choices?.[0]?.message?.content || "";
-        if (descEl && text) descEl.value = text.trim();
+        const raw = data.choices?.[0]?.message?.content || "";
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("No JSON");
+        const parsed = JSON.parse(jsonMatch[0]);
+
+        mpCardSlogan = parsed.slogan || "";
+        mpCardTagline = parsed.tagline || "";
+        mpCardFeatures = parsed.features || [];
+
+        // Показываем в поле описания
+        if (descEl) {
+            const lines = mpCardFeatures.map(f => `${f.icon} ${f.text}`).join("\n");
+            descEl.value = `${mpCardSlogan}\n${mpCardTagline}\n\n${lines}`;
+        }
     } catch(e) {
+        console.error("AI idea error:", e);
         tg.showAlert("Не удалось получить идею, попробуй ещё раз");
     } finally {
         if (btn) { btn.textContent = "✦ AI идея"; btn.disabled = false; }
@@ -1103,13 +1119,20 @@ async function mpCardGenerate() {
     if (!mpCardPhotoBase64) return;
 
     const name = document.getElementById("mp-card-name").value.trim();
-    const badge = document.getElementById("mp-card-badge").value.trim();
-    const feat1 = document.getElementById("mp-card-feat1").value.trim();
-    const feat2 = document.getElementById("mp-card-feat2").value.trim();
-    const feat3 = document.getElementById("mp-card-feat3").value.trim();
-    // Берём описание из видимого поля если заполнено, иначе из скрытого subtitle
-    const descField = document.getElementById("mp-card-description")?.value.trim();
-    const subtitle = descField || document.getElementById("mp-card-subtitle").value.trim();
+
+    // Если AI идея была нажата — используем слоган и фичи
+    // Иначе fallback на скрытые поля от автоанализа
+    const useAiIdea = mpCardSlogan && mpCardFeatures.length > 0;
+    const cardTitle   = useAiIdea ? mpCardSlogan : name;
+    const cardSubtitle = useAiIdea ? mpCardTagline : document.getElementById("mp-card-subtitle").value.trim();
+    const badge = useAiIdea ? name : (document.getElementById("mp-card-badge").value.trim() || name);
+    const features = useAiIdea
+        ? mpCardFeatures
+        : [
+            { icon: "✦", text: document.getElementById("mp-card-feat1").value.trim() },
+            { icon: "✦", text: document.getElementById("mp-card-feat2").value.trim() },
+            { icon: "✦", text: document.getElementById("mp-card-feat3").value.trim() },
+          ].filter(f => f.text);
 
     const sceneBg = mpCardBgPrompt || "clean professional studio, soft gradient background, neutral tones";
     const scenePrompt = `${sceneBg}. Photorealistic commercial photography scene, cinematic lighting, high detail, 3:4 aspect ratio. NO text, NO watermarks.`;
@@ -1130,11 +1153,10 @@ async function mpCardGenerate() {
                 product_name: name || "product",
                 category: mpCardCategory || "clothing",
                 card: mpCardWithText ? {
-                    name, subtitle, badge,
-                    feat1, feat2, feat3,
-                    icon1: mpCardIcon1,
-                    icon2: mpCardIcon2,
-                    icon3: mpCardIcon3,
+                    name: cardTitle,
+                    subtitle: cardSubtitle,
+                    badge,
+                    features,
                     scheme: mpCardColorScheme || "warm"
                 } : null
             })
