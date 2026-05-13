@@ -580,11 +580,11 @@ body {{ font-family: Arial, sans-serif; position:relative; background:#111; }}
     position:absolute; inset:0;
     background: linear-gradient(
         105deg,
-        rgba({tr},{tg},{tb},0.96) 0%,
-        rgba({tr},{tg},{tb},0.88) 30%,
-        rgba({tr},{tg},{tb},0.55) 50%,
-        rgba({tr},{tg},{tb},0.1) 68%,
-        transparent 82%
+        rgba({tr},{tg},{tb},0.78) 0%,
+        rgba({tr},{tg},{tb},0.65) 28%,
+        rgba({tr},{tg},{tb},0.38) 48%,
+        rgba({tr},{tg},{tb},0.08) 65%,
+        transparent 78%
     );
 }}
 .content {{
