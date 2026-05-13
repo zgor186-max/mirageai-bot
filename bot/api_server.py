@@ -800,7 +800,7 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     # ── Subtitle (tight after title, max 2 words/line, +10% size) ─
     if subtitle_raw:
         sy = ty + 6
-        for line in _svg_wrap(subtitle_raw, max_chars=11):
+        for line in _svg_wrap(subtitle_raw, max_chars=19):
             els.append(
                 f'<text x="40" y="{sy}" '
                 f'font-family="{FONT}" '
