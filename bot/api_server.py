@@ -90,10 +90,10 @@ async def generate_card_handler(request):
         # Category-specific placement instructions
         PLACEMENT = {
             "clothing": (
-                "is neatly folded or laid as a SINGLE UNIFIED item on the surface in the RIGHT half of the frame, "
-                "filling 55% of the total frame. Keep it as ONE piece — do NOT separate top and bottom apart. "
-                "Lay it naturally as it would look folded in a store. NO scattered fabric pieces anywhere. "
-                "Every thread belongs to the single folded item. The LEFT 40% stays clean background."
+                "is displayed as a recognizable clothing item on the RIGHT side of the frame, "
+                "filling 55% of the total frame. Show it EXACTLY as the clothing it is — preserve its shape, "
+                "collar, sleeves, buttons, pattern. Lay it spread out on the surface so the design is clearly visible. "
+                "ONE item only, no duplicates or extra pieces. The LEFT 40% stays clean background."
             ),
             "accessories": (
                 "is placed as a single item upright or flat on the RIGHT side of the frame, filling 50% of the total frame. "
@@ -784,7 +784,7 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     # ── Subtitle ─────────────────────────────────────────────────
     if subtitle_raw:
         for sline in _svg_wrap(subtitle_raw, max_chars=26):
-            sline = sline.lstrip("• ").strip()
+            sline = sline.strip("• ").strip()
             if not sline:
                 continue
             els.append(
