@@ -693,18 +693,43 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     import io as _io2
     from PIL import ImageDraw as _ImageDraw
     import numpy as np
+    import colorsys
 
     pil_img = Image.open(_io.BytesIO(raw_bytes)).convert("RGB")
 
-    # ── Auto-detect background brightness (left 450px = text area) ──
+    # ── Sample background color from left text area, derive harmonious text color ──
     bg_arr   = np.array(pil_img.resize((800, 1100), Image.LANCZOS))
-    left_avg = bg_arr[:, :450, :].mean()
-    is_dark_bg   = left_avg < 140
-    title_color  = "#ffffff" if is_dark_bg else TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])["title"]
-    sub_color    = "#ffffff" if is_dark_bg else TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])["subtitle"]
-    feat_color   = "#ffffff" if is_dark_bg else TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])["feat"]
+    left_px  = bg_arr[:, :450, :]          # left 450px — where text goes
+    avg_r    = int(left_px[:, :, 0].mean())
+    avg_g    = int(left_px[:, :, 1].mean())
+    avg_b    = int(left_px[:, :, 2].mean())
+    avg_v    = (avg_r + avg_g + avg_b) / 3.0
+    is_dark_bg = avg_v < 140
+
+    # Convert avg color to HSV, then derive readable text color in same hue family
+    h, s, v = colorsys.rgb_to_hsv(avg_r / 255, avg_g / 255, avg_b / 255)
+    if is_dark_bg:
+        # Dark background → light text: same hue, low saturation, high brightness
+        t_r, t_g, t_b = colorsys.hsv_to_rgb(h, max(s * 0.4, 0.08), 0.95)
+    else:
+        # Light background → dark text: same hue, higher saturation, low brightness
+        t_r, t_g, t_b = colorsys.hsv_to_rgb(h, min(s * 1.8 + 0.3, 0.85), 0.22)
+
+    def _hex(r, g, b):
+        return "#{:02x}{:02x}{:02x}".format(int(r * 255), int(g * 255), int(b * 255))
+
+    title_color  = _hex(t_r, t_g, t_b)
+    # Subtitle: same hue, slightly less saturated / brighter than title
+    if is_dark_bg:
+        s2_r, s2_g, s2_b = colorsys.hsv_to_rgb(h, max(s * 0.25, 0.05), 0.88)
+    else:
+        s2_r, s2_g, s2_b = colorsys.hsv_to_rgb(h, min(s * 1.4 + 0.2, 0.7), 0.35)
+    sub_color   = _hex(s2_r, s2_g, s2_b)
+    feat_color  = title_color
     badge_text_c = "#111111"
-    print(f"[Cairo] bg brightness={left_avg:.1f} → {'dark' if is_dark_bg else 'light'} → text={title_color}")
+
+    print(f"[Cairo] bg avg=({avg_r},{avg_g},{avg_b}) v={avg_v:.1f} "
+          f"{'dark' if is_dark_bg else 'light'} → text={title_color}")
 
     # ── Circular thumbnail: pre-crop in PIL (more reliable than SVG clip-path) ──
     thumb_size = 88
