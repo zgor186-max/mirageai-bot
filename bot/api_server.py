@@ -792,20 +792,20 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             sy += 22
 
     # ── Features ───────────────────────────────────────────
-    # 5 rows × 62px, anchored above thumbnail (top of thumbnail = 974, gap 36)
+    # Max 13 chars per line (2-3 words) → text stays compact on left side
     if feats:
-        feat_h    = 62
+        feat_h    = 68  # taller per row to fit 2-line text comfortably
         fz_bottom = 938
-        fz_top    = max(fz_bottom - len(feats) * feat_h, 550)
+        fz_top    = max(fz_bottom - len(feats) * feat_h, 520)
 
         for idx, feat in enumerate(feats):
-            cy = fz_top + idx * feat_h + 21
+            cy = fz_top + idx * feat_h + 24
 
             # Separator line between features (not before first)
             if idx > 0:
                 els.append(
-                    f'<line x1="40" y1="{cy - 27}" x2="420" y2="{cy - 27}" '
-                    f'stroke="white" stroke-opacity="0.2" stroke-width="1"/>'
+                    f'<line x1="40" y1="{cy - 30}" x2="340" y2="{cy - 30}" '
+                    f'stroke="{feat_color}" stroke-opacity="0.25" stroke-width="1"/>'
                 )
 
             # Filled icon circle (solid accent color)
@@ -818,24 +818,16 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
                 f'font-size="17">{feat["icon"]}</text>'
             )
 
-            # Feature text — up to 2 lines
-            flines = _svg_wrap(feat["text"], max_chars=24)
-            if len(flines) == 1:
+            # Feature text — wrap at 13 chars (≈2-3 words per line), max 3 lines
+            flines = _svg_wrap(feat["text"], max_chars=13)[:3]
+            n = len(flines)
+            line_h = 16
+            start_y = cy - (n - 1) * line_h // 2
+            for li, fl in enumerate(flines):
                 els.append(
-                    f'<text x="92" y="{cy + 6}" '
+                    f'<text x="92" y="{start_y + li * line_h}" '
                     f'font-family="Arial, Liberation Sans, sans-serif" '
-                    f'font-size="14" font-weight="700" fill="{feat_color}">{flines[0]}</text>'
-                )
-            else:
-                els.append(
-                    f'<text x="92" y="{cy - 4}" '
-                    f'font-family="Arial, Liberation Sans, sans-serif" '
-                    f'font-size="14" font-weight="700" fill="{feat_color}">{flines[0]}</text>'
-                )
-                els.append(
-                    f'<text x="92" y="{cy + 13}" '
-                    f'font-family="Arial, Liberation Sans, sans-serif" '
-                    f'font-size="14" font-weight="700" fill="{feat_color}">{flines[1]}</text>'
+                    f'font-size="13" font-weight="700" fill="{feat_color}">{fl}</text>'
                 )
 
     # ── Thumbnail circle (pre-cropped as circular PNG in PIL) ─
