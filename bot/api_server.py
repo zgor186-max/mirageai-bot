@@ -593,14 +593,16 @@ html, body {{ width:800px; height:1100px; overflow:hidden; background:transparen
 }}
 .title {{
     font-family:'Oswald', 'Arial Black', 'Impact', Arial, sans-serif;
-    font-size:64px; font-weight:700; color:{title_color};
+    font-size:64px; font-weight:700; color:#fff;
     line-height:1.0;
     text-transform:uppercase; margin-bottom:12px;
+    text-shadow: 1px 2px 12px rgba(0,0,0,0.7);
 }}
 .subtitle {{
-    font-size:15px; color:{subtitle_color};
+    font-size:15px; color:rgba(255,255,255,0.88);
     line-height:1.5;
     margin-bottom:auto;
+    text-shadow: 1px 1px 6px rgba(0,0,0,0.7);
 }}
 .features {{
     display:flex; flex-direction:column; gap:12px;
@@ -617,8 +619,9 @@ html, body {{ width:800px; height:1100px; overflow:hidden; background:transparen
     font-size:19px; flex-shrink:0;
 }}
 .feat-text {{
-    font-size:13px; font-weight:700; color:{feat_color};
+    font-size:13px; font-weight:700; color:#fff;
     text-transform:uppercase; letter-spacing:0.4px;
+    text-shadow: 1px 1px 6px rgba(0,0,0,0.7);
 }}
 .texture {{
     position:absolute; bottom:36px; left:40px;
@@ -691,9 +694,6 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
     html = CARD_HTML_TEMPLATE.format(
         image_url=image_url,
         accent=accent,
-        title_color=tc["title"],
-        subtitle_color=tc["subtitle"],
-        feat_color=tc["feat"],
         name=card.get("name", "").upper(),
         badge_html=badge_html,
         subtitle_html=subtitle_html,
