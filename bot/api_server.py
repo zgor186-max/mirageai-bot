@@ -722,8 +722,9 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         # Left column gradient (full height) — protects entire text zone
         '<linearGradient id="scrimX" x1="0" y1="0" x2="1" y2="0">'
         '<stop offset="0%"   stop-color="black" stop-opacity="0.72"/>'
-        '<stop offset="42%"  stop-color="black" stop-opacity="0.38"/>'
-        '<stop offset="62%"  stop-color="black" stop-opacity="0.10"/>'
+        '<stop offset="35%"  stop-color="black" stop-opacity="0.42"/>'
+        '<stop offset="58%"  stop-color="black" stop-opacity="0.14"/>'
+        '<stop offset="78%"  stop-color="black" stop-opacity="0.04"/>'
         '<stop offset="100%" stop-color="black" stop-opacity="0"/>'
         '</linearGradient>'
         # Top gradient (title area)
