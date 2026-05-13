@@ -752,90 +752,102 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         if feat:
             feats.append({"icon": icon, "text": _svg_esc(feat.upper())})
 
+    # Single font family used everywhere for visual consistency
+    FONT       = "'Georgia', 'Liberation Serif', 'DejaVu Serif', serif"
+    FONT_EMOJI = "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif"
+
     els = []
 
-    # ── Badge ──────────────────────────────────────────────
+    # ── Badge (top-right corner, +10% size) ────────────────
     if badge:
-        bw = min(max(len(badge) * 9 + 28, 80), 380)
-        els.append(f'<rect x="40" y="44" width="{bw}" height="28" rx="14" fill="{accent}"/>')
+        bw  = min(max(int((len(badge) * 9 + 28) * 1.1), 88), 418)
+        bh  = 31          # 28 × 1.1
+        brx = 15          # 14 × 1.1
+        bx  = 800 - bw - 40
+        by  = 44
         els.append(
-            f'<text x="{40 + bw // 2}" y="63" text-anchor="middle" '
-            f'font-family="Arial, Liberation Sans, sans-serif" '
-            f'font-size="12" font-weight="700" fill="{badge_text_c}">{badge}</text>'
+            f'<rect x="{bx}" y="{by}" width="{bw}" height="{bh}" rx="{brx}" fill="{accent}"/>'
+        )
+        els.append(
+            f'<text x="{bx + bw // 2}" y="{by + 21}" text-anchor="middle" '
+            f'font-family="{FONT}" '
+            f'font-size="13" font-weight="700" fill="{badge_text_c}">{badge}</text>'
         )
 
-    # ── Title ──────────────────────────────────────────────
-    title_lines = _svg_wrap(name, max_chars=11)
+    # ── Title (−15% size, serif) ───────────────────────────
+    title_lines = _svg_wrap(name, max_chars=12)
+    title_fs = 53    # 62 × 0.85
+    title_lh = 58    # proportional line height
     ty = 108
     for line in title_lines:
         els.append(
             f'<text x="40" y="{ty}" '
-            f'font-family="\'Arial Black\', \'Liberation Sans\', \'DejaVu Sans\', sans-serif" '
-            f'font-size="62" font-weight="900" fill="{title_color}">{line}</text>'
+            f'font-family="{FONT}" '
+            f'font-size="{title_fs}" font-weight="900" fill="{title_color}">{line}</text>'
         )
-        ty += 68
+        ty += title_lh
 
-    # ── Subtitle ───────────────────────────────────────────
+    # ── Subtitle (right after title, +20% size, same font) ─
     if subtitle_raw:
-        # Decorative accent line above subtitle
-        els.append(
-            f'<line x1="40" y1="{ty + 10}" x2="140" y2="{ty + 10}" '
-            f'stroke="{accent}" stroke-width="2.5"/>'
-        )
-        sy = ty + 28
-        for line in _svg_wrap(subtitle_raw, max_chars=38):
+        sy = ty + 14
+        for line in _svg_wrap(subtitle_raw, max_chars=32):
             els.append(
                 f'<text x="40" y="{sy}" '
-                f'font-family="Arial, Liberation Sans, sans-serif" '
-                f'font-size="15" fill="{sub_color}">{line}</text>'
+                f'font-family="{FONT}" '
+                f'font-size="18" fill="{sub_color}">{line}</text>'
             )
-            sy += 22
+            sy += 26
 
-    # ── Features ───────────────────────────────────────────
-    # Max 13 chars per line (2-3 words) → text stays compact on left side
+    # ── Features (bottom-left corner, +10% scale) ──────────
     if feats:
-        feat_h    = 68  # taller per row to fit 2-line text comfortably
-        fz_bottom = 938
+        feat_h    = 75   # 68 × 1.1
+        feat_r    = 23   # 21 × 1.1
+        feat_cx   = 67   # circle centre x (bigger radius → shift right)
+        feat_tx   = 100  # text x
+        feat_fs   = 14   # 13 × 1.1
+        feat_lh   = 18   # 16 × 1.1
+        feat_icon = 19   # 17 × 1.1
+        fz_bottom = 980
         fz_top    = max(fz_bottom - len(feats) * feat_h, 520)
 
         for idx, feat in enumerate(feats):
             cy = fz_top + idx * feat_h + 24
 
-            # Separator line between features (not before first)
             if idx > 0:
                 els.append(
-                    f'<line x1="40" y1="{cy - 30}" x2="340" y2="{cy - 30}" '
+                    f'<line x1="40" y1="{cy - 33}" x2="374" y2="{cy - 33}" '
                     f'stroke="{feat_color}" stroke-opacity="0.25" stroke-width="1"/>'
                 )
 
-            # Filled icon circle (solid accent color)
-            els.append(f'<circle cx="61" cy="{cy}" r="21" fill="{accent}"/>')
+            els.append(f'<circle cx="{feat_cx}" cy="{cy}" r="{feat_r}" fill="{accent}"/>')
 
-            # Emoji inside circle
             els.append(
-                f'<text x="61" y="{cy + 7}" text-anchor="middle" '
-                f'font-family="Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif" '
-                f'font-size="17">{feat["icon"]}</text>'
+                f'<text x="{feat_cx}" y="{cy + 7}" text-anchor="middle" '
+                f'font-family="{FONT_EMOJI}" '
+                f'font-size="{feat_icon}">{feat["icon"]}</text>'
             )
 
-            # Feature text — wrap at 13 chars (≈2-3 words per line), max 3 lines
             flines = _svg_wrap(feat["text"], max_chars=13)[:3]
             n = len(flines)
-            line_h = 16
-            start_y = cy - (n - 1) * line_h // 2
+            start_y = cy - (n - 1) * feat_lh // 2
             for li, fl in enumerate(flines):
                 els.append(
-                    f'<text x="92" y="{start_y + li * line_h}" '
-                    f'font-family="Arial, Liberation Sans, sans-serif" '
-                    f'font-size="13" font-weight="700" fill="{feat_color}">{fl}</text>'
+                    f'<text x="{feat_tx}" y="{start_y + li * feat_lh}" '
+                    f'font-family="{FONT}" '
+                    f'font-size="{feat_fs}" font-weight="700" fill="{feat_color}">{fl}</text>'
                 )
 
-    # ── Thumbnail circle (pre-cropped as circular PNG in PIL) ─
+    # ── Thumbnail (centred at bottom) ──────────────────────
+    thumb_cx = 400
+    thumb_cy = 1056   # bottom edge lands at y=1100
+    thumb_r  = 44
     els.append(
-        f'<image href="{thumb_uri}" x="37" y="974" width="88" height="88"/>'
+        f'<image href="{thumb_uri}" '
+        f'x="{thumb_cx - thumb_r}" y="{thumb_cy - thumb_r}" '
+        f'width="{thumb_r * 2}" height="{thumb_r * 2}"/>'
     )
     els.append(
-        f'<circle cx="81" cy="1018" r="44" fill="none" '
+        f'<circle cx="{thumb_cx}" cy="{thumb_cy}" r="{thumb_r}" fill="none" '
         f'stroke="{accent}" stroke-width="2.5"/>'
     )
 
