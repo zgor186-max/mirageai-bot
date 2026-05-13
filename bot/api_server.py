@@ -718,14 +718,12 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     def _hex(r, g, b):
         return "#{:02x}{:02x}{:02x}".format(int(r * 255), int(g * 255), int(b * 255))
 
-    title_color  = _hex(t_r, t_g, t_b)
-    # Subtitle: same hue, slightly less saturated / brighter than title
-    if is_dark_bg:
-        s2_r, s2_g, s2_b = colorsys.hsv_to_rgb(h, max(s * 0.25, 0.05), 0.88)
-    else:
-        s2_r, s2_g, s2_b = colorsys.hsv_to_rgb(h, min(s * 1.4 + 0.2, 0.7), 0.35)
-    sub_color   = _hex(s2_r, s2_g, s2_b)
-    feat_color  = title_color
+    # Scrim always darkens title/subtitle area → force light text there
+    title_color = _hex(t_r, t_g, t_b) if is_dark_bg else "#ffffff"
+    sub_color   = "#e8e8e8" if not is_dark_bg else _hex(
+        *colorsys.hsv_to_rgb(h, max(s * 0.25, 0.05), 0.88))
+    # Features sit below scrim — keep adaptive color
+    feat_color  = _hex(t_r, t_g, t_b)
     badge_text_c = "#111111"
 
     print(f"[Cairo] bg avg=({avg_r},{avg_g},{avg_b}) v={avg_v:.1f} "
@@ -757,6 +755,18 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     FONT_EMOJI = "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif"
 
     els = []
+
+    # ── Scrim: dark gradient behind title/subtitle for readability ──
+    els.append(
+        '<defs>'
+        '<linearGradient id="scrim" x1="0" y1="0" x2="0" y2="1">'
+        '<stop offset="0%" stop-color="black" stop-opacity="0.55"/>'
+        '<stop offset="75%" stop-color="black" stop-opacity="0.15"/>'
+        '<stop offset="100%" stop-color="black" stop-opacity="0"/>'
+        '</linearGradient>'
+        '</defs>'
+    )
+    els.append('<rect x="0" y="0" width="800" height="460" fill="url(#scrim)"/>')
 
     # ── Badge (top-right corner, +10% size) ────────────────
     if badge:
@@ -831,19 +841,7 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
                     f'font-size="{feat_fs}" font-weight="700" fill="{feat_color}">{fl}</text>'
                 )
 
-    # ── Thumbnail (centred at bottom) ──────────────────────
-    thumb_cx = 400
-    thumb_cy = 1056   # bottom edge lands at y=1100
-    thumb_r  = 44
-    els.append(
-        f'<image href="{thumb_uri}" '
-        f'x="{thumb_cx - thumb_r}" y="{thumb_cy - thumb_r}" '
-        f'width="{thumb_r * 2}" height="{thumb_r * 2}"/>'
-    )
-    els.append(
-        f'<circle cx="{thumb_cx}" cy="{thumb_cy}" r="{thumb_r}" fill="none" '
-        f'stroke="{accent}" stroke-width="2.5"/>'
-    )
+    # Thumbnail removed — product is already visible in the background image
 
     svg = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'

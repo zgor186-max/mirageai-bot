@@ -998,9 +998,9 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
         const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
         setVal("mp-card-subtitle", data.subtitle || "");
         setVal("mp-card-badge",    data.badge    || "");
-        setVal("mp-card-feat1",    dbAdvs[0] || data.feat1 || "");
-        setVal("mp-card-feat2",    dbAdvs[1] || data.feat2 || "");
-        setVal("mp-card-feat3",    dbAdvs[2] || data.feat3 || "");
+        setVal("mp-card-feat1",    data.feat1 || dbAdvs[0] || "");
+        setVal("mp-card-feat2",    data.feat2 || dbAdvs[1] || "");
+        setVal("mp-card-feat3",    data.feat3 || dbAdvs[2] || "");
 
 
     } catch (e) {
