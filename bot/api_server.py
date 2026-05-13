@@ -702,7 +702,9 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
         async with async_playwright() as p:
             browser = await p.chromium.launch(args=[
                 "--no-sandbox", "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage", "--disable-gpu"
+                "--disable-dev-shm-usage", "--disable-gpu",
+                "--force-color-profile=srgb",
+                "--disable-color-correct-rendering",
             ])
             page = await browser.new_page(viewport={"width": 800, "height": 1100})
             # No external resources — block fonts to be safe
