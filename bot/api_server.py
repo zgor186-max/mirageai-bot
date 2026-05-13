@@ -576,22 +576,17 @@ body {{ font-family: Arial, sans-serif; position:relative; background:#111; }}
     background-position: center right;
     filter: brightness(1.15);
 }}
-.overlay {{
-    position:absolute; inset:0;
-    background: linear-gradient(
-        105deg,
-        rgba({tr},{tg},{tb},0.88) 0%,
-        rgba({tr},{tg},{tb},0.75) 25%,
-        rgba({tr},{tg},{tb},0.42) 46%,
-        rgba({tr},{tg},{tb},0.08) 63%,
-        transparent 76%
-    );
-}}
 .content {{
     position:absolute; inset:0;
     padding: 44px 40px 160px 40px;
     display:flex; flex-direction:column;
     width:450px;
+    background: linear-gradient(
+        to right,
+        rgba(0,0,0,0.52) 0%,
+        rgba(0,0,0,0.38) 60%,
+        transparent 100%
+    );
 }}
 .badge {{
     display:inline-flex; align-items:center;
@@ -644,7 +639,6 @@ body {{ font-family: Arial, sans-serif; position:relative; background:#111; }}
 </style></head>
 <body>
 <div class="bg"></div>
-<div class="overlay"></div>
 <div class="content">
     {badge_html}
     <div class="title">{name}</div>
