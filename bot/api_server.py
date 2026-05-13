@@ -577,10 +577,12 @@ CARD_HTML_TEMPLATE = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&display=swap');
-* {{ margin:0; padding:0; box-sizing:border-box; }}
+* {{ margin:0; padding:0; box-sizing:border-box;
+     -webkit-font-smoothing: antialiased;
+     -moz-osx-font-smoothing: grayscale; }}
 html, body {{ width:800px; height:1100px; overflow:hidden; background:transparent; }}
 .content {{
-    position:absolute; inset:0;
+    position:absolute; top:0; left:0; bottom:0;
     padding: 44px 40px 160px 40px;
     display:flex; flex-direction:column;
     width:450px;
@@ -699,6 +701,8 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
             browser = await p.chromium.launch(args=[
                 "--no-sandbox", "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage", "--disable-gpu",
+                "--disable-font-subpixel-positioning",
+                "--force-color-profile=srgb",
             ])
             page = await browser.new_page(viewport={"width": 800, "height": 1100})
             await page.route("**://fonts.googleapis.com/**", lambda route: route.abort())
@@ -746,6 +750,13 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
         b_ch = np.clip(b_img[:, :, 2] / alpha_safe, 0, 255)
         a_ch = np.clip(alpha * 255, 0, 255)
         a_ch[alpha <= 1e-3] = 0  # fully transparent where no content
+
+        # Remove dark semi-transparent pixels (anti-aliasing artifacts from subpixel rendering).
+        # Dark = luminance < 80, semi-transparent = alpha < 230.
+        # Fully-opaque dark pixels (badge text etc.) are kept (alpha >= 230).
+        luminance = (r_ch + g_ch + b_ch) / 3.0
+        dark_semi = (luminance < 80) & (a_ch < 230)
+        a_ch[dark_semi] = 0
 
         overlay = Image.fromarray(
             np.stack([r_ch, g_ch, b_ch, a_ch], axis=2).astype(np.uint8), "RGBA"
