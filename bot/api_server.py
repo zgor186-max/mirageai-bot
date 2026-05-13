@@ -695,10 +695,20 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     import numpy as np
     import colorsys
 
-    pil_img = Image.open(_io.BytesIO(raw_bytes)).convert("RGB")
+    pil_img = Image.open(_io.BytesIO(raw_bytes)).convert("RGB").resize((800, 1100), Image.LANCZOS)
+
+    # ── Pan product right so it stays clear of left text column ──────────
+    from PIL import ImageFilter as _ImageFilter
+    _pan  = 150
+    _fill = pil_img.crop((0, 0, 20, 1100)).resize((_pan, 1100), Image.LANCZOS)
+    _fill = _fill.filter(_ImageFilter.GaussianBlur(radius=12))
+    _panned = Image.new("RGB", (800, 1100))
+    _panned.paste(_fill, (0, 0))
+    _panned.paste(pil_img.crop((0, 0, 800 - _pan, 1100)), (_pan, 0))
+    pil_img = _panned
 
     # ── Sample background color from left text area, derive harmonious text color ──
-    bg_arr   = np.array(pil_img.resize((800, 1100), Image.LANCZOS))
+    bg_arr   = np.array(pil_img)
     left_px  = bg_arr[:, :450, :]          # left 450px — where text goes
     avg_r    = int(left_px[:, :, 0].mean())
     avg_g    = int(left_px[:, :, 1].mean())
@@ -861,9 +871,8 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         import traceback; traceback.print_exc()
         return None
 
-    # Composite: background photo + SVG overlay
-    bg = Image.open(_io.BytesIO(raw_bytes)).convert("RGBA")
-    bg = bg.resize((800, 1100), Image.LANCZOS)
+    # Composite: background photo (already panned right) + SVG overlay
+    bg = pil_img.convert("RGBA")
     overlay = Image.open(_io.BytesIO(overlay_png)).convert("RGBA")
     bg.paste(overlay, (0, 0), overlay)
     out = _io.BytesIO()
