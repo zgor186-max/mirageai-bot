@@ -549,15 +549,12 @@ def _extract_output(result: dict) -> str | None:
 
 
 async def _apply_card_overlay(image_b64: str | None, card_data: dict) -> str:
-    """Render text overlay: Cairo first, Playwright fallback, raw image last."""
+    """Render text overlay via Cairo."""
     if not image_b64:
         return image_b64
     raw_b64 = image_b64.split(",", 1)[1] if image_b64.startswith("data:") else image_b64
     if card_data:
         rendered = await render_card_cairo(raw_b64, card_data)
-        if rendered:
-            return rendered
-        rendered = await render_card_playwright(raw_b64, card_data)
         if rendered:
             return rendered
     return image_b64
@@ -879,163 +876,15 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     return f"data:image/jpeg;base64,{b64}"
 
 
-async def render_card_playwright(image_b64: str, card: dict) -> str | None:
-    """Render card HTML with Playwright and return base64 JPEG."""
-    try:
-        from playwright.async_api import async_playwright
-    except ImportError:
-        print("[Playwright] Not installed, skipping render")
-        return None
-
-    scheme = card.get("scheme", "warm")
-    accent = ACCENT_COLORS.get(scheme, "#d4a017")
-    tc = TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])
-
-    import io as _io
-    raw_bytes = base64.b64decode(image_b64)
-
-    # Save texture image for the circle (file:// for HTML)
-    img_filename = f"{uuid.uuid4().hex}.jpg"
-    img_path = os.path.join(TEMP_DIR, img_filename)
-    with open(img_path, "wb") as f:
-        f.write(raw_bytes)
-    asyncio.create_task(_delete_after(img_path, 120))
-    image_url = f"file://{img_path}"
-
-    # Build HTML parts
-    badge = card.get("badge", "")
-    badge_html = f'<div class="badge">{badge}</div>' if badge else ""
-    subtitle = card.get("subtitle", "")
-    subtitle_html = f'<div class="subtitle">{subtitle}</div>' if subtitle else ""
-
-    feats = []
-    # Поддержка нового формата: массив features [{icon, text}]
-    for i in range(1, 6):
-        feat = card.get(f"feat{i}", "")
-        icon = card.get(f"icon{i}", "✦")
-        if feat:
-            feats.append(f'<div class="feat"><div class="feat-icon">{icon}</div><div class="feat-text">{feat.upper()}</div></div>')
-    print(f"[Card] feats built: {len(feats)} items")
-    features_html = "\n".join(feats)
-
-    html = CARD_HTML_TEMPLATE.format(
-        image_url=image_url,
-        accent=accent,
-        name=card.get("name", "").upper(),
-        badge_html=badge_html,
-        subtitle_html=subtitle_html,
-        features_html=features_html,
-    )
-
-    print(f"[Playwright] HTML size={len(html)//1024}KB, scheme={scheme}")
-
-    try:
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(args=[
-                "--no-sandbox", "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage", "--disable-gpu",
-                "--disable-font-subpixel-positioning",
-                "--force-color-profile=srgb",
-            ])
-            page = await browser.new_page(viewport={"width": 800, "height": 1100})
-            await page.route("**://fonts.googleapis.com/**", lambda route: route.abort())
-            await page.route("**://fonts.gstatic.com/**", lambda route: route.abort())
-            await page.set_content(html, wait_until="domcontentloaded", timeout=15000)
-            await page.wait_for_timeout(400)
-
-            # Two-render alpha extraction: render on black, then white background.
-            # This gives mathematically exact alpha with zero dark-halo artifacts.
-            await page.evaluate(
-                "document.documentElement.style.background='#000';"
-                "document.body.style.background='#000';"
-            )
-            await page.wait_for_timeout(100)
-            black_png = await page.screenshot(
-                type="png", clip={"x": 0, "y": 0, "width": 800, "height": 1100}
-            )
-
-            await page.evaluate(
-                "document.documentElement.style.background='#fff';"
-                "document.body.style.background='#fff';"
-            )
-            await page.wait_for_timeout(100)
-            white_png = await page.screenshot(
-                type="png", clip={"x": 0, "y": 0, "width": 800, "height": 1100}
-            )
-
-            await browser.close()
-
-        # Extract true RGBA overlay from two renders:
-        #   alpha = 1 - (white_render - black_render) / 255
-        #   color = black_render / alpha
-        from PIL import Image
-        import numpy as np
-        b_img = np.array(Image.open(_io.BytesIO(black_png)).convert("RGB")).astype(np.float32)
-        w_img = np.array(Image.open(_io.BytesIO(white_png)).convert("RGB")).astype(np.float32)
-
-        diff = np.clip(w_img - b_img, 0, 255)           # white - black per channel
-        alpha = np.max(1.0 - diff / 255.0, axis=2)      # alpha = max across R,G,B
-        alpha = np.clip(alpha, 0.0, 1.0)
-
-        alpha_safe = np.where(alpha > 1e-3, alpha, 1.0)
-        r_ch = np.clip(b_img[:, :, 0] / alpha_safe, 0, 255)
-        g_ch = np.clip(b_img[:, :, 1] / alpha_safe, 0, 255)
-        b_ch = np.clip(b_img[:, :, 2] / alpha_safe, 0, 255)
-        a_ch = np.clip(alpha * 255, 0, 255)
-        a_ch[alpha <= 1e-3] = 0  # fully transparent where no content
-
-        # Remove dark semi-transparent pixels (anti-aliasing artifacts from subpixel rendering).
-        # Dark = luminance < 80, semi-transparent = alpha < 230.
-        # Fully-opaque dark pixels (badge text etc.) are kept (alpha >= 230).
-        luminance = (r_ch + g_ch + b_ch) / 3.0
-        dark_semi = (luminance < 80) & (a_ch < 230)
-        a_ch[dark_semi] = 0
-
-        overlay = Image.fromarray(
-            np.stack([r_ch, g_ch, b_ch, a_ch], axis=2).astype(np.uint8), "RGBA"
-        )
-
-        # Composite onto background photo
-        bg = Image.open(_io.BytesIO(raw_bytes)).convert("RGBA")
-        bg = bg.resize((800, 1100), Image.LANCZOS)
-        bg.paste(overlay, (0, 0), overlay)
-        out = _io.BytesIO()
-        bg.convert("RGB").save(out, format="JPEG", quality=93)
-        b64 = base64.b64encode(out.getvalue()).decode()
-        print(f"[Playwright] Card composited successfully ({len(out.getvalue())//1024}KB)")
-        return f"data:image/jpeg;base64,{b64}"
-    except Exception as e:
-        print(f"[Playwright] Render error: {e}")
-        import traceback; traceback.print_exc()
-        return None
 
 
 async def health_handler(request):
     return web.Response(text="OK", headers=CORS_HEADERS)
 
 
-async def test_playwright_handler(request):
-    """Quick Playwright smoke test — open in browser to check if it works."""
-    try:
-        from playwright.async_api import async_playwright
-    except ImportError:
-        return web.Response(text="ERROR: playwright not installed", headers=CORS_HEADERS)
-    try:
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(args=["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--disable-gpu"])
-            page = await browser.new_page()
-            await page.set_content("<h1>Playwright OK</h1>", wait_until="domcontentloaded")
-            await browser.close()
-        return web.Response(text="OK: Playwright works", headers=CORS_HEADERS)
-    except Exception as e:
-        import traceback
-        return web.Response(text=f"ERROR: {e}\n{traceback.format_exc()}", headers=CORS_HEADERS)
-
-
 def create_app() -> web.Application:
     app = web.Application(client_max_size=10 * 1024 * 1024)
     app.router.add_get("/health", health_handler)
-    app.router.add_get("/test-playwright", test_playwright_handler)
     app.router.add_get("/img/{filename}", serve_temp_image)
     app.router.add_post("/generate", generate_handler)
     app.router.add_route("OPTIONS", "/generate", generate_handler)
