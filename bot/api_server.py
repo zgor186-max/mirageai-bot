@@ -598,13 +598,13 @@ html, body {{ width:800px; height:1100px; overflow:hidden; background:transparen
     font-size:64px; font-weight:700; color:#fff;
     line-height:1.0;
     text-transform:uppercase; margin-bottom:12px;
-    text-shadow: 1px 2px 12px rgba(0,0,0,0.7);
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.9);
 }}
 .subtitle {{
-    font-size:15px; color:rgba(255,255,255,0.88);
+    font-size:15px; color:rgba(255,255,255,0.95);
     line-height:1.5;
     margin-bottom:auto;
-    text-shadow: 1px 1px 6px rgba(0,0,0,0.7);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
 }}
 .features {{
     display:flex; flex-direction:column; gap:12px;
@@ -623,7 +623,7 @@ html, body {{ width:800px; height:1100px; overflow:hidden; background:transparen
 .feat-text {{
     font-size:13px; font-weight:700; color:#fff;
     text-transform:uppercase; letter-spacing:0.4px;
-    text-shadow: 1px 1px 6px rgba(0,0,0,0.7);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
 }}
 .texture {{
     position:absolute; bottom:36px; left:40px;
