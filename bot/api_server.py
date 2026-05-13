@@ -91,34 +91,35 @@ async def generate_card_handler(request):
         PLACEMENT = {
             "clothing": (
                 "is unfolded and laid completely flat on the surface in a flat lay arrangement, "
-                "filling 70% of the frame. The top and bottom parts are separated and displayed together. "
-                "Every part of the fabric is touching the surface — NO parts floating, hovering or hanging in air. "
+                "positioned in the RIGHT half of the frame, filling 55% of the total frame. "
+                "The top and bottom parts are separated and displayed together, fully visible. "
+                "Every part of the fabric is touching the surface — NO parts floating or hanging. "
                 "NO hanger anywhere. Viewed from slightly above (40-degree angle). "
-                "Soft drop shadow beneath the fabric edges."
+                "The LEFT third of the frame remains open with scene background for text overlay."
             ),
             "accessories": (
-                "is placed upright and prominently on the surface, hero shot angle, filling 65% of the frame. "
-                "Firmly resting on the surface with a soft shadow beneath. NOT floating."
+                "is placed upright on the RIGHT side of the frame, filling 50% of the total frame. "
+                "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
             ),
             "food": (
-                "is placed on the surface surrounded by the scene props, filling 65% of the frame. "
-                "Firmly on the surface. Appetizing food photography angle."
+                "is placed on the RIGHT side of the frame, filling 50% of the total frame. "
+                "Firmly on the surface. The LEFT third stays open with scene background."
             ),
             "beauty": (
-                "is standing upright on the surface, hero beauty shot, filling 65% of the frame. "
-                "Firmly on the surface. Soft specular highlights on packaging. NOT floating."
+                "is standing upright on the RIGHT side of the frame, filling 50% of the total frame. "
+                "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
             ),
             "gadgets": (
-                "is placed at a 45-degree hero angle on the surface, filling 65% of the frame. "
-                "Firmly on the surface. Premium tech product shot. NOT floating."
+                "is placed at a hero angle on the RIGHT side of the frame, filling 50% of the total frame. "
+                "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
             ),
             "home": (
-                "is placed naturally on the surface as it would be used, filling 65% of the frame. "
-                "Firmly on the surface. Lifestyle product photography. NOT floating."
+                "is placed naturally on the RIGHT side of the frame as it would be used, filling 50% of the total frame. "
+                "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
             ),
             "other": (
-                "is placed prominently on the surface, filling 65% of the frame. "
-                "Firmly on the surface with soft shadow beneath. NOT floating."
+                "is placed prominently on the RIGHT side of the frame, filling 50% of the total frame. "
+                "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
             ),
         }
         placement_instruction = PLACEMENT.get(category, PLACEMENT["other"])
@@ -127,9 +128,10 @@ async def generate_card_handler(request):
             f"Take the COMPLETE product shown in the reference image (every part, every component, the entire item as shown) "
             f"and integrate it fully into this scene: {scene_prompt}. "
             f"The product {placement_instruction} "
-            f"IMPORTANT: reproduce ALL parts of the product from the reference — do not omit any component. "
-            f"Preserve the exact colors, patterns, textures and details of the original product. "
-            f"The props from the scene (cup, candles, books etc.) remain visible around the product. "
+            f"CRITICAL COMPOSITION: the product must be in the RIGHT half of the frame — "
+            f"the left 40% of the image must remain as clean scene background (no product there). "
+            f"IMPORTANT: reproduce ALL parts of the product — do not crop or cut any component. "
+            f"Preserve exact colors, patterns, textures of the original product. "
             f"Photorealistic commercial product photography, warm cinematic lighting. NO text, NO watermarks."
         )
 
@@ -688,8 +690,15 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     accent   = ACCENT_COLORS.get(scheme, "#d4a017")
     raw_bytes = base64.b64decode(image_b64)
 
-    # Embed product image as base64 data URI — cairosvg doesn't support file:// URLs
-    thumb_uri = f"data:image/jpeg;base64,{image_b64}"
+    # Resize image to small thumbnail before embedding as data URI
+    # Full-size base64 (~400KB) crashes cairosvg; 100×100 is ~3KB
+    import io as _thumb_io
+    _thumb_img = Image.open(_io.BytesIO(raw_bytes)).convert("RGB")
+    _thumb_img = _thumb_img.resize((100, 100), Image.LANCZOS)
+    _thumb_buf = _thumb_io.BytesIO()
+    _thumb_img.save(_thumb_buf, format="JPEG", quality=80)
+    _thumb_b64 = base64.b64encode(_thumb_buf.getvalue()).decode()
+    thumb_uri = f"data:image/jpeg;base64,{_thumb_b64}"
 
     badge        = _svg_esc(card.get("badge", ""))
     name         = _svg_esc(card.get("name", "")).upper()
