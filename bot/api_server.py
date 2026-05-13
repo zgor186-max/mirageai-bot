@@ -690,27 +690,35 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     accent   = ACCENT_COLORS.get(scheme, "#d4a017")
     raw_bytes = base64.b64decode(image_b64)
 
-    # Resize image to small thumbnail before embedding as data URI
-    # Full-size base64 (~400KB) crashes cairosvg; 100×100 is ~3KB
-    import io as _thumb_io
-    _thumb_img = Image.open(_io.BytesIO(raw_bytes)).convert("RGB")
-    _thumb_img = _thumb_img.resize((100, 100), Image.LANCZOS)
-    _thumb_buf = _thumb_io.BytesIO()
-    _thumb_img.save(_thumb_buf, format="JPEG", quality=80)
-    _thumb_b64 = base64.b64encode(_thumb_buf.getvalue()).decode()
-    thumb_uri = f"data:image/jpeg;base64,{_thumb_b64}"
+    import io as _io2
+    from PIL import ImageDraw as _ImageDraw
+    import numpy as np
+
+    pil_img = Image.open(_io.BytesIO(raw_bytes)).convert("RGB")
+
+    # ── Auto-detect background brightness (left 450px = text area) ──
+    bg_arr   = np.array(pil_img.resize((800, 1100), Image.LANCZOS))
+    left_avg = bg_arr[:, :450, :].mean()
+    is_dark_bg   = left_avg < 140
+    title_color  = "#ffffff" if is_dark_bg else TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])["title"]
+    sub_color    = "#ffffff" if is_dark_bg else TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])["subtitle"]
+    feat_color   = "#ffffff" if is_dark_bg else TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])["feat"]
+    badge_text_c = "#111111"
+    print(f"[Cairo] bg brightness={left_avg:.1f} → {'dark' if is_dark_bg else 'light'} → text={title_color}")
+
+    # ── Circular thumbnail: pre-crop in PIL (more reliable than SVG clip-path) ──
+    thumb_size = 88
+    thumb = pil_img.resize((thumb_size, thumb_size), Image.LANCZOS).convert("RGBA")
+    mask  = Image.new("L", (thumb_size, thumb_size), 0)
+    _ImageDraw.Draw(mask).ellipse((0, 0, thumb_size - 1, thumb_size - 1), fill=255)
+    thumb.putalpha(mask)
+    _tbuf = _io2.BytesIO()
+    thumb.save(_tbuf, format="PNG")
+    thumb_uri = "data:image/png;base64," + base64.b64encode(_tbuf.getvalue()).decode()
 
     badge        = _svg_esc(card.get("badge", ""))
     name         = _svg_esc(card.get("name", "")).upper()
     subtitle_raw = _svg_esc(card.get("subtitle", ""))
-
-    # Dark-background schemes → white text; light-background schemes → dark text
-    LIGHT_SCHEMES = {"warm", "workshop", "nature"}
-    is_light = scheme in LIGHT_SCHEMES
-    title_color   = TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])["title"] if is_light else "#ffffff"
-    sub_color     = TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])["subtitle"] if is_light else "#ffffffcc"
-    feat_color    = TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])["feat"] if is_light else "#ffffff"
-    badge_text_c  = "#111111" if is_light else "#111111"
 
     feats = []
     for i in range(1, 6):
@@ -805,16 +813,9 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
                     f'font-size="14" font-weight="700" fill="{feat_color}">{flines[1]}</text>'
                 )
 
-    # ── Thumbnail circle ───────────────────────────────────
+    # ── Thumbnail circle (pre-cropped as circular PNG in PIL) ─
     els.append(
-        '<defs><clipPath id="tc">'
-        '<circle cx="81" cy="1018" r="44"/>'
-        '</clipPath></defs>'
-    )
-    els.append(
-        f'<image href="{thumb_uri}" '
-        f'x="37" y="974" width="88" height="88" '
-        f'clip-path="url(#tc)" preserveAspectRatio="xMidYMid slice"/>'
+        f'<image href="{thumb_uri}" x="37" y="974" width="88" height="88"/>'
     )
     els.append(
         f'<circle cx="81" cy="1018" r="44" fill="none" '
