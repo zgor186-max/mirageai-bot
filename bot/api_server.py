@@ -574,17 +574,17 @@ body {{ font-family: Arial, sans-serif; position:relative; background:#111; }}
     background-image: url('{image_url}');
     background-size: cover;
     background-position: center right;
-    filter: brightness(1.05);
+    filter: brightness(1.15);
 }}
 .overlay {{
     position:absolute; inset:0;
     background: linear-gradient(
         105deg,
-        rgba({tr},{tg},{tb},0.78) 0%,
-        rgba({tr},{tg},{tb},0.65) 28%,
-        rgba({tr},{tg},{tb},0.38) 48%,
-        rgba({tr},{tg},{tb},0.08) 65%,
-        transparent 78%
+        rgba({tr},{tg},{tb},0.88) 0%,
+        rgba({tr},{tg},{tb},0.75) 25%,
+        rgba({tr},{tg},{tb},0.42) 46%,
+        rgba({tr},{tg},{tb},0.08) 63%,
+        transparent 76%
     );
 }}
 .content {{
