@@ -598,13 +598,15 @@ html, body {{ width:800px; height:1100px; overflow:hidden; background:transparen
     font-size:64px; font-weight:700; color:#fff;
     line-height:1.0;
     text-transform:uppercase; margin-bottom:12px;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.9);
+    -webkit-text-stroke: 1.5px rgba(0,0,0,0.6);
+    paint-order: stroke fill;
 }}
 .subtitle {{
-    font-size:15px; color:rgba(255,255,255,0.95);
+    font-size:15px; color:#fff;
     line-height:1.5;
     margin-bottom:auto;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
+    -webkit-text-stroke: 0.5px rgba(0,0,0,0.5);
+    paint-order: stroke fill;
 }}
 .features {{
     display:flex; flex-direction:column; gap:12px;
@@ -623,14 +625,14 @@ html, body {{ width:800px; height:1100px; overflow:hidden; background:transparen
 .feat-text {{
     font-size:13px; font-weight:700; color:#fff;
     text-transform:uppercase; letter-spacing:0.4px;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
+    -webkit-text-stroke: 0.8px rgba(0,0,0,0.7);
+    paint-order: stroke fill;
 }}
 .texture {{
     position:absolute; bottom:36px; left:40px;
     width:92px; height:92px; border-radius:50%;
     overflow:hidden;
     border:2.5px solid {accent};
-    box-shadow:0 4px 20px rgba(0,0,0,0.3);
     background-image:url('{image_url}');
     background-size:320%; background-position:center;
 }}
