@@ -723,7 +723,8 @@ function mpSetTextMode(withText) {
     mpCardWithText = withText;
     document.getElementById("mp-tt-with").classList.toggle("active", withText);
     document.getElementById("mp-tt-without").classList.toggle("active", !withText);
-    document.getElementById("mp-card-analysis-cell").style.display = withText ? "" : "none";
+    const descCell = document.getElementById("mp-card-analysis-cell");
+    if (descCell) descCell.style.display = withText ? "block" : "none";
 }
 
 function mpSelectBg(style, el) {
@@ -825,15 +826,17 @@ function mpCardHandlePhoto(input) {
         // Показываем переключатель режима
         document.getElementById("mp-text-toggle-wrap").style.display = "block";
         // Показываем ячейку анализа и запускаем анализ (если режим "с текстом")
-        if (mpCardWithText) {
-            const cell = document.getElementById("mp-card-analysis-cell");
-            const loading = document.getElementById("mp-analysis-loading");
-            const result = document.getElementById("mp-analysis-result");
-            if (cell) cell.style.display = "block";
-            if (loading) loading.style.display = "flex";
-            if (result) result.style.display = "none";
-            mpCardAnalyze(mpCardPhotoBase64);
-        }
+        // Всегда показываем базовые поля (название + категория)
+        const baseFields = document.getElementById("mp-card-base-fields");
+        const loading = document.getElementById("mp-analysis-loading");
+        const result = document.getElementById("mp-analysis-result");
+        if (baseFields) baseFields.style.display = "block";
+        if (loading) loading.style.display = "flex";
+        if (result) result.style.display = "none";
+        // Показываем описание только для режима "С текстом"
+        const descCell = document.getElementById("mp-card-analysis-cell");
+        if (descCell) descCell.style.display = mpCardWithText ? "block" : "none";
+        mpCardAnalyze(mpCardPhotoBase64);
     };
     reader.readAsDataURL(file);
 }
@@ -995,6 +998,13 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
         setVal("mp-card-feat1",    dbAdvs[0] || data.feat1 || "");
         setVal("mp-card-feat2",    dbAdvs[1] || data.feat2 || "");
         setVal("mp-card-feat3",    dbAdvs[2] || data.feat3 || "");
+
+        // Заполняем видимое поле описания (subtitle + feats)
+        const descEl = document.getElementById("mp-card-description");
+        if (descEl) {
+            const feats = [dbAdvs[0] || data.feat1, dbAdvs[1] || data.feat2, dbAdvs[2] || data.feat3].filter(Boolean);
+            descEl.value = (data.subtitle ? data.subtitle + "\n" : "") + feats.join(" • ");
+        }
 
     } catch (e) {
         console.warn("Auto-analyze failed:", e.message);
