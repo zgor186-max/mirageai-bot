@@ -564,8 +564,8 @@ ACCENT_COLORS = {
 CARD_HTML_TEMPLATE = """<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&display=swap" rel="stylesheet">
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&display=swap');
 * {{ margin:0; padding:0; box-sizing:border-box; }}
 html, body {{ width:800px; height:1100px; overflow:hidden; }}
 body {{ font-family: Arial, sans-serif; position:relative; background:#111; }}
@@ -602,7 +602,7 @@ body {{ font-family: Arial, sans-serif; position:relative; background:#111; }}
     margin-bottom:16px; align-self:flex-start;
 }}
 .title {{
-    font-family:'Oswald', Arial, sans-serif;
+    font-family:'Oswald', 'Arial Black', 'Impact', Arial, sans-serif;
     font-size:64px; font-weight:700; color:#fff;
     line-height:1.0; text-shadow: 2px 3px 14px rgba(0,0,0,0.95);
     text-transform:uppercase; margin-bottom:12px;
@@ -702,9 +702,16 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
 
     try:
         async with async_playwright() as p:
-            browser = await p.chromium.launch(args=["--no-sandbox", "--disable-setuid-sandbox"])
+            browser = await p.chromium.launch(args=[
+                "--no-sandbox", "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage", "--disable-gpu"
+            ])
             page = await browser.new_page(viewport={"width": 800, "height": 1100})
-            await page.set_content(html, wait_until="networkidle")
+            # block Google Fonts to avoid networkidle hang; font fallback to Arial Black
+            await page.route("**://fonts.googleapis.com/**", lambda route: route.abort())
+            await page.route("**://fonts.gstatic.com/**", lambda route: route.abort())
+            await page.set_content(html, wait_until="domcontentloaded", timeout=15000)
+            await page.wait_for_timeout(600)  # let CSS/layout settle
             screenshot = await page.screenshot(type="jpeg", quality=92,
                                                clip={"x":0,"y":0,"width":800,"height":1100})
             await browser.close()
@@ -714,6 +721,7 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
         return f"data:image/jpeg;base64,{b64}"
     except Exception as e:
         print(f"[Playwright] Render error: {e}")
+        import traceback; traceback.print_exc()
         return None
 
 
