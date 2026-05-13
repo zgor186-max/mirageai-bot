@@ -662,11 +662,23 @@ async def render_card_playwright(image_b64: str, card: dict) -> str | None:
     accent = ACCENT_COLORS.get(scheme, "#d4a017")
     tc = TEXT_COLORS.get(scheme, TEXT_COLORS["warm"])
 
-    # Save image to temp file and use file:// URL — reliable, no HTTP needed
+    # Save image to temp file — strip ICC profile via PIL so Chromium doesn't darken it
     img_filename = f"{uuid.uuid4().hex}.jpg"
     img_path = os.path.join(TEMP_DIR, img_filename)
-    with open(img_path, "wb") as f:
-        f.write(base64.b64decode(image_b64))
+    raw_bytes = base64.b64decode(image_b64)
+    try:
+        from PIL import Image, ImageEnhance
+        import io as _io
+        img = Image.open(_io.BytesIO(raw_bytes)).convert("RGB")
+        out = _io.BytesIO()
+        img.save(out, format="JPEG", quality=93)
+        with open(img_path, "wb") as f:
+            f.write(out.getvalue())
+        print("[Playwright] ICC stripped via PIL")
+    except Exception as pil_err:
+        print(f"[Playwright] PIL unavailable ({pil_err}), saving raw")
+        with open(img_path, "wb") as f:
+            f.write(raw_bytes)
     asyncio.create_task(_delete_after(img_path, 120))
     image_url = f"file://{img_path}"
 
