@@ -213,24 +213,20 @@ def _composite_product_right(
     prod_w, prod_h = prod.size
     print(f"[Composite] product size after trim: {prod_w}x{prod_h}")
 
-    target_h_r, max_w_r, y_off_r = CATEGORY_SIZING.get(category, CATEGORY_SIZING["other"])
+    target_h_r, _, y_off_r = CATEGORY_SIZING.get(category, CATEGORY_SIZING["other"])
     target_h = int(out_h * target_h_r)
-    max_w    = int(out_w * max_w_r)
 
-    # Масштабируем по высоте, затем проверяем ширину
+    # Масштабируем строго по высоте — ширина не ограничена
     scale = target_h / prod_h
-    new_w = int(prod_w * scale)
     new_h = target_h
-    if new_w > max_w:
-        scale = max_w / prod_w
-        new_w = max_w
-        new_h = int(prod_h * scale)
+    new_w = int(prod_w * scale)
 
     prod_resized = prod.resize((new_w, new_h), Image.LANCZOS)
 
-    # ── Позиция: строго правая половина, от самого верха ─────────
-    right_margin = 15
-    x = max(out_w // 2, out_w - new_w - right_margin)
+    # ── Позиция: правый край товара = правый край холста ──────────
+    # Минимальный x = 350 (чтобы текст слева не перекрывался)
+    # Товар может выходить за правый край — PIL обрежет естественно
+    x = max(350, out_w - new_w)
     y = int(out_h * y_off_r)
     # Не выходить за нижний край
     y = min(y, out_h - new_h - 5)
