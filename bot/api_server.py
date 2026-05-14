@@ -147,7 +147,7 @@ async def generate_card_handler(request):
             f"2. The LEFT 40% of the image must be CLEAN, EMPTY and slightly dark — absolutely NO furniture, NO objects, NO patterns in that zone. Only smooth dark gradient. This zone is reserved for text. "
             f"3. All scene elements (furniture, decor, plants) go ONLY in the right half and bottom of the image. "
             f"4. {hanging_note}"
-            f"5. Add a soft natural shadow under the product. "
+            f"5. SHADOWS: add realistic cast shadow from the product onto the wall behind it — soft, slightly offset to the right and downward, matching the lighting direction. Also add shadow on the floor beneath the product. Shadows must look physically accurate, not flat. "
             f"6. LIGHTING: bright and even illumination, exposure +1 stop, average scene brightness 140-180/255. "
             f"Light-colored walls (white, beige, light grey). Natural daylight through window OR warm indoor lamp. "
             f"NO dark rooms, NO dramatic shadows, NO moody atmosphere, NO night scenes. Bright airy interior. "
