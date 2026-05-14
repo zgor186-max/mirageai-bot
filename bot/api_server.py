@@ -134,13 +134,13 @@ async def generate_card_handler(request):
         place_prompt = (
             f"Take the COMPLETE product shown in the reference image and integrate it into this scene: {scene_prompt}. "
             f"The product {placement_instruction} "
-            f"CRITICAL — QUANTITY: the reference image shows a specific number of items (e.g. a pair of shoes = 2 shoes). "
-            f"You MUST show EXACTLY the same number of items as in the reference — do NOT reduce, merge or remove any. "
+            f"CRITICAL — QUANTITY: show EXACTLY the same number of items as in the reference — do NOT reduce, merge or remove any. "
             f"CRITICAL — INTEGRITY: reproduce every part, every component exactly — do not crop, cut or simplify anything. "
-            f"CRITICAL — COMPOSITION: product must be in the RIGHT half of the frame — "
-            f"left 40% remains clean scene background. "
+            f"CRITICAL — COMPOSITION: product must be in the RIGHT half of the frame. "
+            f"CRITICAL — LEFT SIDE: the LEFT 40% of the frame must be a clean, light, uncluttered background "
+            f"(light wall, soft fabric, neutral surface) — NO product elements there, suitable for text overlay. "
             f"Preserve exact colors, patterns, textures of the original product. "
-            f"Photorealistic commercial product photography, warm cinematic lighting. NO text, NO watermarks."
+            f"Photorealistic commercial product photography, soft warm lighting. NO text, NO watermarks."
         )
 
         try:
@@ -600,211 +600,232 @@ def _svg_wrap(text: str, max_chars: int = 12) -> list:
 
 
 async def render_card_cairo(image_b64: str, card: dict) -> str | None:
-    """Render card text overlay via CairoSVG — zero alpha/darkening artifacts."""
+    """Marketplace-style card: dynamic color from product, dividers, macro circle."""
     try:
         import cairosvg
     except ImportError:
-        print("[Cairo] cairosvg not installed, will fall back to Playwright")
         return None
 
     import io as _io
-    from PIL import Image
-
-    scheme   = card.get("scheme", "warm")
-    accent   = ACCENT_COLORS.get(scheme, "#d4a017")
-    raw_bytes = base64.b64decode(image_b64)
-
-    import io as _io2
-    from PIL import ImageDraw as _ImageDraw
-
     import numpy as np
-    pil_img = Image.open(_io.BytesIO(raw_bytes)).convert("RGB")
-    img_arr = np.array(pil_img)   # shape (H, W, 3)
-    H, W    = img_arr.shape[:2]
+    from PIL import Image, ImageDraw as _ImageDraw
+    from sklearn.cluster import KMeans
 
-    # ── Text: always white + black stroke — readable on ANY background ──
-    title_color  = "#ffffff"
-    sub_color    = "#ffffff"
-    feat_color   = "#ffffff"
-    stroke_col   = "#000000"
-    stroke_op    = "0.85"
-    badge_text_c = "#111111"
+    raw_bytes = base64.b64decode(image_b64)
+    pil_img   = Image.open(_io.BytesIO(raw_bytes)).convert("RGB")
+    img_arr   = np.array(pil_img)
+    H, W      = img_arr.shape[:2]
 
-    # ── Smart feature zone: find cleanest area in left half ──────────────
-    # Left half only (product is always placed right).
-    # Title occupies y≈0-360, so feature zones start below that.
-    # Three candidate zones: mid-left, lower-left, bottom strip.
-    lw = W // 2   # left half width
+    # ── 1. KMeans: найти доминирующий цвет товара ────────────────
+    small  = np.array(pil_img.resize((150, 200))).reshape(-1, 3).astype(float)
+    km     = KMeans(n_clusters=6, n_init=8, random_state=42)
+    km.fit(small)
+    centers = km.cluster_centers_
+    sizes   = np.bincount(km.labels_)
+
+    best, best_score = None, -1
+    for i, c in enumerate(centers):
+        brightness = float(np.mean(c))
+        mx = float(np.max(c))
+        sat = (mx - float(np.min(c))) / (mx + 1e-6)
+        if 45 < brightness < 215 and sat > 0.12:
+            score = sat * (sizes[i] / len(km.labels_))
+            if score > best_score:
+                best_score, best = score, c
+
+    dr, dg, db = (int(best[0]), int(best[1]), int(best[2])) if best is not None else (120, 90, 60)
+    accent_hex = f"#{dr:02x}{dg:02x}{db:02x}"
+    dark_hex   = f"#{int(dr*.50):02x}{int(dg*.50):02x}{int(db*.50):02x}"  # текст заголовка
+    feat_hex   = f"#{int(dr*.42):02x}{int(dg*.42):02x}{int(db*.42):02x}"  # текст фич
+
+    # ── 2. Яркость левой зоны → светлый или тёмный фон ──────────
+    lw = W // 2
+    left_bright = float(np.mean(img_arr[200:900, :lw, :]))
+    light_bg    = left_bright > 148
+
+    if light_bg:
+        t_col  = dark_hex;  s_col = dark_hex;  f_col = feat_hex
+        sk_col = accent_hex; sk_w_t = "1.2"; sk_w_f = "0.6"; sk_op = "0.25"
+        shd_op = "0.12"
+    else:
+        t_col  = "#ffffff";  s_col = "#ffffff"; f_col = "#ffffff"
+        sk_col = "#000000";  sk_w_t = "5";      sk_w_f = "1.5";  sk_op = "0.85"
+        shd_op = "0.90"
+
+    print(f"[Cairo] dominant=({dr},{dg},{db}) bright={left_bright:.0f} light={light_bg}")
+
+    # ── 3. Умная зона для фич ────────────────────────────────────
     ZONES = {
-        "mid":    img_arr[350:620,  :lw, :],   # y 350-620
-        "lower":  img_arr[620:870,  :lw, :],   # y 620-870
-        "bottom": img_arr[870:1080, :lw, :],   # y 870-1080
+        "mid":    img_arr[400:640, :lw, :],
+        "lower":  img_arr[640:860, :lw, :],
+        "bottom": img_arr[860:1060, :lw, :],
     }
-    zone_std = {name: float(np.std(z)) for name, z in ZONES.items()}
-    best_zone = min(zone_std, key=zone_std.get)
-    ZONE_Y = {"mid": 380, "lower": 640, "bottom": 890}
-    feat_zone_top = ZONE_Y[best_zone]
-    # Guarantee all 4 features fit: cap so last feature (idx=3) stays above y=1080
-    row_gap_check = 90
-    max_top = 1080 - 3 * row_gap_check - 40   # = 770
-    feat_zone_top = min(feat_zone_top, max_top)
-    print(f"[Cairo] feature zone={best_zone} stds={zone_std} top_y={feat_zone_top}, scheme={scheme}")
+    zone_std     = {n: float(np.std(z)) for n, z in ZONES.items()}
+    best_zone    = min(zone_std, key=zone_std.get)
+    ZONE_Y       = {"mid": 420, "lower": 655, "bottom": 875}
+    row_gap      = 88
+    feat_zone_top = min(ZONE_Y[best_zone], 1080 - 3 * row_gap - 44)
 
-    # ── Circular thumbnail: pre-crop in PIL (more reliable than SVG clip-path) ──
-    thumb_size = 88
-    thumb = pil_img.resize((thumb_size, thumb_size), Image.LANCZOS).convert("RGBA")
-    mask  = Image.new("L", (thumb_size, thumb_size), 0)
-    _ImageDraw.Draw(mask).ellipse((0, 0, thumb_size - 1, thumb_size - 1), fill=255)
-    thumb.putalpha(mask)
-    _tbuf = _io2.BytesIO()
-    thumb.save(_tbuf, format="PNG")
-    thumb_uri = "data:image/png;base64," + base64.b64encode(_tbuf.getvalue()).decode()
+    # ── 4. Макро-кружок: кроп центра товара (правая половина) ────
+    macro_r  = 120
+    cx_img   = W * 3 // 4
+    cy_img   = H * 2 // 3
+    crop_box = (max(0, cx_img-macro_r), max(0, cy_img-macro_r),
+                min(W, cx_img+macro_r), min(H, cy_img+macro_r))
+    macro_img  = pil_img.crop(crop_box).resize((macro_r*2, macro_r*2), Image.LANCZOS).convert("RGBA")
+    macro_mask = Image.new("L", (macro_r*2, macro_r*2), 0)
+    _ImageDraw.Draw(macro_mask).ellipse((0, 0, macro_r*2-1, macro_r*2-1), fill=255)
+    macro_img.putalpha(macro_mask)
+    _mbuf = _io.BytesIO()
+    macro_img.save(_mbuf, format="PNG")
+    macro_uri = "data:image/png;base64," + base64.b64encode(_mbuf.getvalue()).decode()
 
+    # ── 5. Данные карточки ───────────────────────────────────────
     badge        = _svg_esc(card.get("badge", ""))
     name         = _svg_esc(card.get("name", "")).upper()
-    subtitle_raw = _svg_esc(card.get("subtitle", ""))
     tagline_raw  = _svg_esc(card.get("tagline", ""))
+    subtitle_raw = _svg_esc(card.get("subtitle", ""))
 
     feats = []
     for i in range(1, 6):
         feat = card.get(f"feat{i}", "")
         icon = card.get(f"icon{i}", "✦")
         if feat:
-            feats.append({"icon": icon, "text": _svg_esc(feat.upper())})
+            # Первая буква заглавная, остальное строчные — как в эталоне
+            txt = feat.strip()
+            txt = txt[0].upper() + txt[1:].lower() if txt else txt
+            feats.append({"icon": icon, "text": _svg_esc(txt)})
 
-    FONT_TITLE = "'Bebas Neue', 'Bebas Neue Bold', sans-serif"   # display title font
+    FONT_TITLE = "'Bebas Neue', 'Bebas Neue Bold', sans-serif"
     FONT       = "'Open Sans', 'Liberation Sans', 'DejaVu Sans', sans-serif"
     FONT_EMOJI = "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif"
 
     els = []
 
-    # ── SVG filter: strong drop shadow — works on any background ───
+    # Shadow filter
     els.append(
-        f'<defs>'
-        f'<filter id="ts" x="-10%" y="-10%" width="120%" height="120%">'
-        f'<feDropShadow dx="0" dy="1.5" stdDeviation="3" '
-        f'flood-color="#000000" flood-opacity="0.90"/>'
-        f'</filter>'
-        f'</defs>'
+        f'<defs><filter id="ts" x="-10%" y="-10%" width="130%" height="130%">'
+        f'<feDropShadow dx="0" dy="1" stdDeviation="2" '
+        f'flood-color="#000" flood-opacity="{shd_op}"/>'
+        f'</filter></defs>'
     )
 
-    # ── Badge (top-right corner) ────────────────────────────
+    # ── Бейдж: сверху-слева ──────────────────────────────────────
     if badge:
-        bw  = min(max(int((len(badge) * 9 + 28) * 1.1), 88), 418)
-        bh  = 31
-        brx = 15
-        bx  = 800 - bw - 40
-        by  = 44
+        bw = min(len(badge) * 11 + 34, 280)
+        els.append(f'<rect x="28" y="26" width="{bw}" height="32" rx="16" fill="{accent_hex}"/>')
         els.append(
-            f'<rect x="{bx}" y="{by}" width="{bw}" height="{bh}" rx="{brx}" fill="{accent}"/>'
-        )
-        els.append(
-            f'<text x="{bx + bw // 2}" y="{by + 21}" text-anchor="middle" '
+            f'<text x="{28 + bw//2}" y="48" text-anchor="middle" '
             f'font-family="{FONT}" font-size="13" font-weight="700" '
-            f'fill="{badge_text_c}">{badge}</text>'
+            f'letter-spacing="0.8" fill="#ffffff">{badge}</text>'
         )
 
-    # ── Title: Bebas Neue — centered, 110px ─────────────────────
-    title_lines = _svg_wrap(name, max_chars=14)
-    title_fs = 110
-    title_lh = 116
-    ty = 115
-    for line in title_lines:
+    # ── Заголовок: Bebas Neue, левый край, цветной ───────────────
+    ty = 88
+    for line in _svg_wrap(name, max_chars=14):
         els.append(
-            f'<text x="400" y="{ty}" text-anchor="middle" '
-            f'font-family="{FONT_TITLE}" font-size="{title_fs}" font-weight="700" '
-            f'fill="{title_color}" '
-            f'stroke="{stroke_col}" stroke-width="6" stroke-opacity="{stroke_op}" '
-            f'paint-order="stroke fill" filter="url(#ts)">{line}</text>'
+            f'<text x="28" y="{ty}" '
+            f'font-family="{FONT_TITLE}" font-size="110" font-weight="700" '
+            f'fill="{t_col}" stroke="{sk_col}" stroke-width="{sk_w_t}" '
+            f'stroke-opacity="{sk_op}" paint-order="stroke fill" '
+            f'filter="url(#ts)">{line}</text>'
         )
-        ty += title_lh
+        ty += 115
 
-    # ── Tagline: продающая фраза (левый край, italic, +50%) ───
+    # ── Tagline: italic, 2 строки ────────────────────────────────
     if tagline_raw:
-        els.append(
-            f'<text x="40" y="{ty + 14}" '
-            f'font-family="{FONT}" font-size="26" font-style="italic" '
-            f'fill="{sub_color}" '
-            f'stroke="{stroke_col}" stroke-width="1.5" stroke-opacity="0.7" '
-            f'paint-order="stroke fill" filter="url(#ts)">{_svg_wrap(tagline_raw, max_chars=38)[0]}</text>'
-        )
-        ty += 46
+        ty += 10
+        for line in _svg_wrap(tagline_raw, max_chars=36)[:2]:
+            els.append(
+                f'<text x="28" y="{ty}" font-family="{FONT}" font-size="22" '
+                f'font-style="italic" fill="{s_col}" '
+                f'stroke="{sk_col}" stroke-width="0.6" stroke-opacity="0.15" '
+                f'paint-order="stroke fill">{line}</text>'
+            )
+            ty += 30
 
-    # ── Subtitle (слоган): левый край, +50% ──────────────────
+    # ── Слоган ───────────────────────────────────────────────────
     if subtitle_raw:
+        ty += 6
         els.append(
-            f'<text x="40" y="{ty + 14}" '
-            f'font-family="{FONT}" font-size="29" font-weight="600" '
-            f'fill="{sub_color}" '
-            f'stroke="{stroke_col}" stroke-width="1.8" stroke-opacity="{stroke_op}" '
-            f'paint-order="stroke fill" filter="url(#ts)">{_svg_wrap(subtitle_raw, max_chars=30)[0]}</text>'
+            f'<text x="28" y="{ty}" font-family="{FONT}" font-size="24" '
+            f'font-weight="600" fill="{s_col}" '
+            f'stroke="{sk_col}" stroke-width="0.8" stroke-opacity="0.15" '
+            f'paint-order="stroke fill">{_svg_wrap(subtitle_raw, max_chars=30)[0]}</text>'
         )
-        ty += 48
+        ty += 34
 
-    # ── Features: single LEFT column, zone chosen by image analysis ─
+    # ── Фичи: левая колонка, разделители, 2 строки ───────────────
     if feats:
         feats = feats[:4]
         feat_r    = 26
-        feat_fs   = 28
-        feat_icon = 22
-        row_gap   = 90
-        cx        = 56
-        tx        = 94
+        feat_fs   = 20
+        feat_lh   = 24
+        feat_icon = 20
+        cx_f      = 54
+        tx_f      = 92
 
         for idx, feat in enumerate(feats):
             cy = feat_zone_top + idx * row_gap
 
-            els.append(f'<circle cx="{cx}" cy="{cy}" r="{feat_r}" fill="{accent}"/>')
+            # Разделитель
+            if idx > 0:
+                els.append(
+                    f'<line x1="{cx_f - feat_r}" y1="{cy - 15}" x2="340" y2="{cy - 15}" '
+                    f'stroke="{accent_hex}" stroke-width="0.8" stroke-opacity="0.35"/>'
+                )
+            # Круг + иконка
+            els.append(f'<circle cx="{cx_f}" cy="{cy}" r="{feat_r}" fill="{accent_hex}"/>')
             els.append(
-                f'<text x="{cx}" y="{cy + 6}" text-anchor="middle" '
+                f'<text x="{cx_f}" y="{cy + 7}" text-anchor="middle" '
                 f'font-family="{FONT_EMOJI}" font-size="{feat_icon}" '
                 f'filter="url(#ts)">{feat["icon"]}</text>'
             )
-            flines = _svg_wrap(feat["text"], max_chars=20)[:1]
-            for fl in flines:
+            # Текст: 2 строки
+            flines = _svg_wrap(feat["text"], max_chars=22)[:2]
+            start_y = cy - (len(flines) - 1) * feat_lh // 2
+            for li, fl in enumerate(flines):
                 els.append(
-                    f'<text x="{tx}" y="{cy + 5}" '
+                    f'<text x="{tx_f}" y="{start_y + li * feat_lh}" '
                     f'font-family="{FONT}" font-size="{feat_fs}" font-weight="700" '
-                    f'fill="{feat_color}" filter="url(#ts)">{fl}</text>'
+                    f'fill="{f_col}" stroke="{sk_col}" stroke-width="{sk_w_f}" '
+                    f'stroke-opacity="{sk_op}" paint-order="stroke fill" '
+                    f'filter="url(#ts)">{fl}</text>'
                 )
 
-    # ── Thumbnail (bottom-right corner, away from features) ──
-    thumb_cx = 726   # 800 - 44 - 30
-    thumb_cy = 1056  # bottom edge lands at y=1100
-    thumb_r  = 44
+    # ── Макро-кружок: снизу-слева ────────────────────────────────
+    mcx = 28 + macro_r
+    mcy = 1100 - 28 - macro_r
     els.append(
-        f'<image href="{thumb_uri}" '
-        f'x="{thumb_cx - thumb_r}" y="{thumb_cy - thumb_r}" '
-        f'width="{thumb_r * 2}" height="{thumb_r * 2}"/>'
+        f'<image href="{macro_uri}" x="{mcx-macro_r}" y="{mcy-macro_r}" '
+        f'width="{macro_r*2}" height="{macro_r*2}"/>'
     )
     els.append(
-        f'<circle cx="{thumb_cx}" cy="{thumb_cy}" r="{thumb_r}" fill="none" '
-        f'stroke="{accent}" stroke-width="2.5"/>'
+        f'<circle cx="{mcx}" cy="{mcy}" r="{macro_r}" fill="none" '
+        f'stroke="{accent_hex}" stroke-width="3"/>'
     )
 
+    # ── Сборка SVG ───────────────────────────────────────────────
     svg = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<svg xmlns="http://www.w3.org/2000/svg" '
         'xmlns:xlink="http://www.w3.org/1999/xlink" '
         'width="800" height="1100">\n'
-        + "\n".join(els)
-        + "\n</svg>"
+        + "\n".join(els) + "\n</svg>"
     )
 
-    print(f"[Cairo] SVG size={len(svg)//1024}KB feats={len(feats)} scheme={scheme}")
+    print(f"[Cairo] SVG {len(svg)//1024}KB feats={len(feats)} zone={best_zone}")
 
     try:
         overlay_png = cairosvg.svg2png(
             bytestring=svg.encode("utf-8"),
-            output_width=800,
-            output_height=1100,
+            output_width=800, output_height=1100,
         )
     except Exception as e:
         print(f"[Cairo] svg2png error: {e}")
         import traceback; traceback.print_exc()
         return None
 
-    # Composite: background photo + SVG overlay
     bg = Image.open(_io.BytesIO(raw_bytes)).convert("RGBA")
     bg = bg.resize((800, 1100), Image.LANCZOS)
     overlay = Image.open(_io.BytesIO(overlay_png)).convert("RGBA")
@@ -812,7 +833,7 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     out = _io.BytesIO()
     bg.convert("RGB").save(out, format="JPEG", quality=93)
     b64 = base64.b64encode(out.getvalue()).decode()
-    print(f"[Cairo] Composited OK ({len(out.getvalue()) // 1024}KB)")
+    print(f"[Cairo] OK ({len(out.getvalue())//1024}KB)")
     return f"data:image/jpeg;base64,{b64}"
 
 
