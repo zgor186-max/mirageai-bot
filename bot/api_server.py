@@ -674,6 +674,32 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
 
     els = []
 
+    # ── Gradients for text readability ─────────────────────
+    # Dark bg → dark overlay; light bg → white overlay
+    gc   = "#000000" if is_dark_bg else "#ffffff"
+    gt   = 0.52 if is_dark_bg else 0.58   # title zone opacity
+    gf   = 0.62 if is_dark_bg else 0.68   # features zone opacity
+
+    els.append(
+        f'<defs>'
+        # Horizontal gradient: left edge → transparent (covers title + subtitle)
+        f'<linearGradient id="gT" x1="0" y1="0" x2="500" y2="0" gradientUnits="userSpaceOnUse">'
+        f'<stop offset="0%" stop-color="{gc}" stop-opacity="{gt}"/>'
+        f'<stop offset="65%" stop-color="{gc}" stop-opacity="{gt * 0.18:.2f}"/>'
+        f'<stop offset="100%" stop-color="{gc}" stop-opacity="0"/>'
+        f'</linearGradient>'
+        # Vertical gradient: bottom → transparent (covers features block)
+        f'<linearGradient id="gF" x1="0" y1="1100" x2="0" y2="540" gradientUnits="userSpaceOnUse">'
+        f'<stop offset="0%" stop-color="{gc}" stop-opacity="{gf}"/>'
+        f'<stop offset="100%" stop-color="{gc}" stop-opacity="0"/>'
+        f'</linearGradient>'
+        f'</defs>'
+    )
+    # Title / subtitle zone — left strip, upper 520px
+    els.append(f'<rect x="0" y="0" width="500" height="520" fill="url(#gT)"/>')
+    # Features zone — left strip, lower portion
+    els.append(f'<rect x="0" y="520" width="290" height="580" fill="url(#gF)"/>')
+
     # ── Badge (top-right corner, +10% size) ────────────────
     if badge:
         bw  = min(max(int((len(badge) * 9 + 28) * 1.1), 88), 418)
@@ -714,17 +740,18 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             )
             sy += 28
 
-    # ── Features (bottom-left, pushed lower, no separator lines) ─
+    # ── Features (bottom-left, max 4 to avoid overlap with thumbnail) ─
     if feats:
-        feat_h    = 75   # 68 × 1.1
-        feat_r    = 23   # 21 × 1.1
+        feats = feats[:4]          # cap at 4 — 5th was getting clipped by thumbnail
+        feat_h    = 78
+        feat_r    = 23
         feat_cx   = 67
         feat_tx   = 100
-        feat_fs   = 14   # 13 × 1.1
-        feat_lh   = 18   # 16 × 1.1
-        feat_icon = 19   # 17 × 1.1
-        fz_bottom = 1030
-        fz_top    = max(fz_bottom - len(feats) * feat_h, 520)
+        feat_fs   = 14
+        feat_lh   = 18
+        feat_icon = 19
+        fz_bottom = 1020           # leave room above thumbnail
+        fz_top    = max(fz_bottom - len(feats) * feat_h, 530)
 
         for idx, feat in enumerate(feats):
             cy = fz_top + idx * feat_h + 24
@@ -737,7 +764,7 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
                 f'font-size="{feat_icon}">{feat["icon"]}</text>'
             )
 
-            flines = _svg_wrap(feat["text"], max_chars=13)[:3]
+            flines = _svg_wrap(feat["text"], max_chars=13)[:2]   # max 2 lines per feat
             n = len(flines)
             start_y = cy - (n - 1) * feat_lh // 2
             for li, fl in enumerate(flines):
@@ -747,9 +774,9 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
                     f'font-size="{feat_fs}" font-weight="700" fill="{feat_color}">{fl}</text>'
                 )
 
-    # ── Thumbnail (centred at bottom) ──────────────────────
-    thumb_cx = 400
-    thumb_cy = 1056   # bottom edge lands at y=1100
+    # ── Thumbnail (bottom-right corner, away from features) ──
+    thumb_cx = 726   # 800 - 44 - 30
+    thumb_cy = 1056  # bottom edge lands at y=1100
     thumb_r  = 44
     els.append(
         f'<image href="{thumb_uri}" '
