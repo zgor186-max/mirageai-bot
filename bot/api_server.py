@@ -67,7 +67,13 @@ async def generate_handler(request):
 
 
 async def generate_card_handler(request):
-    """Two-step generation: scene first, then place product in it"""
+    """
+    Card generation pipeline:
+      1. rembg — remove background from product photo (local, guaranteed)
+      2. flux-dev — generate background scene
+      3. PIL composite — place product on RIGHT side of background (guaranteed composition)
+      4. Cairo overlay — draw text/badges on top
+    """
     if request.method == "OPTIONS":
         return web.Response(status=200, headers=CORS_HEADERS)
 
@@ -87,123 +93,161 @@ async def generate_card_handler(request):
 
         print(f"[Card] category={category} scene={scene_prompt[:80]}")
 
-        # Category-specific placement — professional angles per product type
-        PLACEMENT = {
-            "clothing": (
-                "is hanging on a wooden hanger. "
-                "STRICT COMPOSITION RULE: the product must occupy ONLY the RIGHT HALF of the image (x=50% to x=100%). "
-                "The LEFT HALF (x=0 to x=50%) must be 100% empty — only background, NO part of the product crosses the center line. "
-                "Full-length frontal view, gentle natural fabric drape showing texture and fit. "
-                "Camera at eye-level with slight 5-degree downward tilt. "
-                "Soft directional light from upper-left. Natural shadow grounds the product."
-            ),
-            "footwear": (
-                "is shown as a pair placed together, left shoe slightly in front, "
-                "at a 3/4 front-side angle — camera 30 degrees from the side and 20 degrees above. "
-                "STRICT COMPOSITION RULE: the shoes must occupy ONLY the RIGHT HALF of the image (x=50% to x=100%). "
-                "The LEFT HALF (x=0 to x=50%) must be 100% empty — only background, NO part of the product crosses the center line. "
-                "Both shoes completely visible, sole edge slightly showing to convey depth. "
-                "The shoes stand firmly on the surface — NOT floating, NOT disassembled. "
-                "Sharp focus preserving exact original colors, patterns and sole design."
-            ),
-            "accessories": (
-                "is positioned at a 45-degree rotation, camera 15 degrees above eye-level, "
-                "showing both the front face and side profile simultaneously. "
-                "STRICT COMPOSITION RULE: must occupy ONLY the RIGHT HALF (x=50%–100%). LEFT HALF must be empty background only. "
-                "All handles, straps or key design elements clearly visible. Firmly on the surface."
-            ),
-            "food": (
-                "Packaged food: eye-level shot, front label fully facing the camera, filling RIGHT 50%. "
-                "Fresh or prepared food: 45-degree overhead flat lay, beautiful arrangement with props. "
-                "Drinks: eye-level with condensation droplets visible. "
-                "The LEFT 40% is a clean, light background for text overlay."
-            ),
-            "beauty": (
-                "is standing upright with the label directly facing the camera, eye-level shot (0-degree elevation). "
-                "If multiple items — arranged in a tight triangular group. "
-                "Cap or lid clean and fully visible. Filling the RIGHT 50% of the frame. "
-                "The LEFT 40% is a clean, light background for text overlay. "
-                "Soft light from upper-left, subtle highlight on packaging."
-            ),
-            "gadgets": (
-                "is shown at a 3/4 rear-side hero angle — camera 40 degrees above, 35 degrees from the side. "
-                "The screen or main surface is angled toward the viewer showing depth and premium feel. "
-                "Dynamic perspective revealing key product features. Filling the RIGHT 50% of the frame. "
-                "The LEFT 40% is a clean, dark or gradient background for text overlay. "
-                "Dramatic lighting with edge highlight emphasising the form."
-            ),
-            "home": (
-                "is shown in its natural context of use, camera at 30-40 degree angle revealing depth and form. "
-                "Textiles: gently draped or folded showing texture and material quality. "
-                "Furniture: perspective angle showing all key dimensions. "
-                "Filling the RIGHT 50% of the frame. "
-                "The LEFT 40% is a clean, light background for text overlay."
-            ),
-            "other": (
-                "is placed at its most flattering angle. "
-                "STRICT COMPOSITION RULE: must occupy ONLY the RIGHT HALF (x=50%–100%). "
-                "The LEFT HALF (x=0 to x=50%) must be 100% empty — only background. "
-                "Firmly on the surface."
-            ),
-        }
-        placement_instruction = PLACEMENT.get(category, PLACEMENT["other"])
+        # ── Step 1: Remove background from product photo ──────────────
+        print("[Card] Step 1 — removing background (rembg)")
+        product_no_bg = await asyncio.get_event_loop().run_in_executor(
+            None, _remove_bg, photo_b64
+        )
+        if not product_no_bg:
+            return web.json_response({"error": "Background removal failed"}, status=500, headers=CORS_HEADERS)
+        print("[Card] Step 1 done ✓")
 
-        place_prompt = (
-            f"Take the COMPLETE product shown in the reference image and integrate it into this scene: {scene_prompt}. "
-            f"The product {placement_instruction} "
-            f"CRITICAL — QUANTITY: show EXACTLY the same number of items as in the reference — do NOT reduce, merge or remove any. "
-            f"CRITICAL — INTEGRITY: reproduce every part, every component exactly — same shape, colors, patterns, textures. "
-            f"CRITICAL — LEFT SIDE: LEFT 40% of frame must be clean and uncluttered — suitable for text overlay. "
-            f"LIGHTING: soft directional light from upper-left, natural shadow grounding the product on the surface. "
-            f"FOCUS: sharp focus on product, background slightly softened (shallow depth of field). "
-            f"Photorealistic commercial product photography. NO text, NO watermarks, NO extra objects."
+        # ── Step 2: Generate background scene ────────────────────────
+        print("[Card] Step 2 — generating background scene")
+        bg_scene_prompt = (
+            f"{scene_prompt}. "
+            f"Empty scene with NO products, NO people. "
+            f"Photorealistic commercial photography background. "
+            f"Soft natural lighting from upper-left. "
+            f"Ultra detailed, clean and uncluttered."
         )
 
-        try:
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=300)) as session:
-                # Step 1: Generate background scene (no product)
-                print(f"[Card] Step 1 — generating scene")
-                bg_url = await call_text2img(session, scene_prompt)
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=300)) as session:
+            bg_url = await call_text2img(session, bg_scene_prompt)
+            if bg_url:
+                bg_b64 = await download_as_b64(session, bg_url)
+            else:
+                bg_b64 = None
 
-                if bg_url:
-                    print(f"[Card] Step 1 done: {bg_url[:60]}")
-                    print(f"[Card] Step 2 — placing product in scene")
+        if not bg_b64:
+            print("[Card] Step 2 failed — using plain background")
 
-                    # Upload product photo (Replicate API or local temp server)
-                    product_url = await upload_image_to_replicate(session, photo_b64)
+        print("[Card] Step 2 done ✓")
 
-                    # Download bg and upload it too
-                    bg_b64 = await download_as_b64(session, bg_url)
-                    bg_upload_url = await upload_image_to_replicate(session, bg_b64) if bg_b64 else None
+        # ── Step 3: Composite product on RIGHT side ───────────────────
+        print("[Card] Step 3 — compositing product on right side")
+        composited_b64 = await asyncio.get_event_loop().run_in_executor(
+            None, _composite_product_right, product_no_bg, bg_b64, category
+        )
+        print("[Card] Step 3 done ✓")
 
-                    result_url = await call_kontext_two_images(session, product_url, bg_upload_url, place_prompt)
-
-                    if result_url:
-                        image_b64 = await download_image_as_base64(result_url)
-                        print(f"[Card] Two-step done ✓")
-                        final = await _apply_card_overlay(image_b64, card_data)
-                        return web.json_response({"url": final}, headers=CORS_HEADERS)
-
-                # Fallback: single step
-                print("[Card] Falling back to single-step generation")
-
-        except Exception as e:
-            print(f"[Card] Two-step error: {e}, falling back")
-
-        # Single-step fallback
-        result_url = await call_replicate(photo_b64, place_prompt)
-        if not result_url:
-            return web.json_response({"error": "Generation failed"}, status=500, headers=CORS_HEADERS)
-
-        image_b64 = await download_image_as_base64(result_url)
-        print(f"[Card] Single-step fallback done ✓")
-        final = await _apply_card_overlay(image_b64, card_data)
+        # ── Step 4: Apply text overlay ────────────────────────────────
+        final = await _apply_card_overlay(composited_b64, card_data)
         return web.json_response({"url": final}, headers=CORS_HEADERS)
 
     except Exception as e:
         import traceback
         traceback.print_exc()
         return web.json_response({"error": str(e)}, status=500, headers=CORS_HEADERS)
+
+
+def _remove_bg(photo_b64: str) -> str | None:
+    """Remove background using rembg, return base64 PNG with transparency."""
+    try:
+        from rembg import remove
+        import io as _io
+        from PIL import Image
+
+        raw = base64.b64decode(photo_b64)
+        result = remove(raw)
+        img = Image.open(_io.BytesIO(result)).convert("RGBA")
+        out = _io.BytesIO()
+        img.save(out, format="PNG")
+        return base64.b64encode(out.getvalue()).decode()
+    except Exception as e:
+        print(f"[rembg] error: {e}")
+        import traceback; traceback.print_exc()
+        return None
+
+
+# Размеры товара по категории: (target_h_ratio, max_w_ratio, y_offset_ratio)
+# target_h_ratio  — желаемая высота товара как доля от высоты карточки
+# max_w_ratio     — максимальная ширина товара как доля от ширины карточки
+# y_offset_ratio  — смещение от верха (0 = прижать вверх, 0.5 = по центру)
+CATEGORY_SIZING = {
+    "clothing":    (0.90, 0.52, 0.02),   # полный рост, почти вся высота
+    "footwear":    (0.55, 0.48, 0.35),   # обувь ниже центра
+    "accessories": (0.60, 0.46, 0.22),
+    "food":        (0.65, 0.44, 0.18),
+    "beauty":      (0.68, 0.40, 0.16),
+    "gadgets":     (0.60, 0.46, 0.22),
+    "home":        (0.70, 0.48, 0.18),
+    "other":       (0.65, 0.46, 0.20),
+}
+
+
+def _composite_product_right(
+    product_no_bg_b64: str,
+    bg_b64: str | None,
+    category: str,
+    out_w: int = 800,
+    out_h: int = 1100,
+) -> str:
+    """
+    Place product (transparent PNG) on the RIGHT side of the background.
+    Left side is guaranteed to be clear of product.
+    """
+    import io as _io
+    import numpy as np
+    from PIL import Image, ImageFilter
+
+    # ── Background ────────────────────────────────────────────────
+    if bg_b64:
+        bg = Image.open(_io.BytesIO(base64.b64decode(bg_b64))).convert("RGBA")
+        bg = bg.resize((out_w, out_h), Image.LANCZOS)
+    else:
+        # Нейтральный серый фон
+        bg = Image.new("RGBA", (out_w, out_h), (230, 228, 224, 255))
+
+    # Небольшое размытие фона для эффекта глубины резкости
+    bg_blurred = bg.filter(ImageFilter.GaussianBlur(radius=1.8))
+
+    # ── Product ───────────────────────────────────────────────────
+    prod = Image.open(_io.BytesIO(base64.b64decode(product_no_bg_b64))).convert("RGBA")
+    prod_w, prod_h = prod.size
+
+    target_h_r, max_w_r, y_off_r = CATEGORY_SIZING.get(category, CATEGORY_SIZING["other"])
+    target_h = int(out_h * target_h_r)
+    max_w    = int(out_w * max_w_r)
+
+    # Масштабируем по высоте, затем проверяем ширину
+    scale = target_h / prod_h
+    new_w = int(prod_w * scale)
+    new_h = target_h
+    if new_w > max_w:
+        scale = max_w / prod_w
+        new_w = max_w
+        new_h = int(prod_h * scale)
+
+    prod_resized = prod.resize((new_w, new_h), Image.LANCZOS)
+
+    # ── Позиция: строго правая половина ──────────────────────────
+    # Правый край с отступом 20px, левый край товара >= out_w//2
+    right_margin = 20
+    x = max(out_w // 2, out_w - new_w - right_margin)
+    y = int(out_h * y_off_r)
+    # Не выходить за нижний край
+    y = min(y, out_h - new_h - 10)
+
+    # Мягкая тень под товаром
+    shadow = Image.new("RGBA", (out_w, out_h), (0, 0, 0, 0))
+    shadow_layer = Image.new("RGBA", (new_w, 40), (0, 0, 0, 0))
+    for i in range(40):
+        alpha = int(60 * (1 - i / 40))
+        for px in range(new_w):
+            shadow_layer.putpixel((px, i), (0, 0, 0, alpha))
+    shadow.paste(shadow_layer, (x, y + new_h - 20))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(radius=12))
+
+    # Собираем: фон → тень → товар
+    canvas = bg_blurred.copy()
+    canvas = Image.alpha_composite(canvas, shadow)
+    canvas.paste(prod_resized, (x, y), prod_resized)
+
+    # ── Конвертируем в JPEG base64 ─────────────────────────────
+    out = _io.BytesIO()
+    canvas.convert("RGB").save(out, format="JPEG", quality=93)
+    return base64.b64encode(out.getvalue()).decode()
 
 
 async def call_text2img(session: aiohttp.ClientSession, prompt: str) -> str | None:
