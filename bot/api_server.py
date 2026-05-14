@@ -683,63 +683,64 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             f'fill="{badge_text_c}">{badge}</text>'
         )
 
-    # ── Title: stroke + shadow for max readability, no backdrop ─
-    title_lines = _svg_wrap(name, max_chars=12)
-    title_fs = 45
-    title_lh = 50
-    ty = 75
+    # ── Title: 2.5× bigger, bold, stroke + shadow ───────────────
+    title_lines = _svg_wrap(name, max_chars=10)
+    title_fs = 110
+    title_lh = 118
+    ty = 120
     for line in title_lines:
         els.append(
             f'<text x="40" y="{ty}" '
             f'font-family="{FONT}" font-size="{title_fs}" font-weight="900" '
             f'fill="{title_color}" '
-            f'stroke="{stroke_col}" stroke-width="2.5" stroke-opacity="{stroke_op}" '
+            f'stroke="{stroke_col}" stroke-width="3.5" stroke-opacity="{stroke_op}" '
             f'paint-order="stroke fill" filter="url(#ts)">{line}</text>'
         )
         ty += title_lh
 
-    # ── Subtitle: 1 line max, lighter stroke + shadow ────────
+    # ── Subtitle: 1 line max, under title ────────────────────
     if subtitle_raw:
-        sy = ty + 10
+        sy = ty + 12
         for line in _svg_wrap(subtitle_raw, max_chars=32)[:1]:
             els.append(
                 f'<text x="40" y="{sy}" '
-                f'font-family="{FONT}" font-size="20" '
+                f'font-family="{FONT}" font-size="22" '
                 f'fill="{sub_color}" '
                 f'stroke="{stroke_col}" stroke-width="1.5" stroke-opacity="{stroke_op}" '
                 f'paint-order="stroke fill" filter="url(#ts)">{line}</text>'
             )
-            sy += 28
 
-    # ── Features: shadow only (stroke too heavy at small size) ─
+    # ── Features: 2×2 grid at bottom — below product body ────
+    # Positioned in bottom strip so they never overlap the main product.
+    # Layout: row0 y≈960, row1 y≈1040 | col0 x=0-390, col1 x=410-800
     if feats:
         feats = feats[:4]
-        feat_h    = 78
-        feat_r    = 23
-        feat_cx   = 67
-        feat_tx   = 100
+        feat_r    = 20
         feat_fs   = 14
-        feat_lh   = 18
-        feat_icon = 19
-        fz_bottom = 1020
-        fz_top    = max(fz_bottom - len(feats) * feat_h, 530)
+        feat_lh   = 17
+        feat_icon = 17
+        rows = [(0, 955), (1, 955), (2, 1040), (3, 1040)]  # (feat_idx, cy_base)
+        col_x = [30, 410]  # left x of each column
 
         for idx, feat in enumerate(feats):
-            cy = fz_top + idx * feat_h + 24
+            col   = idx % 2
+            row   = idx // 2
+            cx    = col_x[col] + feat_r
+            cy    = rows[idx][1]
+            tx    = col_x[col] + feat_r * 2 + 8
 
-            els.append(f'<circle cx="{feat_cx}" cy="{cy}" r="{feat_r}" fill="{accent}"/>')
+            els.append(f'<circle cx="{cx}" cy="{cy}" r="{feat_r}" fill="{accent}"/>')
             els.append(
-                f'<text x="{feat_cx}" y="{cy + 7}" text-anchor="middle" '
+                f'<text x="{cx}" y="{cy + 6}" text-anchor="middle" '
                 f'font-family="{FONT_EMOJI}" font-size="{feat_icon}" '
                 f'filter="url(#ts)">{feat["icon"]}</text>'
             )
 
-            flines = _svg_wrap(feat["text"], max_chars=22)[:2]
-            n = len(flines)
-            start_y = cy - (n - 1) * feat_lh // 2
+            # 1 line max — text should be ≤2 words from AI prompt
+            flines = _svg_wrap(feat["text"], max_chars=22)[:1]
             for li, fl in enumerate(flines):
                 els.append(
-                    f'<text x="{feat_tx}" y="{start_y + li * feat_lh}" '
+                    f'<text x="{tx}" y="{cy + 5}" '
                     f'font-family="{FONT}" font-size="{feat_fs}" font-weight="700" '
                     f'fill="{feat_color}" filter="url(#ts)">{fl}</text>'
                 )
