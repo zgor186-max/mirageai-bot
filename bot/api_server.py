@@ -682,21 +682,7 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     row_gap      = 88
     feat_zone_top = min(ZONE_Y[best_zone], 1080 - 3 * row_gap - 44)
 
-    # ── 4. Макро-кружок: кроп центра товара (правая половина) ────
-    macro_r  = 120
-    cx_img   = W * 3 // 4
-    cy_img   = H * 2 // 3
-    crop_box = (max(0, cx_img-macro_r), max(0, cy_img-macro_r),
-                min(W, cx_img+macro_r), min(H, cy_img+macro_r))
-    macro_img  = pil_img.crop(crop_box).resize((macro_r*2, macro_r*2), Image.LANCZOS).convert("RGBA")
-    macro_mask = Image.new("L", (macro_r*2, macro_r*2), 0)
-    _ImageDraw.Draw(macro_mask).ellipse((0, 0, macro_r*2-1, macro_r*2-1), fill=255)
-    macro_img.putalpha(macro_mask)
-    _mbuf = _io.BytesIO()
-    macro_img.save(_mbuf, format="PNG")
-    macro_uri = "data:image/png;base64," + base64.b64encode(_mbuf.getvalue()).decode()
-
-    # ── 5. Данные карточки ───────────────────────────────────────
+    # ── 4. Данные карточки ───────────────────────────────────────
     badge        = _svg_esc(card.get("badge", ""))
     name         = _svg_esc(card.get("name", "")).upper()
     tagline_raw  = _svg_esc(card.get("tagline", ""))
@@ -809,17 +795,7 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
                     f'filter="url(#ts)">{fl}</text>'
                 )
 
-    # ── Макро-кружок: снизу-слева ────────────────────────────────
-    mcx = 28 + macro_r
-    mcy = 1100 - 28 - macro_r
-    els.append(
-        f'<image href="{macro_uri}" x="{mcx-macro_r}" y="{mcy-macro_r}" '
-        f'width="{macro_r*2}" height="{macro_r*2}"/>'
-    )
-    els.append(
-        f'<circle cx="{mcx}" cy="{mcy}" r="{macro_r}" fill="none" '
-        f'stroke="{accent_hex}" stroke-width="3"/>'
-    )
+    # Макро-кружок удалён навсегда — не восстанавливать
 
     # ── Сборка SVG ───────────────────────────────────────────────
     svg = (
