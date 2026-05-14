@@ -789,9 +789,9 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     }
     zone_std     = {n: float(np.std(z)) for n, z in ZONES.items()}
     best_zone    = min(zone_std, key=zone_std.get)
-    ZONE_Y       = {"mid": 420, "lower": 655, "bottom": 875}
-    row_gap      = 88
-    feat_zone_top = min(ZONE_Y[best_zone], 1080 - 3 * row_gap - 44)
+    ZONE_Y        = {"mid": 420, "lower": 640, "bottom": 860}
+    row_gap_calc  = 95   # 2 строки по 1 слову
+    feat_zone_top = min(ZONE_Y[best_zone], 1080 - 4 * row_gap_calc - 20)
 
     # ── 4. Данные карточки ───────────────────────────────────────
     badge        = _svg_esc(card.get("badge", ""))
@@ -879,15 +879,16 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         )
         ty += 34
 
-    # ── Фичи: левая колонка, разделители, 2 строки ───────────────
+    # ── Фичи: левая колонка, 2 строки по 1 слову ────────────────
     if feats:
         feats = feats[:4]
         feat_r    = 26
-        feat_fs   = 20
-        feat_lh   = 24
+        feat_fs   = 22   # чуть крупнее — одно слово на строке
+        feat_lh   = 26   # межстрочный интервал
         feat_icon = 20
         cx_f      = 54
         tx_f      = 92
+        row_gap   = 95   # больше места под 2 строки
 
         for idx, feat in enumerate(feats):
             cy = feat_zone_top + idx * row_gap
@@ -895,7 +896,7 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             # Разделитель
             if idx > 0:
                 els.append(
-                    f'<line x1="{cx_f - feat_r}" y1="{cy - 15}" x2="340" y2="{cy - 15}" '
+                    f'<line x1="{cx_f - feat_r}" y1="{cy - 18}" x2="340" y2="{cy - 18}" '
                     f'stroke="{accent_hex}" stroke-width="0.8" stroke-opacity="0.35"/>'
                 )
             # Круг + иконка
@@ -905,16 +906,19 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
                 f'font-family="{FONT_EMOJI}" font-size="{feat_icon}" '
                 f'filter="url(#ts)">{feat["icon"]}</text>'
             )
-            # Текст: 2 строки
-            flines = _svg_wrap(feat["text"], max_chars=22)[:2]
-            start_y = cy - (len(flines) - 1) * feat_lh // 2
-            for li, fl in enumerate(flines):
+            # Текст: каждое слово на отдельной строке, ЗАГЛАВНЫМИ
+            words = feat["text"].upper().split()[:2]
+            if not words:
+                words = [feat["text"].upper()]
+            start_y = cy - (len(words) - 1) * feat_lh // 2
+            for li, word in enumerate(words):
                 els.append(
                     f'<text x="{tx_f}" y="{start_y + li * feat_lh}" '
                     f'font-family="{FONT}" font-size="{feat_fs}" font-weight="700" '
+                    f'letter-spacing="0.5" '
                     f'fill="{f_col}" stroke="{sk_col}" stroke-width="{sk_w_f}" '
                     f'stroke-opacity="{sk_op}" paint-order="stroke fill" '
-                    f'filter="url(#ts)">{fl}</text>'
+                    f'filter="url(#ts)">{word}</text>'
                 )
 
     # Макро-кружок удалён навсегда — не восстанавливать
