@@ -144,15 +144,16 @@ async def generate_card_handler(request):
             f"This image shows a product placed on a plain neutral background. "
             f"Replace ONLY the plain background with a beautiful photorealistic scene: {scene_prompt}. "
             f"CRITICAL RULES: "
-            f"1. Keep the product EXACTLY as it is — same position, same size, same look. Do NOT move, resize or duplicate it. "
-            f"2. The LEFT 40% of the image must be CLEAN, EMPTY and slightly dark — absolutely NO furniture, NO objects, NO patterns in that zone. Only smooth dark gradient. This zone is reserved for text. "
-            f"3. All scene elements (furniture, decor, plants) go ONLY in the right half and bottom of the image. "
-            f"4. {hanging_note}"
-            f"5. SHADOWS: add realistic cast shadow from the product onto the wall behind it — soft, slightly offset to the right and downward, matching the lighting direction. Also add shadow on the floor beneath the product. Shadows must look physically accurate, not flat. "
-            f"6. LIGHTING: bright and even illumination, exposure +1 stop, average scene brightness 140-180/255. "
-            f"Light-colored walls (white, beige, light grey). Natural daylight through window OR warm indoor lamp. "
-            f"NO dark rooms, NO dramatic shadows, NO moody atmosphere, NO night scenes. Bright airy interior. "
-            f"7. NO duplicate products. NO text. NO watermarks. NO busy patterns on the left side."
+            f"1. PRODUCT COLORS: Do NOT change product colors, patterns or textures in any way. Preserve exact original colors. "
+            f"2. PRODUCT SIZE: The product MUST remain the same large size as in the input image. Do NOT scale it down. "
+            f"3. PRODUCT POSITION: Product is a large foreground element, close to camera, fills the right side of frame. Keep it exactly where it is. "
+            f"4. Do NOT move, resize or duplicate the product. "
+            f"5. The LEFT 40% of the image must be CLEAN, EMPTY and slightly dark — absolutely NO furniture, NO objects, NO patterns in that zone. Only smooth dark gradient. This zone is reserved for text. "
+            f"6. All scene elements (furniture, decor, plants) go ONLY in the right half and bottom of the image. "
+            f"7. {hanging_note}"
+            f"8. SHADOWS: add realistic cast shadow from the product onto the wall behind it — soft, slightly offset to the right and downward. Also add shadow on the floor beneath the product. "
+            f"9. LIGHTING: bright and even illumination, average scene brightness 140-180/255. Light-colored walls (white, beige, light grey). Natural daylight or warm indoor lamp. NO dark rooms, NO night scenes. "
+            f"10. NO duplicate products. NO text. NO watermarks."
         )
 
         result_b64 = None
@@ -479,6 +480,7 @@ async def call_kontext_single(session, image_url: str, prompt: str) -> str | Non
             "aspect_ratio": "3:4",
             "output_format": "jpg",
             "safety_tolerance": 2,
+            "guidance": 3.5,
         }
     }
     try:
