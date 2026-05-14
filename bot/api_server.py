@@ -106,10 +106,10 @@ async def generate_card_handler(request):
         print("[Card] Step 2 — generating background scene")
         bg_scene_prompt = (
             f"{scene_prompt}. "
-            f"Empty scene with NO products, NO people. "
-            f"Photorealistic commercial photography background. "
-            f"Soft natural lighting from upper-left. "
-            f"Ultra detailed, clean and uncluttered."
+            f"Empty scene — absolutely NO products, NO clothing, NO garments, NO fabric items, "
+            f"NO checkered or plaid patterns anywhere in the scene. "
+            f"Clean minimal background suitable for product photography. "
+            f"Photorealistic, soft natural lighting from upper-left. Ultra detailed."
         )
 
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=300)) as session:
@@ -136,12 +136,14 @@ async def generate_card_handler(request):
         # чтобы фоновые объекты не перекрывали его.
         print("[Card] Step 4 — naturalizing composition (kontext)")
         naturalize_prompt = (
-            f"This composite image has a product on a background. "
-            f"Only enhance the background and shadows: add realistic cast shadow beneath the product, "
-            f"match the ambient scene lighting on the background surface around the product. "
-            f"DO NOT change, move or cover the product itself in any way. "
-            f"Keep the LEFT half of the image clean and uncluttered. "
-            f"Photorealistic commercial photography look. NO text, NO watermarks."
+            f"This composite image has exactly ONE product placed on a background. "
+            f"Only enhance shadows and lighting: add a soft realistic shadow beneath the product, "
+            f"adjust background lighting to match the scene. "
+            f"CRITICAL: do NOT add any new objects, do NOT duplicate the product, "
+            f"do NOT add any clothing or fabric items that are not already present. "
+            f"DO NOT move or alter the product in any way. "
+            f"Keep the LEFT half completely clean. "
+            f"Photorealistic commercial photography. NO text, NO watermarks."
         )
         try:
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=300)) as session:
