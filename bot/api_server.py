@@ -124,47 +124,47 @@ async def generate_card_handler(request):
 
         print("[Card] Step 2 done ✓")
 
-        # ── Step 3: Kontext — рендерим товар в сцене (оба по отдельности) ─
-        print("[Card] Step 3 — kontext: product + background separately")
-
-        # Конвертируем rembg PNG → JPEG на нейтральном фоне для kontext
-        product_jpg_b64 = await asyncio.get_event_loop().run_in_executor(
-            None, _png_to_jpg_neutral, product_no_bg
+        # ── Step 3: PIL — размещаем товар справа на нейтральном фоне ─
+        print("[Card] Step 3 — placing product on neutral background")
+        staged_b64, _ = await asyncio.get_event_loop().run_in_executor(
+            None, _composite_product_right, product_no_bg, None, category
         )
+        print("[Card] Step 3 done ✓")
 
-        kontext_prompt = (
-            f"Take the product from the first image and place it naturally into the background scene from the second image. "
-            f"COMPOSITION: product must hang on the RIGHT side of the frame — occupying x=45% to x=100%, "
-            f"full height from top to bottom (90% of frame height). "
-            f"The LEFT 40% of the frame must stay completely clean and empty — no product there. "
-            f"LIGHTING: match the scene lighting exactly — shadows and highlights on the fabric must match the background light source. "
-            f"REALISM: natural hanging drape, cast shadow on the surface below, soft edges. "
-            f"CRITICAL: place EXACTLY ONE product — do NOT duplicate or multiply it. "
-            f"Photorealistic commercial product photography. NO text, NO watermarks."
+        # ── Step 4: Kontext — генерирует фон вокруг товара ────────────
+        # Товар уже на месте. Kontext только заполняет фон.
+        print("[Card] Step 4 — kontext: generate background around placed product")
+        bg_prompt = (
+            f"This image shows a product on a plain neutral background. "
+            f"Replace the plain background with a beautiful photorealistic scene: {scene_prompt}. "
+            f"CRITICAL: keep the product EXACTLY as it is — same position, same size, same appearance, do NOT move or duplicate it. "
+            f"The LEFT 40% of the image should be clean and slightly dim — suitable for text overlay. "
+            f"Add a natural soft shadow beneath the product. "
+            f"Lighting from upper-left, warm and natural. "
+            f"NO extra objects near or on top of the product. NO text, NO watermarks."
         )
 
         result_b64 = None
         try:
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=300)) as session:
-                product_url = await upload_image_to_replicate(session, product_jpg_b64)
-                bg_upload_url = await upload_image_to_replicate(session, bg_b64) if bg_b64 else None
-                kontext_url = await call_kontext_two_images(session, product_url, bg_upload_url, kontext_prompt)
+                staged_url = await upload_image_to_replicate(session, staged_b64)
+                kontext_url = await call_kontext_single(session, staged_url, bg_prompt)
                 if kontext_url:
-                    result_b64 = await download_image_as_base64(kontext_url)
-                    if result_b64:
-                        result_b64 = result_b64.split(",", 1)[1] if result_b64.startswith("data:") else result_b64
-                        print("[Card] Step 3 kontext done ✓")
+                    dl = await download_image_as_base64(kontext_url)
+                    if dl:
+                        result_b64 = dl.split(",", 1)[1] if dl.startswith("data:") else dl
+                        print("[Card] Step 4 kontext done ✓")
         except Exception as e:
-            print(f"[Card] Step 3 kontext error: {e}")
+            print(f"[Card] Step 4 kontext error: {e}")
 
-        # Fallback: PIL composite если kontext не сработал
+        # Fallback: используем PIL composite с готовым фоном
         if not result_b64:
-            print("[Card] Step 3 fallback — PIL composite")
+            print("[Card] Step 4 fallback — PIL composite with bg")
             result_b64, _ = await asyncio.get_event_loop().run_in_executor(
                 None, _composite_product_right, product_no_bg, bg_b64, category
             )
 
-        # ── Step 4: Apply text overlay ────────────────────────────────
+        # ── Step 5: Apply text overlay ────────────────────────────────
         final = await _apply_card_overlay(result_b64, card_data)
         return web.json_response({"url": final}, headers=CORS_HEADERS)
 
