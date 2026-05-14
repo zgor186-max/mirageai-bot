@@ -616,11 +616,12 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     import io as _io2
     from PIL import ImageDraw as _ImageDraw
 
+    import numpy as np
     pil_img = Image.open(_io.BytesIO(raw_bytes)).convert("RGB")
+    img_arr = np.array(pil_img)   # shape (H, W, 3)
+    H, W    = img_arr.shape[:2]
 
     # ── Text: always white + black stroke — readable on ANY background ──
-    # Dynamic color matching is unreliable (text zone may differ from image avg).
-    # White fill + heavy black stroke + drop shadow works universally.
     title_color  = "#ffffff"
     sub_color    = "#ffffff"
     feat_color   = "#ffffff"
@@ -628,7 +629,21 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     stroke_op    = "0.85"
     badge_text_c = "#111111"
 
-    print(f"[Cairo] fixed white+stroke text, scheme={scheme}, accent={accent}")
+    # ── Smart feature zone: find cleanest area in left half ──────────────
+    # Left half only (product is always placed right).
+    # Title occupies y≈0-360, so feature zones start below that.
+    # Three candidate zones: mid-left, lower-left, bottom strip.
+    lw = W // 2   # left half width
+    ZONES = {
+        "mid":    img_arr[350:620,  :lw, :],   # y 350-620
+        "lower":  img_arr[620:870,  :lw, :],   # y 620-870
+        "bottom": img_arr[870:1080, :lw, :],   # y 870-1080
+    }
+    zone_std = {name: float(np.std(z)) for name, z in ZONES.items()}
+    best_zone = min(zone_std, key=zone_std.get)
+    ZONE_Y = {"mid": 380, "lower": 640, "bottom": 890}
+    feat_zone_top = ZONE_Y[best_zone]
+    print(f"[Cairo] feature zone={best_zone} stds={zone_std} top_y={feat_zone_top}, scheme={scheme}")
 
     # ── Circular thumbnail: pre-crop in PIL (more reliable than SVG clip-path) ──
     thumb_size = 88
@@ -710,24 +725,23 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
                 f'paint-order="stroke fill" filter="url(#ts)">{line}</text>'
             )
 
-    # ── Features: 2×2 grid at bottom — below product body ────
-    # Positioned in bottom strip so they never overlap the main product.
-    # Layout: row0 y≈960, row1 y≈1040 | col0 x=0-390, col1 x=410-800
+    # ── Features: 2×2 grid, zone chosen by image analysis ───────
+    # feat_zone_top was picked above as the cleanest left-half area.
+    # 2 columns × 2 rows, each row spaced 75px apart.
     if feats:
         feats = feats[:4]
         feat_r    = 20
         feat_fs   = 14
-        feat_lh   = 17
         feat_icon = 17
-        rows = [(0, 955), (1, 955), (2, 1040), (3, 1040)]  # (feat_idx, cy_base)
-        col_x = [30, 410]  # left x of each column
+        row_gap   = 75
+        col_x     = [30, 410]   # left-half col | right-half col
 
         for idx, feat in enumerate(feats):
-            col   = idx % 2
-            row   = idx // 2
-            cx    = col_x[col] + feat_r
-            cy    = rows[idx][1]
-            tx    = col_x[col] + feat_r * 2 + 8
+            col = idx % 2
+            row = idx // 2
+            cx  = col_x[col] + feat_r
+            cy  = feat_zone_top + row * row_gap
+            tx  = col_x[col] + feat_r * 2 + 8
 
             els.append(f'<circle cx="{cx}" cy="{cy}" r="{feat_r}" fill="{accent}"/>')
             els.append(
@@ -735,10 +749,8 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
                 f'font-family="{FONT_EMOJI}" font-size="{feat_icon}" '
                 f'filter="url(#ts)">{feat["icon"]}</text>'
             )
-
-            # 1 line max — text should be ≤2 words from AI prompt
             flines = _svg_wrap(feat["text"], max_chars=22)[:1]
-            for li, fl in enumerate(flines):
+            for fl in flines:
                 els.append(
                     f'<text x="{tx}" y="{cy + 5}" '
                     f'font-family="{FONT}" font-size="{feat_fs}" font-weight="700" '
