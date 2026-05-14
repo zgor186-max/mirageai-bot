@@ -193,14 +193,15 @@ def _remove_bg(photo_b64: str) -> str | None:
 # max_w_ratio     — максимальная ширина товара как доля от ширины карточки
 # y_offset_ratio  — смещение от верха (0 = прижать вверх, 0.5 = по центру)
 CATEGORY_SIZING = {
-    "clothing":    (0.90, 0.52, 0.02),   # полный рост, почти вся высота
+    # (target_h_ratio, max_w_ratio, y_offset_ratio)
+    "clothing":    (0.97, 0.54, 0.01),   # на всю высоту сверху вниз
     "footwear":    (0.55, 0.48, 0.35),   # обувь ниже центра
-    "accessories": (0.60, 0.46, 0.22),
+    "accessories": (0.62, 0.46, 0.20),
     "food":        (0.65, 0.44, 0.18),
     "beauty":      (0.68, 0.40, 0.16),
-    "gadgets":     (0.60, 0.46, 0.22),
-    "home":        (0.70, 0.48, 0.18),
-    "other":       (0.65, 0.46, 0.20),
+    "gadgets":     (0.62, 0.46, 0.20),
+    "home":        (0.72, 0.50, 0.16),
+    "other":       (0.68, 0.48, 0.18),
 }
 
 
@@ -232,7 +233,13 @@ def _composite_product_right(
 
     # ── Product ───────────────────────────────────────────────────
     prod = Image.open(_io.BytesIO(base64.b64decode(product_no_bg_b64))).convert("RGBA")
+
+    # Обрезаем прозрачные отступы rembg — берём реальный размер товара
+    bbox = prod.getbbox()
+    if bbox:
+        prod = prod.crop(bbox)
     prod_w, prod_h = prod.size
+    print(f"[Composite] product size after trim: {prod_w}x{prod_h}")
 
     target_h_r, max_w_r, y_off_r = CATEGORY_SIZING.get(category, CATEGORY_SIZING["other"])
     target_h = int(out_h * target_h_r)
@@ -249,23 +256,22 @@ def _composite_product_right(
 
     prod_resized = prod.resize((new_w, new_h), Image.LANCZOS)
 
-    # ── Позиция: строго правая половина ──────────────────────────
-    # Правый край с отступом 20px, левый край товара >= out_w//2
-    right_margin = 20
+    # ── Позиция: строго правая половина, от самого верха ─────────
+    right_margin = 15
     x = max(out_w // 2, out_w - new_w - right_margin)
     y = int(out_h * y_off_r)
     # Не выходить за нижний край
-    y = min(y, out_h - new_h - 10)
+    y = min(y, out_h - new_h - 5)
 
-    # Мягкая тень под товаром
+    # Мягкая тень под товаром (для одежды — тень под вешалкой)
     shadow = Image.new("RGBA", (out_w, out_h), (0, 0, 0, 0))
-    shadow_layer = Image.new("RGBA", (new_w, 40), (0, 0, 0, 0))
-    for i in range(40):
-        alpha = int(60 * (1 - i / 40))
+    shadow_layer = Image.new("RGBA", (new_w, 50), (0, 0, 0, 0))
+    for i in range(50):
+        alpha = int(70 * (1 - i / 50))
         for px in range(new_w):
             shadow_layer.putpixel((px, i), (0, 0, 0, alpha))
-    shadow.paste(shadow_layer, (x, y + new_h - 20))
-    shadow = shadow.filter(ImageFilter.GaussianBlur(radius=12))
+    shadow.paste(shadow_layer, (x, y + new_h - 25))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(radius=14))
 
     # Собираем: фон → тень → товар
     canvas = bg_blurred.copy()
