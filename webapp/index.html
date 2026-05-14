@@ -341,19 +341,7 @@
         </div>
     </div>
 
-    <script>
-      // Динамическая загрузка JS — обходит кеш Service Worker
-      (function() {
-        var ts = Date.now();
-        var t = document.createElement('script');
-        t.src = 'js/templates.js?_=' + ts;
-        t.onload = function() {
-          var a = document.createElement('script');
-          a.src = 'js/app2.js?_=' + ts;
-          document.body.appendChild(a);
-        };
-        document.body.appendChild(t);
-      })();
-    </script>
+    <script src="js/templates.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>

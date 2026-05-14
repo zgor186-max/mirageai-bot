@@ -665,53 +665,53 @@ const LOCATION_SEEDS = {
         "warm living room with low sofa, floor lamp, soft carpet, books on table"
     ],
     accessories: [
-        "white marble surface with soft studio light, elegant minimal product display",
-        "dark collector shelf with focused spotlights and warm accent glow",
-        "luxury boutique counter with gold accents and soft diffused lighting",
-        "minimalist jewelry store display with clean white surface and gentle light",
-        "dark velvet surface with dramatic side spotlight and shallow depth of field"
+        "мраморная поверхность с мягким студийным светом",
+        "тёмная полка коллекционера с точечной подсветкой",
+        "роскошный бутик с золотыми акцентами",
+        "минималистичная витрина ювелирного магазина",
+        "тёмный бархат с драматическим прожектором"
     ],
     food: [
-        "rustic kitchen with oak wooden countertop, fresh herbs in terracotta pots, warm morning light",
-        "cozy coffee shop interior with warm amber ceiling light and wooden table surface",
-        "organic farmers market with natural wooden crates and soft natural daylight",
-        "modern kitchen with white marble countertop and soft diffused overhead light",
-        "outdoor picnic on green grass with soft natural sunlight and linen cloth"
+        "деревенская кухня с дубовой столешницей и травами",
+        "уютная кофейня с тёплым amber-светом",
+        "фермерский рынок с натуральными продуктами",
+        "современная кухня с белой мраморной поверхностью",
+        "пикник на траве с мягким естественным светом"
     ],
     beauty: [
-        "luxury marble bathroom with water droplets, soft warm backlight and clean white surface",
-        "spa interior with white candles, eucalyptus branches and warm ambient glow",
-        "clean white studio with soft pink accent light and minimal elegant backdrop",
-        "luxury vanity table with round mirror, warm bulb lights and polished surface",
-        "tropical bathroom with green monstera leaves, natural light and white tiles"
+        "мраморная ванная с каплями воды и soft-светом",
+        "спа-интерьер со свечами и веточками эвкалипта",
+        "белая студия с розовым акцентным светом",
+        "роскошный туалетный столик с круглым зеркалом",
+        "тропическая ванная с живыми растениями"
     ],
     gadgets: [
-        "RGB gaming room with neon LED strip lighting and colorful atmospheric glow",
-        "dark minimalist desk setup with blue monitor glow and clean dark surface",
-        "rooftop at night with panoramic city lights bokeh in background",
-        "electronics store shelf with clean backlit display and neutral grey surface",
-        "dark studio with dramatic single spotlight and smoke haze effect"
+        "RGB игровая комната с неоновыми LED-лентами",
+        "тёмный минималистичный офис с синим светом монитора",
+        "ночная крыша с панорамой огней города",
+        "полка в магазине электроники с подсветкой",
+        "тёмная студия с драматическим точечным прожектором"
     ],
     home: [
-        "bright Scandinavian interior with large panoramic window and light oak furniture",
-        "cozy living room with exposed brick wall, candles and warm lamp light",
-        "bright loft studio with high ceilings, concrete walls and soft natural light",
-        "wooden terrace overlooking green garden with soft afternoon sunlight",
-        "modern apartment with floor-to-ceiling windows and city view at dusk"
+        "скандинавский интерьер с большим панорамным окном",
+        "уютная гостиная с кирпичной стеной и свечами",
+        "светлая студия в стиле лофт с высокими потолками",
+        "терраса с видом на зелёный сад",
+        "современная квартира с панорамными окнами ночью"
     ],
     footwear: [
-        "concrete urban waterfront with soft diffused sunset light and wet reflections",
-        "street basketball court with graffiti wall and clean dry concrete surface",
-        "wooden pier over calm water with blurred water background and morning light",
-        "city street with warm bokeh street lights and shallow depth of field",
-        "clean studio with neutral light grey seamless background and soft grounding shadow"
+        "бетонная набережная с мягким рассеянным светом заката",
+        "уличная площадка с граффити на стенах и чистым бетоном",
+        "деревянный пирс с размытым фоном из воды",
+        "городская улица с боке-огнями заднего плана",
+        "чистая студия с нейтральным серым фоном и тенью"
     ],
     other: [
-        "professional wooden carpenter workshop with tools on pegboard and warm spotlight",
-        "garage workshop with grey concrete floor and dramatic overhead neon lighting",
-        "industrial gym with dark rubber floor and overhead spotlights",
-        "urban street with graffiti wall, clean concrete and natural daylight",
-        "minimalist warehouse with dramatic side lighting and smooth concrete floor"
+        "профессиональная деревянная мастерская с инструментами",
+        "гаражный бокс с бетонным полом и неоновым светом",
+        "промышленный спортзал с резиновым покрытием",
+        "уличная площадка с граффити на стенах",
+        "минималистичный склад с драматическим освещением"
     ]
 };
 
@@ -746,7 +746,7 @@ home: ${LOCATION_SEEDS.home[Math.floor(Math.random()*LOCATION_SEEDS.home.length)
 other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.length)]}
 
 {
-  "name": "Тип товара ЗАГЛАВНЫМИ. СТРОГО 1 СЛОВО — только существительное-категория (ПИЖАМА, ФУТБОЛКА, ШУРУПОВЁРТ, КРЕМ, КУРТКА, КРОССОВКИ). Второе слово разрешено ТОЛЬКО если это название бренда видимое на товаре (логотип, надпись): БЕЙСБОЛКА NIKE, ШУРУПОВЁРТ MAKITA. Бренд — это торговая марка, НЕ описание. Прилагательные, фасон, цвет, стиль — второе слово НИКОГДА.",
+  "name": "Название товара по-русски, МАКСИМУМ 2 слова, ЗАГЛАВНЫМИ буквами. Примеры: КРОССОВКИ ASICS, ШУРУПОВЁРТ MAKITA, СМАРТФОН SAMSUNG",
   "category": "один из: clothing, footwear, accessories, food, beauty, gadgets, home, other. ВАЖНО: кроссовки/ботинки/сапоги/туфли/кеды = footwear (НЕ clothing)",
   "location": "скопируй ТОЧНО выбранную локацию из списка выше — ту что лучше всего подходит для этого товара",
   "props": "перечисли 3-4 предмета которые логично окружают этот товар в реальной жизни. Только предметы через запятую на английском. Примеры: для пижамы — folded linen blanket, wooden tray with pine cones, steaming mug of tea, soft candles. Для шуруповёрта — wooden planks, screws, work gloves, sawdust. Для крема — rolled towel, eucalyptus branches, smooth stones, candles.",
@@ -778,27 +778,6 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error("No JSON in: " + text.substring(0, 200));
         const data = JSON.parse(jsonMatch[0]);
-
-        // Фильтр имени: убираем прилагательные, предлоги, слова в косвенных падежах
-        if (data.name) {
-            const raw = data.name.trim().toUpperCase().replace(/[-–—]/g, ' ');
-            const parts = raw.split(/\s+/).filter(Boolean);
-            console.log('[name filter] raw parts:', parts);
-            const PREPOSITIONS = new Set(['В','НА','К','С','ДЛЯ','ПО','ОТ','ДО','ЗА','ИЗ','ПРИ','НАД','ПОД','ОБ','ПРО','У','О','А','И','НО']);
-            const adjEndings   = /АЯ$|ЯЯ$|ОЕ$|ЕЕ$|ЫЙ$|ИЙ$|ОЙ$|ЫЕ$|ИЕ$|ЫХ$|ИХ$/;
-            const caseEndings  = /[УЮ]$/; // существительные в косвенных падежах (клетку, полоску...)
-            const latParts = parts.filter(w => /[a-zA-Z]/.test(w));
-            const cyrGood  = parts.filter(w =>
-                /^[А-ЯЁ\-]+$/.test(w) &&
-                !PREPOSITIONS.has(w) &&
-                !adjEndings.test(w) &&
-                !(caseEndings.test(w) && w.length > 3)
-            );
-            console.log('[name filter] cyrGood:', cyrGood, '| latParts:', latParts);
-            const type = cyrGood.length > 0 ? cyrGood[0] : parts.filter(w => /^[А-ЯЁ\-]+$/.test(w))[0] || parts[0];
-            data.name = latParts.length > 0 ? `${type} ${latParts[0]}` : type;
-            console.log('[name filter] result:', data.name);
-        }
 
         // Заполняем видимые поля
         const nameEl = document.getElementById("mp-card-name");
@@ -904,7 +883,7 @@ async function mpCardAiIdea() {
                     role: "user",
                     content: [
                         { type: "image_url", image_url: { url: "data:image/jpeg;base64," + mpCardPhotoBase64 } },
-                        { type: "text", text: `Ты копирайтер для маркетплейса (WB/Ozon). Товар: "${name}". Посмотри на фото и ответь ТОЛЬКО валидным JSON без markdown. ОБЯЗАТЕЛЬНО ровно 5 элементов в features — не меньше, не больше.\n\nВАЖНО: используй ТОЛЬКО простые слова понятные любому покупателю. ЗАПРЕЩЕНЫ: профессиональные термины, редкие слова, жаргон.\n\nПРАВИЛА ДЛЯ features:\n- 2-3 слова максимум. Прилагательное + существительное (+ ещё одно слово если нужно).\n- ЗАПРЕЩЕНО: одиночные прилагательные (лёгкий, удобный — НЕПРАВИЛЬНО)\n- ПРАВИЛЬНО: МОЩНЫЙ АККУМУЛЯТОР, БЫСТРЫЙ ЗАРЯД, УДОБНЫЙ И МЯГКИЙ МАТЕРИАЛ, СВОБОДНЫЙ КРОЙ\n- Каждая фича — конкретное уникальное свойство товара\n- Не повторять слова между фичами\n\n{\n  "slogan": "эмоциональный слоган СТРОГО 2-3 слова ЗАГЛАВНЫМИ. НЕ название товара. Примеры для инструментов: СИЛА В РУКАХ, МОЩЬ И ТОЧНОСТЬ. Для одежды: ДЛЯ УЮТНЫХ ВЕЧЕРОВ, ТЕПЛО И СТИЛЬ. Для еды: ВКУС ПРИРОДЫ",\n  "tagline": "конкретная фраза 4-7 слов — эмоциональная суть товара. Примеры: мягкость в которой хочется остаться, удобный и мощный помощник дома, лёгкая ткань для свободных движений",\n  "features": [\n    {"icon": "эмодзи1", "text": "2-3 слова, конкретное свойство. Пример: МЯГКИЙ МАТЕРИАЛ или УДОБНЫЙ И МЯГКИЙ МАТЕРИАЛ"},\n    {"icon": "эмодзи2", "text": "2-3 слова, другое свойство. Пример: СВОБОДНЫЙ КРОЙ"},\n    {"icon": "эмодзи3", "text": "2-3 слова, ещё свойство. Пример: ИДЕАЛЬНО ДЛЯ СНА"},\n    {"icon": "эмодзи4", "text": "2-3 слова, ещё свойство. Пример: ЛЁГКИЙ УХОД"},\n    {"icon": "эмодзи5", "text": "2-3 слова, последнее свойство. Пример: СТИЛЬНЫЙ ДИЗАЙН"}\n  ]\n}\nВ features СТРОГО 5 объектов. Всё на русском.` }
+                        { type: "text", text: `Ты копирайтер для маркетплейса (WB/Ozon). Товар: "${name}". Посмотри на фото и ответь ТОЛЬКО валидным JSON без markdown. ОБЯЗАТЕЛЬНО ровно 4 элемента в features — не меньше, не больше.\n\nВАЖНО: используй ТОЛЬКО простые слова понятные любому покупателю. ЗАПРЕЩЕНЫ: профессиональные термины, редкие слова, жаргон (примеры запрещённых слов: стежок, крепление, армирование, перфорация, ламинация, анатомический). Пиши как говорят обычные люди.\n\n{\n  "slogan": "эмоциональный слоган СТРОГО 2-3 слова ЗАГЛАВНЫМИ. НЕ название товара. Только простые слова. Примеры: ДЛЯ УЮТНЫХ ВЕЧЕРОВ, ТЕПЛО И СТИЛЬ, КОМФОРТ КАЖДЫЙ ДЕНЬ, МЯГКО И УДОБНО",\n  "tagline": "конкретная фраза СТРОГО 3-5 слов — только суть, без воды, только простые слова. Примеры: мягкий хлопок для крепкого сна, тёплая и удобная каждый день, лёгкая ткань не сковывает движения",\n  "features": [\n    {"icon": "эмодзи1", "text": "СТРОГО 1-2 слова в именительном падеже. ТОЛЬКО прилагательное+существительное ИЛИ одно прилагательное. ЗАПРЕЩЕНЫ: предлоги, союзы, слова в косвенных падежах (тела, ткани, крою и т.д.). Примеры ПРАВИЛЬНО: МЯГКАЯ ТКАНЬ, ТЁПЛЫЙ, СВОБОДНЫЙ КРОЙ, ЛЁГКАЯ. Не повторять слова из названия"},\n    {"icon": "эмодзи2", "text": "СТРОГО 1-2 слова в именительном падеже. Прилагательное+существительное или одно прилагательное. Не повторять feat1. Примеры: УДОБНЫЙ КРОЙ, НЕЖНАЯ ТКАНЬ, ДЫШАЩИЙ"},\n    {"icon": "эмодзи3", "text": "СТРОГО 1-2 слова в именительном падеже. Не повторять feat1-2. Примеры: КРЕПКИЙ СОН, НАТУРАЛЬНЫЙ СОСТАВ, ПРИЯТНАЯ"},\n    {"icon": "эмодзи4", "text": "СТРОГО 1-2 слова в именительном падеже. Не повторять feat1-3. Примеры: ДОМАШНИЙ КОМФОРТ, ЛЁГКИЙ УХОД, ТЁПЛАЯ"}\n  ]\n}\nВ features СТРОГО 4 объекта. Всё на русском.` }
                     ]
                 }]
             })
