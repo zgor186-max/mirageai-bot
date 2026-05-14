@@ -717,18 +717,20 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     # Gradient rect over entire left half
     els.append('<rect x="0" y="0" width="800" height="1100" fill="url(#textbg)"/>')
 
-    # ── Бейдж: сверху-слева ──────────────────────────────────────
-    if badge:
+    # ── Бейдж: сверху-слева (только если не совпадает с названием) ─
+    badge_shown = badge and badge.upper() != name.upper()
+    if badge_shown:
         bw = min(len(badge) * 11 + 34, 280)
-        els.append(f'<rect x="28" y="26" width="{bw}" height="32" rx="16" fill="{accent_hex}"/>')
+        els.append(f'<rect x="28" y="22" width="{bw}" height="30" rx="15" fill="{accent_hex}"/>')
         els.append(
-            f'<text x="{28 + bw//2}" y="48" text-anchor="middle" '
+            f'<text x="{28 + bw//2}" y="43" text-anchor="middle" '
             f'font-family="{FONT}" font-size="13" font-weight="700" '
             f'letter-spacing="0.8" fill="#ffffff">{badge}</text>'
         )
 
-    # ── Заголовок: Bebas Neue, левый край, цветной ───────────────
-    ty = 88
+    # ── Заголовок: Bebas Neue, начинается НИЖЕ бейджа ─────────────
+    # cap-height Bebas Neue ≈ 72% от font-size → для 110px ≈ 79px
+    ty = 155 if badge_shown else 95
     for line in _svg_wrap(name, max_chars=14):
         els.append(
             f'<text x="28" y="{ty}" '
