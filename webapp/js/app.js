@@ -949,7 +949,7 @@ async function mpCardGenerate() {
                 product_name: name || "product",
                 category: mpCardCategory || "clothing",
                 card: mpCardWithText ? (() => {
-                    const c = { name: cardTitle, subtitle: cardSubtitle, badge, scheme: mpCardColorScheme || "warm" };
+                    const c = { name: cardTitle, subtitle: cardSubtitle, tagline: useAiIdea ? mpCardTagline : "", badge, scheme: mpCardColorScheme || "warm" };
                     features.forEach((f, i) => {
                         c[`feat${i+1}`] = String(f.text || "");
                         c[`icon${i+1}`] = String(f.icon || "✦");

@@ -658,6 +658,7 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     badge        = _svg_esc(card.get("badge", ""))
     name         = _svg_esc(card.get("name", "")).upper()
     subtitle_raw = _svg_esc(card.get("subtitle", ""))
+    tagline_raw  = _svg_esc(card.get("tagline", ""))
 
     feats = []
     for i in range(1, 6):
@@ -666,8 +667,8 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         if feat:
             feats.append({"icon": icon, "text": _svg_esc(feat.upper())})
 
-    # Single font family used everywhere for visual consistency
-    FONT       = "'Georgia', 'Liberation Serif', 'DejaVu Serif', serif"
+    FONT_TITLE = "'Bebas Neue', 'Bebas Neue Bold', sans-serif"   # display title font
+    FONT       = "'Open Sans', 'Liberation Sans', 'DejaVu Sans', sans-serif"
     FONT_EMOJI = "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif"
 
     els = []
@@ -698,32 +699,42 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             f'fill="{badge_text_c}">{badge}</text>'
         )
 
-    # ── Title ────────────────────────────────────────────────────
-    title_lines = _svg_wrap(name, max_chars=12)
-    title_fs = 70
-    title_lh = 78
-    ty = 90
+    # ── Title: Bebas Neue — bold display font ────────────────────
+    title_lines = _svg_wrap(name, max_chars=14)
+    title_fs = 80
+    title_lh = 84
+    ty = 95
     for line in title_lines:
         els.append(
             f'<text x="40" y="{ty}" '
-            f'font-family="{FONT}" font-size="{title_fs}" font-weight="900" '
+            f'font-family="{FONT_TITLE}" font-size="{title_fs}" font-weight="700" '
             f'fill="{title_color}" '
-            f'stroke="{stroke_col}" stroke-width="3.5" stroke-opacity="{stroke_op}" '
+            f'stroke="{stroke_col}" stroke-width="3" stroke-opacity="{stroke_op}" '
             f'paint-order="stroke fill" filter="url(#ts)">{line}</text>'
         )
         ty += title_lh
 
-    # ── Subtitle: 1 line max, under title ────────────────────
+    # ── Tagline: продающая фраза под заголовком ───────────────
+    if tagline_raw:
+        els.append(
+            f'<text x="40" y="{ty + 10}" '
+            f'font-family="{FONT}" font-size="17" font-style="italic" '
+            f'fill="{sub_color}" '
+            f'stroke="{stroke_col}" stroke-width="1.2" stroke-opacity="0.7" '
+            f'paint-order="stroke fill" filter="url(#ts)">{_svg_wrap(tagline_raw, max_chars=45)[0]}</text>'
+        )
+        ty += 36
+
+    # ── Subtitle (слоган): короткая фраза под tagline ─────────
     if subtitle_raw:
-        sy = ty + 12
-        for line in _svg_wrap(subtitle_raw, max_chars=32)[:1]:
-            els.append(
-                f'<text x="40" y="{sy}" '
-                f'font-family="{FONT}" font-size="22" '
-                f'fill="{sub_color}" '
-                f'stroke="{stroke_col}" stroke-width="1.5" stroke-opacity="{stroke_op}" '
-                f'paint-order="stroke fill" filter="url(#ts)">{line}</text>'
-            )
+        els.append(
+            f'<text x="40" y="{ty + 10}" '
+            f'font-family="{FONT}" font-size="19" font-weight="600" '
+            f'fill="{sub_color}" '
+            f'stroke="{stroke_col}" stroke-width="1.5" stroke-opacity="{stroke_op}" '
+            f'paint-order="stroke fill" filter="url(#ts)">{_svg_wrap(subtitle_raw, max_chars=32)[0]}</text>'
+        )
+        ty += 36
 
     # ── Features: single LEFT column, zone chosen by image analysis ─
     # feat_zone_top = cleanest y in left half (product always in right half).
