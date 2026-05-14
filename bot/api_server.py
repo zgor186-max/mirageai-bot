@@ -255,7 +255,7 @@ def _remove_bg(photo_b64: str) -> str | None:
 # y_offset_ratio  — смещение от верха (0 = прижать вверх, 0.5 = по центру)
 CATEGORY_SIZING = {
     # (target_h_ratio, max_w_ratio, y_offset_ratio)
-    "clothing":    (0.97, 0.68, 0.01),   # на всю высоту сверху вниз
+    "clothing":    (0.97, 0.72, 0.01),   # на всю высоту сверху вниз
     "footwear":    (0.55, 0.48, 0.35),   # обувь ниже центра
     "accessories": (0.62, 0.46, 0.20),
     "food":        (0.65, 0.44, 0.18),
