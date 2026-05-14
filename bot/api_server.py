@@ -126,46 +126,12 @@ async def generate_card_handler(request):
 
         # ── Step 3: Composite product on RIGHT side ───────────────────
         print("[Card] Step 3 — compositing product on right side")
-        composited_b64, prod_paste_info = await asyncio.get_event_loop().run_in_executor(
+        composited_b64, _ = await asyncio.get_event_loop().run_in_executor(
             None, _composite_product_right, product_no_bg, bg_b64, category
         )
         print("[Card] Step 3 done ✓")
 
-        # ── Step 4: Naturalize via flux-kontext (add shadows, lighting) ─
-        # После натурализации — снова наклеиваем товар поверх,
-        # чтобы фоновые объекты не перекрывали его.
-        print("[Card] Step 4 — naturalizing composition (kontext)")
-        naturalize_prompt = (
-            f"This composite image has exactly ONE product placed on a background. "
-            f"Only enhance shadows and lighting: add a soft realistic shadow beneath the product, "
-            f"adjust background lighting to match the scene. "
-            f"CRITICAL: do NOT add any new objects, do NOT duplicate the product, "
-            f"do NOT add any clothing or fabric items that are not already present. "
-            f"DO NOT move or alter the product in any way. "
-            f"Keep the LEFT half completely clean. "
-            f"Photorealistic commercial photography. NO text, NO watermarks."
-        )
-        try:
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=300)) as session:
-                comp_url = await upload_image_to_replicate(session, composited_b64)
-                naturalized_url = await call_kontext_single(session, comp_url, naturalize_prompt)
-                if naturalized_url:
-                    naturalized_b64 = await download_image_as_base64(naturalized_url)
-                    if naturalized_b64:
-                        nat_raw = naturalized_b64.split(",", 1)[1] if naturalized_b64.startswith("data:") else naturalized_b64
-                        # Re-paste original product on top to prevent bg objects covering it
-                        composited_b64 = await asyncio.get_event_loop().run_in_executor(
-                            None, _repaste_product, nat_raw, product_no_bg, prod_paste_info
-                        )
-                        print("[Card] Step 4 done ✓ (product repasted on top)")
-                    else:
-                        print("[Card] Step 4 download failed — using composite")
-                else:
-                    print("[Card] Step 4 kontext failed — using composite")
-        except Exception as e:
-            print(f"[Card] Step 4 error: {e} — using composite")
-
-        # ── Step 5: Apply text overlay ────────────────────────────────
+        # ── Step 4: Apply text overlay ────────────────────────────────
         final = await _apply_card_overlay(composited_b64, card_data)
         return web.json_response({"url": final}, headers=CORS_HEADERS)
 
