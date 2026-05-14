@@ -961,9 +961,14 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
                 f'filter="url(#ts)">{feat["icon"]}</text>'
             )
             # Текст: каждое слово на отдельной строке, ЗАГЛАВНЫМИ
-            # Фильтруем предлоги и союзы (≤2 символа) — берём только значимые слова
+            # Фильтруем предлоги, союзы и частицы русского языка
+            _RU_STOPWORDS = {
+                "В","НА","К","С","У","О","А","И","НО","ИЛИ","НЕ","НИ","БЫ","ЖЕ",
+                "ДЛЯ","ПО","ОТ","ДО","ЗА","ПОД","НАД","ПРИ","ИЗ","БЕЗ","ДО","ОБ",
+                "ПРО","ЧТО","КАК","ТАК","ВОТ","УЖЕ","ЕЩЁ","ЕЩЕ","ВСЕ","ВСЁ","ТО",
+            }
             _all_words = feat["text"].upper().split()
-            words = [w for w in _all_words if len(w) > 2][:2]
+            words = [w for w in _all_words if w not in _RU_STOPWORDS][:2]
             if not words:
                 words = _all_words[:2] if _all_words else [feat["text"].upper()]
             start_y = cy - (len(words) - 1) * feat_lh // 2
