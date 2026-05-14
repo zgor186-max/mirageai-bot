@@ -131,7 +131,35 @@ async def generate_card_handler(request):
         )
         print("[Card] Step 3 done ✓")
 
-        # ── Step 4: Apply text overlay ────────────────────────────────
+        # ── Step 4: Naturalize via flux-kontext (add shadows, lighting) ─
+        print("[Card] Step 4 — naturalizing composition (kontext)")
+        naturalize_prompt = (
+            f"This image shows a product placed on a background. "
+            f"Naturalize the product integration: add realistic cast shadow beneath it, "
+            f"match the ambient lighting of the scene onto the product surface, "
+            f"soften any hard cutout edges with natural blending. "
+            f"CRITICAL: keep the product in EXACTLY the same position — do NOT move, resize or crop it. "
+            f"Keep the LEFT half of the image clean and uncluttered. "
+            f"Result should look like professional commercial product photography. "
+            f"Photorealistic. NO text, NO watermarks."
+        )
+        try:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=300)) as session:
+                comp_url = await upload_image_to_replicate(session, composited_b64)
+                naturalized_url = await call_kontext_single(session, comp_url, naturalize_prompt)
+                if naturalized_url:
+                    naturalized_b64 = await download_image_as_base64(naturalized_url)
+                    if naturalized_b64:
+                        composited_b64 = naturalized_b64.split(",", 1)[1] if naturalized_b64.startswith("data:") else naturalized_b64
+                        print("[Card] Step 4 done ✓")
+                    else:
+                        print("[Card] Step 4 download failed — using composite")
+                else:
+                    print("[Card] Step 4 kontext failed — using composite")
+        except Exception as e:
+            print(f"[Card] Step 4 error: {e} — using composite")
+
+        # ── Step 5: Apply text overlay ────────────────────────────────
         final = await _apply_card_overlay(composited_b64, card_data)
         return web.json_response({"url": final}, headers=CORS_HEADERS)
 
@@ -322,6 +350,43 @@ async def call_kontext_two_images(session, product_url: str, bg_url: str | None,
         return None
     except Exception as e:
         print(f"[Kontext2] error: {e}")
+        return None
+
+
+async def call_kontext_single(session, image_url: str, prompt: str) -> str | None:
+    """Kontext with a single image — for naturalizing composites."""
+    api_headers = {
+        "Authorization": f"Token {REPLICATE_TOKEN}",
+        "Content-Type": "application/json",
+        "Prefer": "wait",
+    }
+    payload = {
+        "input": {
+            "prompt": prompt,
+            "input_image": image_url,
+            "aspect_ratio": "3:4",
+            "output_format": "jpg",
+            "safety_tolerance": 2,
+        }
+    }
+    try:
+        result = await _post_with_retry(
+            session,
+            f"https://api.replicate.com/v1/models/{REPLICATE_MODEL}/predictions",
+            api_headers, payload, label="KontextNat"
+        )
+        status = result.get("status")
+        pred_id = result.get("id")
+        print(f"[KontextNat] status={status} id={pred_id}")
+        if status == "succeeded":
+            return _extract_output(result)
+        if status in ("starting", "processing"):
+            return await _poll(session, pred_id, api_headers)
+        if status == "failed":
+            print(f"[KontextNat] FAILED: {result.get('error')}")
+        return None
+    except Exception as e:
+        print(f"[KontextNat] error: {e}")
         return None
 
 
