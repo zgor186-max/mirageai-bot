@@ -260,10 +260,8 @@ def _composite_product_right(
     bbox = prod.getbbox()
     if bbox:
         prod = prod.crop(bbox)
+    import sys as _sys
     prod_w, prod_h = prod.size
-    print(f"[Composite] ── РАЗМЕРЫ ──────────────────────────────────")
-    print(f"[Composite] Холст:               {out_w}x{out_h} px")
-    print(f"[Composite] Товар после обрезки: {prod_w}x{prod_h} px")
 
     target_h_r, _, y_off_r = CATEGORY_SIZING.get(category, CATEGORY_SIZING["other"])
     target_h = int(out_h * target_h_r)
@@ -280,15 +278,17 @@ def _composite_product_right(
     y = int(out_h * y_off_r)
     y = min(y, out_h - new_h - 5)
 
-    print(f"[Composite] Категория:           {category}")
-    print(f"[Composite] Цель высота:         {target_h} px = {target_h_r*100:.0f}% холста")
-    print(f"[Composite] Итог товар:          {new_w}x{new_h} px")
-    print(f"[Composite] Итог товар высота:   {new_h/out_h*100:.1f}% холста")
-    print(f"[Composite] Итог товар ширина:   {new_w/out_w*100:.1f}% холста")
-    print(f"[Composite] Позиция X:           {x} px (от левого края)")
-    print(f"[Composite] Позиция Y:           {y} px (от верха) = {y/out_h*100:.1f}%")
-    print(f"[Composite] Товар занимает Y:    {y} → {y+new_h} px ({y/out_h*100:.1f}% → {(y+new_h)/out_h*100:.1f}%)")
-    print(f"[Composite] ────────────────────────────────────────────")
+    _sys.stdout.write(
+        f"[PIL] canvas={out_w}x{out_h} "
+        f"product_raw={prod_w}x{prod_h} "
+        f"category={category} "
+        f"target={target_h}px({target_h_r*100:.0f}%) "
+        f"result={new_w}x{new_h}px "
+        f"h={new_h/out_h*100:.1f}% w={new_w/out_w*100:.1f}% "
+        f"x={x}({x/out_w*100:.1f}%) y={y}({y/out_h*100:.1f}%) "
+        f"y_range={y/out_h*100:.1f}%..{(y+new_h)/out_h*100:.1f}%\n"
+    )
+    _sys.stdout.flush()
 
     # Мягкая тень под товаром (для одежды — тень под вешалкой)
     shadow = Image.new("RGBA", (out_w, out_h), (0, 0, 0, 0))
