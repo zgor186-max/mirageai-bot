@@ -90,28 +90,27 @@ async def generate_card_handler(request):
         # Category-specific placement — professional angles per product type
         PLACEMENT = {
             "clothing": (
-                "is hanging on a wooden hanger, full-length frontal view, "
-                "gentle natural fabric drape clearly showing texture and fit. "
-                "Camera at eye-level with a slight 5-degree downward tilt. "
-                "The complete garment — top and bottom — fully visible, filling the RIGHT 55% of the frame. "
-                "The LEFT 40% of the frame is a clean, light, uncluttered background for text overlay. "
+                "is hanging on a wooden hanger. "
+                "STRICT COMPOSITION RULE: the product must occupy ONLY the RIGHT HALF of the image (x=50% to x=100%). "
+                "The LEFT HALF (x=0 to x=50%) must be 100% empty — only background, NO part of the product crosses the center line. "
+                "Full-length frontal view, gentle natural fabric drape showing texture and fit. "
+                "Camera at eye-level with slight 5-degree downward tilt. "
                 "Soft directional light from upper-left. Natural shadow grounds the product."
             ),
             "footwear": (
                 "is shown as a pair placed together, left shoe slightly in front, "
                 "at a 3/4 front-side angle — camera 30 degrees from the side and 20 degrees above. "
+                "STRICT COMPOSITION RULE: the shoes must occupy ONLY the RIGHT HALF of the image (x=50% to x=100%). "
+                "The LEFT HALF (x=0 to x=50%) must be 100% empty — only background, NO part of the product crosses the center line. "
                 "Both shoes completely visible, sole edge slightly showing to convey depth. "
                 "The shoes stand firmly on the surface — NOT floating, NOT disassembled. "
-                "Filling the RIGHT 55% of the frame. "
-                "The LEFT 40% is a clean, light background for text overlay. "
                 "Sharp focus preserving exact original colors, patterns and sole design."
             ),
             "accessories": (
                 "is positioned at a 45-degree rotation, camera 15 degrees above eye-level, "
                 "showing both the front face and side profile simultaneously. "
-                "All handles, straps or key design elements clearly visible. "
-                "Filling the RIGHT 50% of the frame, firmly on the surface. "
-                "The LEFT 40% is a clean, light background for text overlay."
+                "STRICT COMPOSITION RULE: must occupy ONLY the RIGHT HALF (x=50%–100%). LEFT HALF must be empty background only. "
+                "All handles, straps or key design elements clearly visible. Firmly on the surface."
             ),
             "food": (
                 "Packaged food: eye-level shot, front label fully facing the camera, filling RIGHT 50%. "
@@ -141,9 +140,10 @@ async def generate_card_handler(request):
                 "The LEFT 40% is a clean, light background for text overlay."
             ),
             "other": (
-                "is placed prominently on the RIGHT side of the frame at its most flattering angle, "
-                "filling 50% of the total frame, firmly on the surface. "
-                "The LEFT 40% is a clean, light background for text overlay."
+                "is placed at its most flattering angle. "
+                "STRICT COMPOSITION RULE: must occupy ONLY the RIGHT HALF (x=50%–100%). "
+                "The LEFT HALF (x=0 to x=50%) must be 100% empty — only background. "
+                "Firmly on the surface."
             ),
         }
         placement_instruction = PLACEMENT.get(category, PLACEMENT["other"])
@@ -659,16 +659,12 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     left_bright = float(np.mean(img_arr[200:900, :lw, :]))
     light_bg    = left_bright > 148
 
-    if light_bg:
-        t_col  = dark_hex;  s_col = dark_hex;  f_col = feat_hex
-        sk_col = accent_hex; sk_w_t = "1.2"; sk_w_f = "0.6"; sk_op = "0.25"
-        shd_op = "0.12"
-    else:
-        t_col  = "#ffffff";  s_col = "#ffffff"; f_col = "#ffffff"
-        sk_col = "#000000";  sk_w_t = "5";      sk_w_f = "1.5";  sk_op = "0.85"
-        shd_op = "0.90"
+    # Всегда белый текст — читаемость обеспечивает градиент слева
+    t_col  = "#ffffff"; s_col = "#ffffff"; f_col = "#ffffff"
+    sk_col = "#000000"; sk_w_t = "3.5";   sk_w_f = "1.2"; sk_op = "0.70"
+    shd_op = "0.75"
 
-    print(f"[Cairo] dominant=({dr},{dg},{db}) bright={left_bright:.0f} light={light_bg}")
+    print(f"[Cairo] dominant=({dr},{dg},{db}) bright={left_bright:.0f} light={light_bg} →always-white")
 
     # ── 3. Умная зона для фич ────────────────────────────────────
     ZONES = {
@@ -704,13 +700,22 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
 
     els = []
 
-    # Shadow filter
+    # Shadow filter + left gradient
     els.append(
-        f'<defs><filter id="ts" x="-10%" y="-10%" width="130%" height="130%">'
+        f'<defs>'
+        f'<filter id="ts" x="-10%" y="-10%" width="130%" height="130%">'
         f'<feDropShadow dx="0" dy="1" stdDeviation="2" '
         f'flood-color="#000" flood-opacity="{shd_op}"/>'
-        f'</filter></defs>'
+        f'</filter>'
+        f'<linearGradient id="textbg" x1="0" y1="0" x2="1" y2="0">'
+        f'<stop offset="0%" stop-color="#000000" stop-opacity="0.58"/>'
+        f'<stop offset="42%" stop-color="#000000" stop-opacity="0.28"/>'
+        f'<stop offset="62%" stop-color="#000000" stop-opacity="0"/>'
+        f'</linearGradient>'
+        f'</defs>'
     )
+    # Gradient rect over entire left half
+    els.append('<rect x="0" y="0" width="800" height="1100" fill="url(#textbg)"/>')
 
     # ── Бейдж: сверху-слева ──────────────────────────────────────
     if badge:
