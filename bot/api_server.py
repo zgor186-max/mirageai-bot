@@ -645,8 +645,8 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     ZONE_Y = {"mid": 380, "lower": 640, "bottom": 890}
     feat_zone_top = ZONE_Y[best_zone]
     # Guarantee all 4 features fit: cap so last feature (idx=3) stays above y=1080
-    row_gap_check = 68
-    max_top = 1080 - 3 * row_gap_check - 30   # = 826
+    row_gap_check = 90
+    max_top = 1080 - 3 * row_gap_check - 40   # = 770
     feat_zone_top = min(feat_zone_top, max_top)
     print(f"[Cairo] feature zone={best_zone} stds={zone_std} top_y={feat_zone_top}, scheme={scheme}")
 
@@ -704,11 +704,11 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             f'fill="{badge_text_c}">{badge}</text>'
         )
 
-    # ── Title: Bebas Neue — centered, bold ───────────────────────
+    # ── Title: Bebas Neue — centered, 110px ─────────────────────
     title_lines = _svg_wrap(name, max_chars=14)
-    title_fs = 85
-    title_lh = 90
-    ty = 100
+    title_fs = 110
+    title_lh = 116
+    ty = 115
     for line in title_lines:
         els.append(
             f'<text x="400" y="{ty}" text-anchor="middle" '
@@ -719,39 +719,37 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         )
         ty += title_lh
 
-    # ── Tagline: продающая фраза под заголовком (italic) ──────
+    # ── Tagline: продающая фраза (левый край, italic, +50%) ───
     if tagline_raw:
         els.append(
-            f'<text x="400" y="{ty + 12}" text-anchor="middle" '
-            f'font-family="{FONT}" font-size="17" font-style="italic" '
+            f'<text x="40" y="{ty + 14}" '
+            f'font-family="{FONT}" font-size="26" font-style="italic" '
             f'fill="{sub_color}" '
-            f'stroke="{stroke_col}" stroke-width="1.2" stroke-opacity="0.7" '
-            f'paint-order="stroke fill" filter="url(#ts)">{_svg_wrap(tagline_raw, max_chars=50)[0]}</text>'
+            f'stroke="{stroke_col}" stroke-width="1.5" stroke-opacity="0.7" '
+            f'paint-order="stroke fill" filter="url(#ts)">{_svg_wrap(tagline_raw, max_chars=38)[0]}</text>'
         )
-        ty += 38
+        ty += 46
 
-    # ── Subtitle (слоган): короткий акцент под tagline ────────
+    # ── Subtitle (слоган): левый край, +50% ──────────────────
     if subtitle_raw:
         els.append(
-            f'<text x="400" y="{ty + 12}" text-anchor="middle" '
-            f'font-family="{FONT}" font-size="19" font-weight="600" '
+            f'<text x="40" y="{ty + 14}" '
+            f'font-family="{FONT}" font-size="29" font-weight="600" '
             f'fill="{sub_color}" '
-            f'stroke="{stroke_col}" stroke-width="1.5" stroke-opacity="{stroke_op}" '
-            f'paint-order="stroke fill" filter="url(#ts)">{_svg_wrap(subtitle_raw, max_chars=36)[0]}</text>'
+            f'stroke="{stroke_col}" stroke-width="1.8" stroke-opacity="{stroke_op}" '
+            f'paint-order="stroke fill" filter="url(#ts)">{_svg_wrap(subtitle_raw, max_chars=30)[0]}</text>'
         )
-        ty += 38
+        ty += 48
 
     # ── Features: single LEFT column, zone chosen by image analysis ─
-    # feat_zone_top = cleanest y in left half (product always in right half).
-    # All 4 features stacked vertically on the LEFT side only (x < 350).
     if feats:
         feats = feats[:4]
-        feat_r    = 20
-        feat_fs   = 14
-        feat_icon = 17
-        row_gap   = 68   # vertical spacing between features
-        cx        = 50   # circle center x — strictly left
-        tx        = 80   # text start x
+        feat_r    = 26
+        feat_fs   = 28
+        feat_icon = 22
+        row_gap   = 90
+        cx        = 56
+        tx        = 94
 
         for idx, feat in enumerate(feats):
             cy = feat_zone_top + idx * row_gap
