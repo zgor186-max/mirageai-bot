@@ -608,47 +608,20 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
 
     import io as _io2
     from PIL import ImageDraw as _ImageDraw
-    import numpy as np
-    import colorsys
 
     pil_img = Image.open(_io.BytesIO(raw_bytes)).convert("RGB")
 
-    # ── Full-image dominant color + brightness (median = robust to outliers) ──
-    bg_arr = np.array(pil_img.resize((800, 1100), Image.LANCZOS))
-    # Median across ALL pixels — one dark plant won't skew the result
-    avg_v      = float(np.median(bg_arr))
-    is_dark_bg = avg_v < 128
-
-    # Dominant hue: median per channel across full image
-    dom_r = int(np.median(bg_arr[:, :, 0]))
-    dom_g = int(np.median(bg_arr[:, :, 1]))
-    dom_b = int(np.median(bg_arr[:, :, 2]))
-
-    h, s, v = colorsys.rgb_to_hsv(dom_r / 255, dom_g / 255, dom_b / 255)
-
-    if is_dark_bg:
-        # Dark image → light text: same hue, desaturated, very bright
-        t_r,  t_g,  t_b  = colorsys.hsv_to_rgb(h, max(s * 0.30, 0.04), 0.93)
-        s2_r, s2_g, s2_b = colorsys.hsv_to_rgb(h, max(s * 0.20, 0.03), 0.85)
-        stroke_col = "#000000"   # dark stroke behind light letters
-        stroke_op  = "0.65"
-    else:
-        # Light image → dark text: same hue, more saturated, very dark
-        t_r,  t_g,  t_b  = colorsys.hsv_to_rgb(h, min(s * 2.0 + 0.15, 0.75), 0.20)
-        s2_r, s2_g, s2_b = colorsys.hsv_to_rgb(h, min(s * 1.5 + 0.10, 0.60), 0.33)
-        stroke_col = "#ffffff"   # white stroke behind dark letters
-        stroke_op  = "0.65"
-
-    def _hex(r, g, b):
-        return "#{:02x}{:02x}{:02x}".format(int(r * 255), int(g * 255), int(b * 255))
-
-    title_color  = _hex(t_r, t_g, t_b)
-    sub_color    = _hex(s2_r, s2_g, s2_b)
-    feat_color   = title_color
+    # ── Text: always white + black stroke — readable on ANY background ──
+    # Dynamic color matching is unreliable (text zone may differ from image avg).
+    # White fill + heavy black stroke + drop shadow works universally.
+    title_color  = "#ffffff"
+    sub_color    = "#ffffff"
+    feat_color   = "#ffffff"
+    stroke_col   = "#000000"
+    stroke_op    = "0.85"
     badge_text_c = "#111111"
 
-    print(f"[Cairo] full-img median={avg_v:.1f} {'dark' if is_dark_bg else 'light'} "
-          f"dom=({dom_r},{dom_g},{dom_b}) → text={title_color}")
+    print(f"[Cairo] fixed white+stroke text, scheme={scheme}, accent={accent}")
 
     # ── Circular thumbnail: pre-crop in PIL (more reliable than SVG clip-path) ──
     thumb_size = 88
@@ -677,14 +650,12 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
 
     els = []
 
-    # ── SVG filter: drop shadow behind every text element ───
-    shadow_clr = "#000000"
-    shadow_op  = "0.80" if not is_dark_bg else "0.60"
+    # ── SVG filter: strong drop shadow — works on any background ───
     els.append(
         f'<defs>'
-        f'<filter id="ts" x="-8%" y="-8%" width="116%" height="116%">'
-        f'<feDropShadow dx="0" dy="1" stdDeviation="2" '
-        f'flood-color="{shadow_clr}" flood-opacity="{shadow_op}"/>'
+        f'<filter id="ts" x="-10%" y="-10%" width="120%" height="120%">'
+        f'<feDropShadow dx="0" dy="1.5" stdDeviation="3" '
+        f'flood-color="#000000" flood-opacity="0.90"/>'
         f'</filter>'
         f'</defs>'
     )
