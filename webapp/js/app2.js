@@ -247,12 +247,17 @@ let userCoins = 0;
 let currentResultUrl = null;
 let currentLang = "ru";
 
-document.addEventListener("DOMContentLoaded", () => {
+function _appInit() {
     clearStorageIfFull();
     loadUserData();
     renderTemplates();
     setupUpload();
-});
+}
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", _appInit);
+} else {
+    _appInit(); // DOM уже готов — запускаем немедленно
+}
 
 function saveGallery(gallery) {
     // Храним только последние 8 карточек
