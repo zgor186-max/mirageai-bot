@@ -126,22 +126,22 @@ async def generate_card_handler(request):
 
         # ── Step 3: Composite product on RIGHT side ───────────────────
         print("[Card] Step 3 — compositing product on right side")
-        composited_b64 = await asyncio.get_event_loop().run_in_executor(
+        composited_b64, prod_paste_info = await asyncio.get_event_loop().run_in_executor(
             None, _composite_product_right, product_no_bg, bg_b64, category
         )
         print("[Card] Step 3 done ✓")
 
         # ── Step 4: Naturalize via flux-kontext (add shadows, lighting) ─
+        # После натурализации — снова наклеиваем товар поверх,
+        # чтобы фоновые объекты не перекрывали его.
         print("[Card] Step 4 — naturalizing composition (kontext)")
         naturalize_prompt = (
-            f"This image shows a product placed on a background. "
-            f"Naturalize the product integration: add realistic cast shadow beneath it, "
-            f"match the ambient lighting of the scene onto the product surface, "
-            f"soften any hard cutout edges with natural blending. "
-            f"CRITICAL: keep the product in EXACTLY the same position — do NOT move, resize or crop it. "
+            f"This composite image has a product on a background. "
+            f"Only enhance the background and shadows: add realistic cast shadow beneath the product, "
+            f"match the ambient scene lighting on the background surface around the product. "
+            f"DO NOT change, move or cover the product itself in any way. "
             f"Keep the LEFT half of the image clean and uncluttered. "
-            f"Result should look like professional commercial product photography. "
-            f"Photorealistic. NO text, NO watermarks."
+            f"Photorealistic commercial photography look. NO text, NO watermarks."
         )
         try:
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=300)) as session:
@@ -150,8 +150,12 @@ async def generate_card_handler(request):
                 if naturalized_url:
                     naturalized_b64 = await download_image_as_base64(naturalized_url)
                     if naturalized_b64:
-                        composited_b64 = naturalized_b64.split(",", 1)[1] if naturalized_b64.startswith("data:") else naturalized_b64
-                        print("[Card] Step 4 done ✓")
+                        nat_raw = naturalized_b64.split(",", 1)[1] if naturalized_b64.startswith("data:") else naturalized_b64
+                        # Re-paste original product on top to prevent bg objects covering it
+                        composited_b64 = await asyncio.get_event_loop().run_in_executor(
+                            None, _repaste_product, nat_raw, product_no_bg, prod_paste_info
+                        )
+                        print("[Card] Step 4 done ✓ (product repasted on top)")
                     else:
                         print("[Card] Step 4 download failed — using composite")
                 else:
@@ -281,6 +285,36 @@ def _composite_product_right(
     # ── Конвертируем в JPEG base64 ─────────────────────────────
     out = _io.BytesIO()
     canvas.convert("RGB").save(out, format="JPEG", quality=93)
+    # Возвращаем также позицию и размер товара для повторной вставки после kontext
+    paste_info = {"x": x, "y": y, "w": new_w, "h": new_h}
+    return base64.b64encode(out.getvalue()).decode(), paste_info
+
+
+def _repaste_product(
+    nat_b64: str,
+    product_no_bg_b64: str,
+    paste_info: dict,
+    out_w: int = 800,
+    out_h: int = 1100,
+) -> str:
+    """После kontext натурализации снова вставляем товар поверх — фон не перекрывает товар."""
+    import io as _io
+    from PIL import Image
+
+    bg = Image.open(_io.BytesIO(base64.b64decode(nat_b64))).convert("RGBA")
+    bg = bg.resize((out_w, out_h), Image.LANCZOS)
+
+    prod = Image.open(_io.BytesIO(base64.b64decode(product_no_bg_b64))).convert("RGBA")
+    bbox = prod.getbbox()
+    if bbox:
+        prod = prod.crop(bbox)
+
+    x, y, new_w, new_h = paste_info["x"], paste_info["y"], paste_info["w"], paste_info["h"]
+    prod_resized = prod.resize((new_w, new_h), Image.LANCZOS)
+    bg.paste(prod_resized, (x, y), prod_resized)
+
+    out = _io.BytesIO()
+    bg.convert("RGB").save(out, format="JPEG", quality=93)
     return base64.b64encode(out.getvalue()).decode()
 
 
@@ -856,39 +890,45 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         )
         ty += 115
 
-    # ── Tagline: italic, 2 строки ────────────────────────────────
+    # ── Tagline: italic, макс 3 слова на строку, 2 строки ────────
     if tagline_raw:
         ty += 10
-        for line in _svg_wrap(tagline_raw, max_chars=36)[:2]:
+        for line in _svg_wrap(tagline_raw, max_chars=18)[:2]:
             els.append(
-                f'<text x="28" y="{ty}" font-family="{FONT}" font-size="22" '
+                f'<text x="28" y="{ty}" font-family="{FONT}" font-size="20" '
                 f'font-style="italic" fill="{s_col}" '
                 f'stroke="{sk_col}" stroke-width="0.6" stroke-opacity="0.15" '
                 f'paint-order="stroke fill">{line}</text>'
             )
-            ty += 30
+            ty += 26
 
     # ── Слоган ───────────────────────────────────────────────────
     if subtitle_raw:
-        ty += 6
+        ty += 8
         els.append(
-            f'<text x="28" y="{ty}" font-family="{FONT}" font-size="24" '
-            f'font-weight="600" fill="{s_col}" '
+            f'<text x="28" y="{ty}" font-family="{FONT}" font-size="22" '
+            f'font-weight="700" fill="{s_col}" '
             f'stroke="{sk_col}" stroke-width="0.8" stroke-opacity="0.15" '
-            f'paint-order="stroke fill">{_svg_wrap(subtitle_raw, max_chars=30)[0]}</text>'
+            f'paint-order="stroke fill">{_svg_wrap(subtitle_raw, max_chars=18)[0]}</text>'
         )
-        ty += 34
+        ty += 32
 
-    # ── Фичи: левая колонка, 2 строки по 1 слову ────────────────
+    # ── Фичи: начинаются строго НИЖЕ текстового блока ────────────
+    feat_row_gap  = 95
+    # feat_zone_top не может быть выше конца текстового блока + отступ 30px
+    feat_zone_top = max(feat_zone_top, ty + 30)
+    # И не выходить за нижний край при 4 фичах
+    feat_zone_top = min(feat_zone_top, 1100 - 4 * feat_row_gap - 20)
+
     if feats:
         feats = feats[:4]
         feat_r    = 26
-        feat_fs   = 22   # чуть крупнее — одно слово на строке
-        feat_lh   = 26   # межстрочный интервал
+        feat_fs   = 22
+        feat_lh   = 26
         feat_icon = 20
         cx_f      = 54
         tx_f      = 92
-        row_gap   = 95   # больше места под 2 строки
+        row_gap   = feat_row_gap
 
         for idx, feat in enumerate(feats):
             cy = feat_zone_top + idx * row_gap
