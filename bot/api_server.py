@@ -174,21 +174,27 @@ async def generate_card_handler(request):
                 None, _composite_product_right, product_no_bg, bg_b64, category
             )
 
-        # ── Step 4.5: Адаптивная яркость ─────────────────────────────
-        # Тёмная сцена (avg < 100) → +20%, светлая → без изменений
+        # ── Step 4.5: Адаптивная яркость (3 уровня) ──────────────────
+        # Цель: итоговая яркость 130–160 (51–63%)
+        # avg < 80  → очень тёмно → +35%
+        # avg 80–120 → немного тёмно → +20%
+        # avg > 120  → светло → без изменений
         def _adaptive_brighten(b64: str) -> str:
             import io as _io
             from PIL import Image as _Img, ImageEnhance as _IE
             import numpy as _np
             img = _Img.open(_io.BytesIO(base64.b64decode(b64))).convert("RGB")
             avg_brightness = _np.array(img).mean()
-            print(f"[Brightness] avg={avg_brightness:.1f} — ", end="")
-            if avg_brightness < 100:
+            if avg_brightness < 80:
+                factor = 1.35
+                level = f"very dark → +35%"
+            elif avg_brightness < 120:
                 factor = 1.20
-                print(f"dark scene → +20% (factor={factor})")
+                level = f"slightly dark → +20%"
             else:
                 factor = 1.0
-                print(f"bright scene → no change")
+                level = f"bright → no change"
+            print(f"[Brightness] avg={avg_brightness:.1f} ({avg_brightness/255*100:.0f}%) — {level}")
             if factor != 1.0:
                 img = _IE.Brightness(img).enhance(factor)
             out = _io.BytesIO()
