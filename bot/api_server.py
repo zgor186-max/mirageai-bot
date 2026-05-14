@@ -91,6 +91,26 @@ async def generate_card_handler(request):
         if photo_b64.startswith("data:"):
             photo_b64 = photo_b64.split(",", 1)[1]
 
+        # ── Фильтр имени: убираем прилагательные, предлоги, косвенные падежи ──
+        raw_name = card_data.get("name", "")
+        if raw_name:
+            import re as _re
+            parts = raw_name.strip().upper().replace("-", " ").replace("–", " ").replace("—", " ").split()
+            PREPOSITIONS = {"В","НА","К","С","ДЛЯ","ПО","ОТ","ДО","ЗА","ИЗ","ПРИ","НАД","ПОД","ОБ","ПРО","У","О","А","И","НО"}
+            adj_end  = _re.compile(r"АЯ$|ЯЯ$|ОЕ$|ЕЕ$|ЫЙ$|ИЙ$|ОЙ$|ЫЕ$|ИЕ$|ЫХ$|ИХ$")
+            case_end = _re.compile(r"[УЮ]$")
+            cyr_pat  = _re.compile(r"^[А-ЯЁ\-]+$")
+            lat_pat  = _re.compile(r"[a-zA-Z]")
+            lat_parts = [w for w in parts if lat_pat.search(w)]
+            cyr_good  = [w for w in parts if cyr_pat.match(w)
+                         and w not in PREPOSITIONS
+                         and not adj_end.search(w)
+                         and not (case_end.search(w) and len(w) > 3)]
+            noun = cyr_good[0] if cyr_good else next((w for w in parts if cyr_pat.match(w)), parts[0] if parts else raw_name)
+            filtered = f"{noun} {lat_parts[0]}" if lat_parts else noun
+            print(f"[Card] name filter: '{raw_name}' → '{filtered}'")
+            card_data["name"] = filtered
+
         print(f"[Card] category={category} scene={scene_prompt[:80]}")
 
         # ── Step 1: Remove background from product photo ──────────────
@@ -126,20 +146,27 @@ async def generate_card_handler(request):
 
         # ── Step 3: PIL — размещаем товар справа на нейтральном фоне ─
         print("[Card] Step 3 — placing product on neutral background")
-        staged_b64, _ = await asyncio.get_event_loop().run_in_executor(
+        staged_b64, paste_info = await asyncio.get_event_loop().run_in_executor(
             None, _composite_product_right, product_no_bg, None, category
         )
-        print("[Card] Step 3 done ✓")
+        print(f"[Card] Step 3 done ✓ paste_info={paste_info}")
 
         # ── Step 4: Kontext — генерирует фон вокруг товара ────────────
         # Товар уже на месте. Kontext только заполняет фон.
         print("[Card] Step 4 — kontext: generate background around placed product")
         is_clothing = category in ("clothing", "footwear")
+        is_surface = category in ("accessories", "food", "beauty", "gadgets", "home", "other")
         hanging_note = (
             "If the product is on a hanger, add a wall-mounted horizontal clothing rod at the very top of the image. "
             "The hanger hook must hang FROM the rod (hook goes OVER the rod from above), not pierce or pass through it. "
             "Rod is above, hanger hook hangs below it — physically correct. "
-        ) if is_clothing else ""
+        ) if is_clothing else (
+            "CRITICAL: The product rests directly on a solid flat surface (wooden table, shelf, or nightstand). "
+            "STRICTLY FORBIDDEN: mannequin heads, head-shaped holders, acrylic stands, transparent stands, "
+            "display pedestals, invisible supports, floating objects. "
+            "The product simply sits or lies on the surface exactly as it would in a store display. "
+            "Cap or hat: lies with brim resting on the table, crown tilted toward camera. "
+        ) if is_surface else ""
         bg_prompt = (
             f"This image shows a product placed on a plain neutral background. "
             f"Replace ONLY the plain background with a beautiful photorealistic scene: {scene_prompt}. "
@@ -206,7 +233,7 @@ async def generate_card_handler(request):
         result_b64 = await asyncio.get_event_loop().run_in_executor(None, _adaptive_brighten, result_b64)
 
         # ── Step 5: Apply text overlay ────────────────────────────────
-        final = await _apply_card_overlay(result_b64, card_data)
+        final = await _apply_card_overlay(result_b64, card_data, paste_info)
         return web.json_response({"url": final}, headers=CORS_HEADERS)
 
     except Exception as e:
@@ -259,7 +286,7 @@ CATEGORY_SIZING = {
     # (target_h_ratio, max_w_ratio, y_offset_ratio)
     "clothing":    (0.95, 0.65, 0.01),   # крупнее — ближе к зрителю
     "footwear":    (0.55, 0.48, 0.35),   # обувь ниже центра
-    "accessories": (0.62, 0.46, 0.20),
+    "accessories": (0.55, 0.46, 0.38),  # ниже в кадре — видна поверхность под объектом
     "food":        (0.65, 0.44, 0.18),
     "beauty":      (0.68, 0.40, 0.16),
     "gadgets":     (0.62, 0.46, 0.20),
@@ -795,13 +822,13 @@ def _extract_output(result: dict) -> str | None:
     return None
 
 
-async def _apply_card_overlay(image_b64: str | None, card_data: dict) -> str:
+async def _apply_card_overlay(image_b64: str | None, card_data: dict, paste_info: dict = None) -> str:
     """Render text overlay via Cairo."""
     if not image_b64:
         return image_b64
     raw_b64 = image_b64.split(",", 1)[1] if image_b64.startswith("data:") else image_b64
     if card_data:
-        rendered = await render_card_cairo(raw_b64, card_data)
+        rendered = await render_card_cairo(raw_b64, card_data, paste_info)
         if rendered:
             return rendered
     return image_b64
@@ -838,7 +865,7 @@ def _svg_wrap(text: str, max_chars: int = 12) -> list:
     return lines or [""]
 
 
-async def render_card_cairo(image_b64: str, card: dict) -> str | None:
+async def render_card_cairo(image_b64: str, card: dict, paste_info: dict = None) -> str | None:
     """Marketplace-style card: dynamic color from product, dividers, macro circle."""
     try:
         import cairosvg
@@ -917,32 +944,83 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             txt = txt[0].upper() + txt[1:].lower() if txt else txt
             feats.append({"icon": icon, "text": _svg_esc(txt)})
 
-    FONT_TITLE    = "'Playfair Display', serif"           # заголовок — serif bold
+    FONT_TITLE    = "'Montserrat ExtraBold', 'Montserrat Black', 'Montserrat', sans-serif"  # заголовок — WB/Ozon стиль
     FONT_SEMI     = "'Montserrat SemiBold', 'Montserrat', sans-serif"  # фичи
     FONT_MEDIUM   = "'Montserrat Medium', 'Montserrat', sans-serif"    # бейдж
     FONT_LIGHT    = "'Montserrat Light', 'Montserrat', sans-serif"     # tagline
     FONT          = FONT_SEMI   # fallback для совместимости
     FONT_EMOJI    = "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif"
 
+    # ── Определяем режим размещения текста ──────────────────────────
+    # paste_info содержит точное положение товара из PIL
+    if paste_info:
+        prod_x     = paste_info.get("x", 400)
+        prod_y     = paste_info.get("y", 0)
+        prod_h_val = paste_info.get("h", 1100)
+        left_free  = prod_x                        # px свободно слева
+        bottom_free = 1100 - (prod_y + prod_h_val) # px свободно снизу
+    else:
+        left_free   = 400
+        bottom_free = 100
+        prod_y      = 0
+        prod_h_val  = 1000
+
+    # left_free >= 300 → текст слева как обычно
+    # left_free <  300 И bottom_free >= 350 → заголовок сверху-слева, фичи вниз под товар
+    # left_free <  300 И bottom_free <  350 → текст слева поверх товара (градиент читаемость)
+    # "bottom" только если товар реально не оставляет места слева (< 120px)
+    # 164px (одежда) — достаточно, фичи слева с градиентом
+    if left_free >= 120:
+        layout = "left"
+    else:
+        layout = "bottom"
+    print(f"[Cairo] layout={layout} left_free={left_free}px bottom_free={bottom_free}px")
+
     els = []
 
-    # Shadow filter + left gradient
+    # ── Shadow filter + градиент адаптивный ─────────────────────────
+    if layout == "left":
+        grad_defs = (
+            f'<linearGradient id="textbg" x1="0" y1="0" x2="1" y2="0">'
+            f'<stop offset="0%"  stop-color="#000" stop-opacity="0.65"/>'
+            f'<stop offset="38%" stop-color="#000" stop-opacity="0.40"/>'
+            f'<stop offset="55%" stop-color="#000" stop-opacity="0.10"/>'
+            f'<stop offset="68%" stop-color="#000" stop-opacity="0"/>'
+            f'</linearGradient>'
+        )
+        grad_rects = '<rect x="0" y="0" width="800" height="1100" fill="url(#textbg)"/>'
+    else:
+        # Левый градиент (для заголовка) + нижний (для фич)
+        feat_zone_y = prod_y + prod_h_val  # откуда начинается нижняя зона
+        grad_defs = (
+            f'<linearGradient id="textbg" x1="0" y1="0" x2="1" y2="0">'
+            f'<stop offset="0%"  stop-color="#000" stop-opacity="0.72"/>'
+            f'<stop offset="32%" stop-color="#000" stop-opacity="0.48"/>'
+            f'<stop offset="48%" stop-color="#000" stop-opacity="0.08"/>'
+            f'<stop offset="58%" stop-color="#000" stop-opacity="0"/>'
+            f'</linearGradient>'
+            f'<linearGradient id="bottombg" x1="0" y1="0" x2="0" y2="1">'
+            f'<stop offset="0%"  stop-color="#000" stop-opacity="0"/>'
+            f'<stop offset="35%" stop-color="#000" stop-opacity="0.55"/>'
+            f'<stop offset="100%" stop-color="#000" stop-opacity="0.82"/>'
+            f'</linearGradient>'
+        )
+        grad_rects = (
+            '<rect x="0" y="0" width="800" height="1100" fill="url(#textbg)"/>'
+            f'<rect x="0" y="{max(feat_zone_y - 60, 0)}" width="800" '
+            f'height="{1100 - max(feat_zone_y - 60, 0)}" fill="url(#bottombg)"/>'
+        )
+
     els.append(
         f'<defs>'
         f'<filter id="ts" x="-10%" y="-10%" width="130%" height="130%">'
         f'<feDropShadow dx="0" dy="1" stdDeviation="2" '
         f'flood-color="#000" flood-opacity="{shd_op}"/>'
         f'</filter>'
-        f'<linearGradient id="textbg" x1="0" y1="0" x2="1" y2="0">'
-        f'<stop offset="0%" stop-color="#000000" stop-opacity="0.65"/>'
-        f'<stop offset="38%" stop-color="#000000" stop-opacity="0.40"/>'
-        f'<stop offset="55%" stop-color="#000000" stop-opacity="0.10"/>'
-        f'<stop offset="68%" stop-color="#000000" stop-opacity="0"/>'
-        f'</linearGradient>'
+        f'{grad_defs}'
         f'</defs>'
     )
-    # Gradient rect over entire left half
-    els.append('<rect x="0" y="0" width="800" height="1100" fill="url(#textbg)"/>')
+    els.append(grad_rects)
 
     # ── Бейдж: сверху-слева (только если не совпадает с названием) ─
     badge_shown = badge and badge.upper() != name.upper()
@@ -955,57 +1033,59 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             f'letter-spacing="1.5" fill="#ffffff">{badge}</text>'
         )
 
-    # ── Заголовок: Playfair Display Bold ─────────────────────────
+    # ── Заголовок: 68px, lh=75 — как у конкурента ───────────────
+    title_max_chars = 10
+    title_lines = _svg_wrap(name, max_chars=title_max_chars)
+    title_fs, title_lh = 68, 75   # конкурент: строка 1 y≈100, строка 2 y≈175
+
     ty = 155 if badge_shown else 100
-    for line in _svg_wrap(name, max_chars=14):
+    for line in title_lines:
         els.append(
             f'<text x="28" y="{ty}" '
-            f'font-family="{FONT_TITLE}" font-size="90" font-weight="700" '
+            f'font-family="{FONT_TITLE}" font-size="{title_fs}" font-weight="800" '
             f'fill="{t_col}" stroke="{sk_col}" stroke-width="{sk_w_t}" '
             f'stroke-opacity="{sk_op}" paint-order="stroke fill" '
             f'filter="url(#ts)">{line}</text>'
         )
-        ty += 100
+        ty += title_lh
 
-    # ── Tagline: italic, макс 3 слова на строку, 2 строки ────────
+    # ── Tagline: вплотную после заголовка (y≈215 при 2 строках title) ─
     if tagline_raw:
-        ty += 10
-        for line in _svg_wrap(tagline_raw, max_chars=18)[:2]:
+        ty = ty - title_lh + 40   # конкурент: tagline начинается ~40px ниже последнего baseline
+        for line in _svg_wrap(tagline_raw, max_chars=22)[:2]:
             els.append(
-                f'<text x="28" y="{ty}" font-family="{FONT_LIGHT}" font-size="18" '
+                f'<text x="28" y="{ty}" font-family="{FONT_LIGHT}" font-size="16" '
                 f'font-weight="300" fill="{s_col}" '
                 f'stroke="{sk_col}" stroke-width="0.6" stroke-opacity="0.15" '
                 f'paint-order="stroke fill">{line}</text>'
             )
-            ty += 24
+            ty += 23
 
     # ── Слоган ───────────────────────────────────────────────────
     if subtitle_raw:
-        ty += 8
+        ty += 10
         els.append(
-            f'<text x="28" y="{ty}" font-family="{FONT_SEMI}" font-size="22" '
+            f'<text x="28" y="{ty}" font-family="{FONT_SEMI}" font-size="20" '
             f'font-weight="600" fill="{s_col}" '
             f'stroke="{sk_col}" stroke-width="0.8" stroke-opacity="0.15" '
-            f'paint-order="stroke fill">{_svg_wrap(subtitle_raw, max_chars=18)[0]}</text>'
+            f'paint-order="stroke fill">{_svg_wrap(subtitle_raw, max_chars=20)[0]}</text>'
         )
-        ty += 32
+        ty += 30
 
-    # ── Фичи: начинаются строго НИЖЕ текстового блока ────────────
-    feat_row_gap  = 95
-    # feat_zone_top не может быть выше конца текстового блока + отступ 30px
-    feat_zone_top = max(feat_zone_top, ty + 30)
-    # И не выходить за нижний край при 4 фичах
-    feat_zone_top = min(feat_zone_top, 1100 - 4 * feat_row_gap - 20)
+    # ── Фичи: фиксированный старт y=340, шаг 100px — как у конкурента ──
+    FEAT_START_Y = 340   # конкурент: feat1 центр y≈340
+    FEAT_ROW_GAP = 100   # конкурент: шаг между фичами ~100px
+    feat_zone_top = max(FEAT_START_Y, ty + 40)  # не выше конца текстового блока
 
     if feats:
-        feats = feats[:4]
+        feats = feats[:5]   # конкурент показывает 5 фич
         feat_r    = 26
-        feat_fs   = 22
-        feat_lh   = 26
-        feat_icon = 20
+        feat_fs   = 20
+        feat_lh   = 24
+        feat_icon = 18
         cx_f      = 54
         tx_f      = 92
-        row_gap   = feat_row_gap
+        row_gap   = FEAT_ROW_GAP
 
         for idx, feat in enumerate(feats):
             cy = feat_zone_top + idx * row_gap
@@ -1013,36 +1093,38 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             # Разделитель
             if idx > 0:
                 els.append(
-                    f'<line x1="{cx_f - feat_r}" y1="{cy - 18}" x2="340" y2="{cy - 18}" '
+                    f'<line x1="{cx_f - feat_r}" y1="{cy - 20}" x2="340" y2="{cy - 20}" '
                     f'stroke="{accent_hex}" stroke-width="0.8" stroke-opacity="0.35"/>'
                 )
             # Круг + иконка
             els.append(f'<circle cx="{cx_f}" cy="{cy}" r="{feat_r}" fill="{accent_hex}"/>')
             els.append(
-                f'<text x="{cx_f}" y="{cy + 7}" text-anchor="middle" '
+                f'<text x="{cx_f}" y="{cy + 6}" text-anchor="middle" '
                 f'font-family="{FONT_EMOJI}" font-size="{feat_icon}" '
                 f'filter="url(#ts)">{feat["icon"]}</text>'
             )
-            # Текст: каждое слово на отдельной строке, ЗАГЛАВНЫМИ
-            # Фильтруем предлоги, союзы и частицы русского языка
-            _RU_STOPWORDS = {
-                "В","НА","К","С","У","О","А","И","НО","ИЛИ","НЕ","НИ","БЫ","ЖЕ",
-                "ДЛЯ","ПО","ОТ","ДО","ЗА","ПОД","НАД","ПРИ","ИЗ","БЕЗ","ДО","ОБ",
-                "ПРО","ЧТО","КАК","ТАК","ВОТ","УЖЕ","ЕЩЁ","ЕЩЕ","ВСЕ","ВСЁ","ТО",
-            }
+            # Текст: до 3 слов на строку, макс 2 строки — как у конкурента
             _all_words = feat["text"].upper().split()
-            words = [w for w in _all_words if w not in _RU_STOPWORDS][:2]
-            if not words:
-                words = _all_words[:2] if _all_words else [feat["text"].upper()]
-            start_y = cy - (len(words) - 1) * feat_lh // 2
-            for li, word in enumerate(words):
+            feat_lines = []
+            line_buf = []
+            for w in _all_words[:6]:
+                line_buf.append(w)
+                if len(line_buf) == 3:
+                    feat_lines.append(" ".join(line_buf))
+                    line_buf = []
+            if line_buf:
+                feat_lines.append(" ".join(line_buf))
+            feat_lines = feat_lines[:2]
+
+            start_y = cy - (len(feat_lines) - 1) * feat_lh // 2
+            for li, fline in enumerate(feat_lines):
                 els.append(
                     f'<text x="{tx_f}" y="{start_y + li * feat_lh}" '
                     f'font-family="{FONT_SEMI}" font-size="{feat_fs}" font-weight="600" '
-                    f'letter-spacing="1.0" '
+                    f'letter-spacing="0.8" '
                     f'fill="{f_col}" stroke="{sk_col}" stroke-width="{sk_w_f}" '
                     f'stroke-opacity="{sk_op}" paint-order="stroke fill" '
-                    f'filter="url(#ts)">{word}</text>'
+                    f'filter="url(#ts)">{fline}</text>'
                 )
 
     # Макро-кружок удалён навсегда — не восстанавливать
