@@ -903,12 +903,12 @@ async function mpCardGenerate() {
 
     const name = document.getElementById("mp-card-name").value.trim();
 
-    // Если AI идея была нажата — используем слоган и фичи
-    // Иначе fallback на скрытые поля от автоанализа
+    // Заголовок карточки = название товара всегда
+    // Слоган (2-4 слова) — идёт как подзаголовок, фичи — снизу
     const useAiIdea = mpCardSlogan && mpCardFeatures.length > 0;
-    const cardTitle   = useAiIdea ? mpCardSlogan : name;
-    const cardSubtitle = useAiIdea ? mpCardTagline : document.getElementById("mp-card-subtitle").value.trim();
-    const badge = useAiIdea ? name : (document.getElementById("mp-card-badge").value.trim() || name);
+    const cardTitle    = name;   // всегда название товара
+    const cardSubtitle = useAiIdea ? mpCardSlogan : document.getElementById("mp-card-subtitle").value.trim();
+    const badge = useAiIdea ? (mpCardTagline || name) : (document.getElementById("mp-card-badge").value.trim() || name);
     const features = useAiIdea
         ? mpCardFeatures
         : [
