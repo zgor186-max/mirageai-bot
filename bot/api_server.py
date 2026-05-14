@@ -87,46 +87,63 @@ async def generate_card_handler(request):
 
         print(f"[Card] category={category} scene={scene_prompt[:80]}")
 
-        # Category-specific placement instructions
+        # Category-specific placement — professional angles per product type
         PLACEMENT = {
             "clothing": (
-                "is unfolded and laid completely flat on the surface in a flat lay arrangement, "
-                "positioned in the RIGHT half of the frame, filling 55% of the total frame. "
-                "The top and bottom parts are separated and displayed together, fully visible. "
-                "Every part of the fabric is touching the surface — NO parts floating or hanging. "
-                "NO hanger anywhere. Viewed from slightly above (40-degree angle). "
-                "The LEFT third of the frame remains open with scene background for text overlay."
+                "is hanging on a wooden hanger, full-length frontal view, "
+                "gentle natural fabric drape clearly showing texture and fit. "
+                "Camera at eye-level with a slight 5-degree downward tilt. "
+                "The complete garment — top and bottom — fully visible, filling the RIGHT 55% of the frame. "
+                "The LEFT 40% of the frame is a clean, light, uncluttered background for text overlay. "
+                "Soft directional light from upper-left. Natural shadow grounds the product."
             ),
             "footwear": (
-                "is placed on the RIGHT side of the frame at a natural 3/4 angle (from the front-side). "
-                "The shoe/sneaker/boot stands upright on the surface — NOT flat, NOT disassembled. "
-                "Show the complete shoe as one intact unit, filling 55% of the total frame. "
-                "The LEFT third of the frame remains open with scene background for text overlay. "
-                "CRITICAL: the shoe must look EXACTLY like the original — same shape, same sole."
+                "is shown as a pair placed together, left shoe slightly in front, "
+                "at a 3/4 front-side angle — camera 30 degrees from the side and 20 degrees above. "
+                "Both shoes completely visible, sole edge slightly showing to convey depth. "
+                "The shoes stand firmly on the surface — NOT floating, NOT disassembled. "
+                "Filling the RIGHT 55% of the frame. "
+                "The LEFT 40% is a clean, light background for text overlay. "
+                "Sharp focus preserving exact original colors, patterns and sole design."
             ),
             "accessories": (
-                "is placed upright on the RIGHT side of the frame, filling 50% of the total frame. "
-                "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
+                "is positioned at a 45-degree rotation, camera 15 degrees above eye-level, "
+                "showing both the front face and side profile simultaneously. "
+                "All handles, straps or key design elements clearly visible. "
+                "Filling the RIGHT 50% of the frame, firmly on the surface. "
+                "The LEFT 40% is a clean, light background for text overlay."
             ),
             "food": (
-                "is placed on the RIGHT side of the frame, filling 50% of the total frame. "
-                "Firmly on the surface. The LEFT third stays open with scene background."
+                "Packaged food: eye-level shot, front label fully facing the camera, filling RIGHT 50%. "
+                "Fresh or prepared food: 45-degree overhead flat lay, beautiful arrangement with props. "
+                "Drinks: eye-level with condensation droplets visible. "
+                "The LEFT 40% is a clean, light background for text overlay."
             ),
             "beauty": (
-                "is standing upright on the RIGHT side of the frame, filling 50% of the total frame. "
-                "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
+                "is standing upright with the label directly facing the camera, eye-level shot (0-degree elevation). "
+                "If multiple items — arranged in a tight triangular group. "
+                "Cap or lid clean and fully visible. Filling the RIGHT 50% of the frame. "
+                "The LEFT 40% is a clean, light background for text overlay. "
+                "Soft light from upper-left, subtle highlight on packaging."
             ),
             "gadgets": (
-                "is placed at a hero angle on the RIGHT side of the frame, filling 50% of the total frame. "
-                "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
+                "is shown at a 3/4 rear-side hero angle — camera 40 degrees above, 35 degrees from the side. "
+                "The screen or main surface is angled toward the viewer showing depth and premium feel. "
+                "Dynamic perspective revealing key product features. Filling the RIGHT 50% of the frame. "
+                "The LEFT 40% is a clean, dark or gradient background for text overlay. "
+                "Dramatic lighting with edge highlight emphasising the form."
             ),
             "home": (
-                "is placed naturally on the RIGHT side of the frame as it would be used, filling 50% of the total frame. "
-                "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
+                "is shown in its natural context of use, camera at 30-40 degree angle revealing depth and form. "
+                "Textiles: gently draped or folded showing texture and material quality. "
+                "Furniture: perspective angle showing all key dimensions. "
+                "Filling the RIGHT 50% of the frame. "
+                "The LEFT 40% is a clean, light background for text overlay."
             ),
             "other": (
-                "is placed prominently on the RIGHT side of the frame, filling 50% of the total frame. "
-                "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
+                "is placed prominently on the RIGHT side of the frame at its most flattering angle, "
+                "filling 50% of the total frame, firmly on the surface. "
+                "The LEFT 40% is a clean, light background for text overlay."
             ),
         }
         placement_instruction = PLACEMENT.get(category, PLACEMENT["other"])
@@ -135,12 +152,11 @@ async def generate_card_handler(request):
             f"Take the COMPLETE product shown in the reference image and integrate it into this scene: {scene_prompt}. "
             f"The product {placement_instruction} "
             f"CRITICAL — QUANTITY: show EXACTLY the same number of items as in the reference — do NOT reduce, merge or remove any. "
-            f"CRITICAL — INTEGRITY: reproduce every part, every component exactly — do not crop, cut or simplify anything. "
-            f"CRITICAL — COMPOSITION: product must be in the RIGHT half of the frame. "
-            f"CRITICAL — LEFT SIDE: the LEFT 40% of the frame must be a clean, light, uncluttered background "
-            f"(light wall, soft fabric, neutral surface) — NO product elements there, suitable for text overlay. "
-            f"Preserve exact colors, patterns, textures of the original product. "
-            f"Photorealistic commercial product photography, soft warm lighting. NO text, NO watermarks."
+            f"CRITICAL — INTEGRITY: reproduce every part, every component exactly — same shape, colors, patterns, textures. "
+            f"CRITICAL — LEFT SIDE: LEFT 40% of frame must be clean and uncluttered — suitable for text overlay. "
+            f"LIGHTING: soft directional light from upper-left, natural shadow grounding the product on the surface. "
+            f"FOCUS: sharp focus on product, background slightly softened (shallow depth of field). "
+            f"Photorealistic commercial product photography. NO text, NO watermarks, NO extra objects."
         )
 
         try:
