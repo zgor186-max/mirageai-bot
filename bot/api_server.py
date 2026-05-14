@@ -698,11 +698,11 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             f'fill="{badge_text_c}">{badge}</text>'
         )
 
-    # ── Title: 2.5× bigger, bold, stroke + shadow ───────────────
-    title_lines = _svg_wrap(name, max_chars=10)
-    title_fs = 110
-    title_lh = 118
-    ty = 120
+    # ── Title ────────────────────────────────────────────────────
+    title_lines = _svg_wrap(name, max_chars=12)
+    title_fs = 70
+    title_lh = 78
+    ty = 90
     for line in title_lines:
         els.append(
             f'<text x="40" y="{ty}" '
@@ -725,23 +725,20 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
                 f'paint-order="stroke fill" filter="url(#ts)">{line}</text>'
             )
 
-    # ── Features: 2×2 grid, zone chosen by image analysis ───────
-    # feat_zone_top was picked above as the cleanest left-half area.
-    # 2 columns × 2 rows, each row spaced 75px apart.
+    # ── Features: single LEFT column, zone chosen by image analysis ─
+    # feat_zone_top = cleanest y in left half (product always in right half).
+    # All 4 features stacked vertically on the LEFT side only (x < 350).
     if feats:
         feats = feats[:4]
         feat_r    = 20
         feat_fs   = 14
         feat_icon = 17
-        row_gap   = 75
-        col_x     = [30, 410]   # left-half col | right-half col
+        row_gap   = 68   # vertical spacing between features
+        cx        = 50   # circle center x — strictly left
+        tx        = 80   # text start x
 
         for idx, feat in enumerate(feats):
-            col = idx % 2
-            row = idx // 2
-            cx  = col_x[col] + feat_r
-            cy  = feat_zone_top + row * row_gap
-            tx  = col_x[col] + feat_r * 2 + 8
+            cy = feat_zone_top + idx * row_gap
 
             els.append(f'<circle cx="{cx}" cy="{cy}" r="{feat_r}" fill="{accent}"/>')
             els.append(
@@ -749,7 +746,7 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
                 f'font-family="{FONT_EMOJI}" font-size="{feat_icon}" '
                 f'filter="url(#ts)">{feat["icon"]}</text>'
             )
-            flines = _svg_wrap(feat["text"], max_chars=22)[:1]
+            flines = _svg_wrap(feat["text"], max_chars=20)[:1]
             for fl in flines:
                 els.append(
                     f'<text x="{tx}" y="{cy + 5}" '
