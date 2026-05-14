@@ -216,19 +216,26 @@ def _composite_product_right(
     target_h_r, _, y_off_r = CATEGORY_SIZING.get(category, CATEGORY_SIZING["other"])
     target_h = int(out_h * target_h_r)
 
-    # Масштабируем строго по высоте — ширина не ограничена
+    # Шаг 1: масштабируем по высоте
     scale = target_h / prod_h
     new_h = target_h
     new_w = int(prod_w * scale)
 
+    # Шаг 2: минимальный x = 340 (левее нельзя — текст)
+    min_x = 340
+    max_product_w = out_w - min_x  # максимальная ширина товара чтобы не обрезался
+
+    # Если товар не влезает — уменьшаем масштаб по ширине
+    if new_w > max_product_w:
+        scale = max_product_w / prod_w
+        new_w = max_product_w
+        new_h = int(prod_h * scale)
+
     prod_resized = prod.resize((new_w, new_h), Image.LANCZOS)
 
-    # ── Позиция: правый край товара = правый край холста ──────────
-    # Минимальный x = 350 (чтобы текст слева не перекрывался)
-    # Товар может выходить за правый край — PIL обрежет естественно
-    x = max(350, out_w - new_w)
+    # ── Позиция: прижат к правому краю, полностью в кадре ────────
+    x = out_w - new_w  # правый край товара = правый край холста
     y = int(out_h * y_off_r)
-    # Не выходить за нижний край
     y = min(y, out_h - new_h - 5)
 
     # Мягкая тень под товаром (для одежды — тень под вешалкой)
