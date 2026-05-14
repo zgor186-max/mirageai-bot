@@ -917,9 +917,12 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             txt = txt[0].upper() + txt[1:].lower() if txt else txt
             feats.append({"icon": icon, "text": _svg_esc(txt)})
 
-    FONT_TITLE = "'Bebas Neue', 'Bebas Neue Bold', sans-serif"
-    FONT       = "'Open Sans', 'Liberation Sans', 'DejaVu Sans', sans-serif"
-    FONT_EMOJI = "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif"
+    FONT_TITLE    = "'Playfair Display', serif"           # заголовок — serif bold
+    FONT_SEMI     = "'Montserrat SemiBold', 'Montserrat', sans-serif"  # фичи
+    FONT_MEDIUM   = "'Montserrat Medium', 'Montserrat', sans-serif"    # бейдж
+    FONT_LIGHT    = "'Montserrat Light', 'Montserrat', sans-serif"     # tagline
+    FONT          = FONT_SEMI   # fallback для совместимости
+    FONT_EMOJI    = "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif"
 
     els = []
 
@@ -948,41 +951,40 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         els.append(f'<rect x="28" y="22" width="{bw}" height="30" rx="15" fill="{accent_hex}"/>')
         els.append(
             f'<text x="{28 + bw//2}" y="43" text-anchor="middle" '
-            f'font-family="{FONT}" font-size="13" font-weight="700" '
-            f'letter-spacing="0.8" fill="#ffffff">{badge}</text>'
+            f'font-family="{FONT_MEDIUM}" font-size="13" font-weight="500" '
+            f'letter-spacing="1.5" fill="#ffffff">{badge}</text>'
         )
 
-    # ── Заголовок: Bebas Neue, начинается НИЖЕ бейджа ─────────────
-    # cap-height Bebas Neue ≈ 72% от font-size → для 110px ≈ 79px
-    ty = 155 if badge_shown else 95
+    # ── Заголовок: Playfair Display Bold ─────────────────────────
+    ty = 155 if badge_shown else 100
     for line in _svg_wrap(name, max_chars=14):
         els.append(
             f'<text x="28" y="{ty}" '
-            f'font-family="{FONT_TITLE}" font-size="110" font-weight="700" '
+            f'font-family="{FONT_TITLE}" font-size="90" font-weight="700" '
             f'fill="{t_col}" stroke="{sk_col}" stroke-width="{sk_w_t}" '
             f'stroke-opacity="{sk_op}" paint-order="stroke fill" '
             f'filter="url(#ts)">{line}</text>'
         )
-        ty += 115
+        ty += 100
 
     # ── Tagline: italic, макс 3 слова на строку, 2 строки ────────
     if tagline_raw:
         ty += 10
         for line in _svg_wrap(tagline_raw, max_chars=18)[:2]:
             els.append(
-                f'<text x="28" y="{ty}" font-family="{FONT}" font-size="20" '
-                f'font-style="italic" fill="{s_col}" '
+                f'<text x="28" y="{ty}" font-family="{FONT_LIGHT}" font-size="18" '
+                f'font-weight="300" fill="{s_col}" '
                 f'stroke="{sk_col}" stroke-width="0.6" stroke-opacity="0.15" '
                 f'paint-order="stroke fill">{line}</text>'
             )
-            ty += 26
+            ty += 24
 
     # ── Слоган ───────────────────────────────────────────────────
     if subtitle_raw:
         ty += 8
         els.append(
-            f'<text x="28" y="{ty}" font-family="{FONT}" font-size="22" '
-            f'font-weight="700" fill="{s_col}" '
+            f'<text x="28" y="{ty}" font-family="{FONT_SEMI}" font-size="22" '
+            f'font-weight="600" fill="{s_col}" '
             f'stroke="{sk_col}" stroke-width="0.8" stroke-opacity="0.15" '
             f'paint-order="stroke fill">{_svg_wrap(subtitle_raw, max_chars=18)[0]}</text>'
         )
@@ -1036,8 +1038,8 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             for li, word in enumerate(words):
                 els.append(
                     f'<text x="{tx_f}" y="{start_y + li * feat_lh}" '
-                    f'font-family="{FONT}" font-size="{feat_fs}" font-weight="700" '
-                    f'letter-spacing="0.5" '
+                    f'font-family="{FONT_SEMI}" font-size="{feat_fs}" font-weight="600" '
+                    f'letter-spacing="1.0" '
                     f'fill="{f_col}" stroke="{sk_col}" stroke-width="{sk_w_f}" '
                     f'stroke-opacity="{sk_op}" paint-order="stroke fill" '
                     f'filter="url(#ts)">{word}</text>'
