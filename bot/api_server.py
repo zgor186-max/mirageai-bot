@@ -134,14 +134,22 @@ async def generate_card_handler(request):
         # ── Step 4: Kontext — генерирует фон вокруг товара ────────────
         # Товар уже на месте. Kontext только заполняет фон.
         print("[Card] Step 4 — kontext: generate background around placed product")
+        is_clothing = category in ("clothing", "footwear")
+        hanging_note = (
+            "If the product is on a hanger, add a wall-mounted clothing rod or ceiling hook at the top — "
+            "so the hanger is physically connected to something, not floating in air. "
+        ) if is_clothing else ""
         bg_prompt = (
-            f"This image shows a product on a plain neutral background. "
-            f"Replace the plain background with a beautiful photorealistic scene: {scene_prompt}. "
-            f"CRITICAL: keep the product EXACTLY as it is — same position, same size, same appearance, do NOT move or duplicate it. "
-            f"The LEFT 40% of the image should be clean and slightly dim — suitable for text overlay. "
-            f"Add a natural soft shadow beneath the product. "
-            f"Lighting from upper-left, warm and natural. "
-            f"NO extra objects near or on top of the product. NO text, NO watermarks."
+            f"This image shows a product placed on a plain neutral background. "
+            f"Replace ONLY the plain background with a beautiful photorealistic scene: {scene_prompt}. "
+            f"CRITICAL RULES: "
+            f"1. Keep the product EXACTLY as it is — same position, same size, same look. Do NOT move, resize or duplicate it. "
+            f"2. The LEFT 40% of the image must be CLEAN, EMPTY and slightly dark — absolutely NO furniture, NO objects, NO patterns in that zone. Only smooth dark gradient. This zone is reserved for text. "
+            f"3. All scene elements (furniture, decor, plants) go ONLY in the right half and bottom of the image. "
+            f"4. {hanging_note}"
+            f"5. Add a soft natural shadow under the product. "
+            f"6. Warm soft lighting from upper right. Cozy atmosphere. "
+            f"7. NO duplicate products. NO text. NO watermarks. NO busy patterns on the left side."
         )
 
         result_b64 = None
@@ -263,12 +271,15 @@ def _composite_product_right(
     import sys as _sys
     prod_w, prod_h = prod.size
 
-    target_h_r, _, y_off_r = CATEGORY_SIZING.get(category, CATEGORY_SIZING["other"])
+    target_h_r, max_w_r, y_off_r = CATEGORY_SIZING.get(category, CATEGORY_SIZING["other"])
     target_h = int(out_h * target_h_r)
+    max_w   = int(out_w * max_w_r)
 
-    # Масштабируем строго по высоте — никаких ограничений по ширине
-    scale = target_h / prod_h
-    new_h = target_h
+    # Масштабируем по высоте, но ограничиваем максимальную ширину
+    scale_by_h = target_h / prod_h
+    scale_by_w = max_w / prod_w
+    scale = min(scale_by_h, scale_by_w)
+    new_h = int(prod_h * scale)
     new_w = int(prod_w * scale)
 
     prod_resized = prod.resize((new_w, new_h), Image.LANCZOS)

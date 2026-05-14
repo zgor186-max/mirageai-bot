@@ -658,11 +658,11 @@ function mpCardHandlePhoto(input) {
 
 const LOCATION_SEEDS = {
     clothing: [
-        "уютная гостиная с тёплым светом торшера",
-        "скандинавская спальня с белыми стенами и дневным светом",
-        "кофейня с деревянными столиками и мягким светом",
-        "летняя терраса с естественным солнечным светом",
-        "минималистичная белая студия с мягкими тенями"
+        "cozy living room with soft sofa, warm blanket and rug on the floor, candle light, muted warm tones",
+        "scandinavian bedroom with white linen bedding, soft morning light from window, wooden floor",
+        "cozy home interior with armchair, knitted blanket, wooden shelf with books, warm evening light",
+        "modern bedroom with neutral walls, soft floor rug, gentle diffused light",
+        "warm living room with low sofa, floor lamp, soft carpet, books on table"
     ],
     accessories: [
         "мраморная поверхность с мягким студийным светом",
