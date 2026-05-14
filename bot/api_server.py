@@ -148,7 +148,9 @@ async def generate_card_handler(request):
             f"3. All scene elements (furniture, decor, plants) go ONLY in the right half and bottom of the image. "
             f"4. {hanging_note}"
             f"5. Add a soft natural shadow under the product. "
-            f"6. BRIGHT warm lighting — well-lit room, light walls, natural daylight or warm lamp. NOT dark, NOT moody, NOT dramatic. Bright and airy atmosphere. "
+            f"6. LIGHTING: bright and even illumination, exposure +1 stop, average scene brightness 140-180/255. "
+            f"Light-colored walls (white, beige, light grey). Natural daylight through window OR warm indoor lamp. "
+            f"NO dark rooms, NO dramatic shadows, NO moody atmosphere, NO night scenes. Bright airy interior. "
             f"7. NO duplicate products. NO text. NO watermarks. NO busy patterns on the left side."
         )
 
@@ -172,18 +174,28 @@ async def generate_card_handler(request):
                 None, _composite_product_right, product_no_bg, bg_b64, category
             )
 
-        # ── Step 4.5: Brightness +10% к финальному результату ─────────
-        def _brighten(b64: str) -> str:
+        # ── Step 4.5: Адаптивная яркость ─────────────────────────────
+        # Тёмная сцена (avg < 100) → +20%, светлая → без изменений
+        def _adaptive_brighten(b64: str) -> str:
             import io as _io
             from PIL import Image as _Img, ImageEnhance as _IE
+            import numpy as _np
             img = _Img.open(_io.BytesIO(base64.b64decode(b64))).convert("RGB")
-            img = _IE.Brightness(img).enhance(1.30)
+            avg_brightness = _np.array(img).mean()
+            print(f"[Brightness] avg={avg_brightness:.1f} — ", end="")
+            if avg_brightness < 100:
+                factor = 1.20
+                print(f"dark scene → +20% (factor={factor})")
+            else:
+                factor = 1.0
+                print(f"bright scene → no change")
+            if factor != 1.0:
+                img = _IE.Brightness(img).enhance(factor)
             out = _io.BytesIO()
             img.save(out, format="JPEG", quality=93)
             return base64.b64encode(out.getvalue()).decode()
 
-        result_b64 = await asyncio.get_event_loop().run_in_executor(None, _brighten, result_b64)
-        print("[Card] Step 4.5 brightness +30% applied")
+        result_b64 = await asyncio.get_event_loop().run_in_executor(None, _adaptive_brighten, result_b64)
 
         # ── Step 5: Apply text overlay ────────────────────────────────
         final = await _apply_card_overlay(result_b64, card_data)
