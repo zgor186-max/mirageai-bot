@@ -172,6 +172,18 @@ async def generate_card_handler(request):
                 None, _composite_product_right, product_no_bg, bg_b64, category
             )
 
+        # ── Step 4.5: Brightness +10% к финальному результату ─────────
+        def _brighten(b64: str) -> str:
+            import io as _io
+            from PIL import Image as _Img, ImageEnhance as _IE
+            img = _Img.open(_io.BytesIO(base64.b64decode(b64))).convert("RGB")
+            img = _IE.Brightness(img).enhance(1.10)
+            out = _io.BytesIO()
+            img.save(out, format="JPEG", quality=93)
+            return base64.b64encode(out.getvalue()).decode()
+
+        result_b64 = await asyncio.get_event_loop().run_in_executor(None, _brighten, result_b64)
+
         # ── Step 5: Apply text overlay ────────────────────────────────
         final = await _apply_card_overlay(result_b64, card_data)
         return web.json_response({"url": final}, headers=CORS_HEADERS)
@@ -224,7 +236,7 @@ def _remove_bg(photo_b64: str) -> str | None:
 # y_offset_ratio  — смещение от верха (0 = прижать вверх, 0.5 = по центру)
 CATEGORY_SIZING = {
     # (target_h_ratio, max_w_ratio, y_offset_ratio)
-    "clothing":    (0.97, 0.75, 0.01),   # на всю высоту сверху вниз
+    "clothing":    (0.97, 0.68, 0.01),   # на всю высоту сверху вниз
     "footwear":    (0.55, 0.48, 0.35),   # обувь ниже центра
     "accessories": (0.62, 0.46, 0.20),
     "food":        (0.65, 0.44, 0.18),
@@ -315,10 +327,6 @@ def _composite_product_right(
     canvas = bg_blurred.copy()
     canvas = Image.alpha_composite(canvas, shadow)
     canvas.paste(prod_resized, (x, y), prod_resized)
-
-    # Яркость +10% для нейтрального фона (kontext потом добавит свой фон)
-    from PIL import ImageEnhance as _IE
-    canvas = _IE.Brightness(canvas).enhance(1.10)
 
     # ── Конвертируем в JPEG base64 ─────────────────────────────
     out = _io.BytesIO()
