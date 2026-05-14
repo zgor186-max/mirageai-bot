@@ -613,39 +613,42 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
 
     pil_img = Image.open(_io.BytesIO(raw_bytes)).convert("RGB")
 
-    # ── Sample background color from upper-left zone (behind title, no product) ──
-    bg_arr   = np.array(pil_img.resize((800, 1100), Image.LANCZOS))
-    left_px  = bg_arr[:300, :450, :]       # top 300px of left 450px — sky/background area
-    avg_r    = int(left_px[:, :, 0].mean())
-    avg_g    = int(left_px[:, :, 1].mean())
-    avg_b    = int(left_px[:, :, 2].mean())
-    avg_v    = (avg_r + avg_g + avg_b) / 3.0
-    is_dark_bg = avg_v < 140
+    # ── Full-image dominant color + brightness (median = robust to outliers) ──
+    bg_arr = np.array(pil_img.resize((800, 1100), Image.LANCZOS))
+    # Median across ALL pixels — one dark plant won't skew the result
+    avg_v      = float(np.median(bg_arr))
+    is_dark_bg = avg_v < 128
 
-    # Convert avg color to HSV, then derive readable text color in same hue family
-    h, s, v = colorsys.rgb_to_hsv(avg_r / 255, avg_g / 255, avg_b / 255)
+    # Dominant hue: median per channel across full image
+    dom_r = int(np.median(bg_arr[:, :, 0]))
+    dom_g = int(np.median(bg_arr[:, :, 1]))
+    dom_b = int(np.median(bg_arr[:, :, 2]))
+
+    h, s, v = colorsys.rgb_to_hsv(dom_r / 255, dom_g / 255, dom_b / 255)
+
     if is_dark_bg:
-        # Dark background → light text: same hue, low saturation, high brightness
-        t_r, t_g, t_b = colorsys.hsv_to_rgb(h, max(s * 0.4, 0.08), 0.95)
+        # Dark image → light text: same hue, desaturated, very bright
+        t_r,  t_g,  t_b  = colorsys.hsv_to_rgb(h, max(s * 0.30, 0.04), 0.93)
+        s2_r, s2_g, s2_b = colorsys.hsv_to_rgb(h, max(s * 0.20, 0.03), 0.85)
+        stroke_col = "#000000"   # dark stroke behind light letters
+        stroke_op  = "0.65"
     else:
-        # Light background → dark text: same hue, higher saturation, low brightness
-        t_r, t_g, t_b = colorsys.hsv_to_rgb(h, min(s * 1.8 + 0.3, 0.85), 0.22)
+        # Light image → dark text: same hue, more saturated, very dark
+        t_r,  t_g,  t_b  = colorsys.hsv_to_rgb(h, min(s * 2.0 + 0.15, 0.75), 0.20)
+        s2_r, s2_g, s2_b = colorsys.hsv_to_rgb(h, min(s * 1.5 + 0.10, 0.60), 0.33)
+        stroke_col = "#ffffff"   # white stroke behind dark letters
+        stroke_op  = "0.65"
 
     def _hex(r, g, b):
         return "#{:02x}{:02x}{:02x}".format(int(r * 255), int(g * 255), int(b * 255))
 
     title_color  = _hex(t_r, t_g, t_b)
-    # Subtitle: same hue, slightly less saturated / brighter than title
-    if is_dark_bg:
-        s2_r, s2_g, s2_b = colorsys.hsv_to_rgb(h, max(s * 0.25, 0.05), 0.88)
-    else:
-        s2_r, s2_g, s2_b = colorsys.hsv_to_rgb(h, min(s * 1.4 + 0.2, 0.7), 0.35)
-    sub_color   = _hex(s2_r, s2_g, s2_b)
-    feat_color  = title_color
+    sub_color    = _hex(s2_r, s2_g, s2_b)
+    feat_color   = title_color
     badge_text_c = "#111111"
 
-    print(f"[Cairo] bg avg=({avg_r},{avg_g},{avg_b}) v={avg_v:.1f} "
-          f"{'dark' if is_dark_bg else 'light'} → text={title_color}")
+    print(f"[Cairo] full-img median={avg_v:.1f} {'dark' if is_dark_bg else 'light'} "
+          f"dom=({dom_r},{dom_g},{dom_b}) → text={title_color}")
 
     # ── Circular thumbnail: pre-crop in PIL (more reliable than SVG clip-path) ──
     thumb_size = 88
@@ -674,11 +677,17 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
 
     els = []
 
-    # Backdrop color: black on dark bg, white on light bg
-    gc      = "#000000" if is_dark_bg else "#ffffff"
-    bg_op_title = 0.48 if is_dark_bg else 0.55   # title block opacity
-    bg_op_sub   = 0.38 if is_dark_bg else 0.45   # subtitle block opacity
-    bg_op_feat  = 0.42 if is_dark_bg else 0.50   # each feature row opacity
+    # ── SVG filter: drop shadow behind every text element ───
+    shadow_clr = "#000000"
+    shadow_op  = "0.80" if not is_dark_bg else "0.60"
+    els.append(
+        f'<defs>'
+        f'<filter id="ts" x="-8%" y="-8%" width="116%" height="116%">'
+        f'<feDropShadow dx="0" dy="1" stdDeviation="2" '
+        f'flood-color="{shadow_clr}" flood-opacity="{shadow_op}"/>'
+        f'</filter>'
+        f'</defs>'
+    )
 
     # ── Badge (top-right corner) ────────────────────────────
     if badge:
@@ -692,51 +701,39 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         )
         els.append(
             f'<text x="{bx + bw // 2}" y="{by + 21}" text-anchor="middle" '
-            f'font-family="{FONT}" '
-            f'font-size="13" font-weight="700" fill="{badge_text_c}">{badge}</text>'
+            f'font-family="{FONT}" font-size="13" font-weight="700" '
+            f'fill="{badge_text_c}">{badge}</text>'
         )
 
-    # ── Title — backdrop tight behind text, then text on top ─
+    # ── Title: stroke + shadow for max readability, no backdrop ─
     title_lines = _svg_wrap(name, max_chars=12)
     title_fs = 45
     title_lh = 50
     ty = 75
-    # Backdrop rect sized to title block
-    tb_y = ty - 42
-    tb_h = len(title_lines) * title_lh + 18
-    tb_w = 370
-    els.append(
-        f'<rect x="24" y="{tb_y}" width="{tb_w}" height="{tb_h}" '
-        f'rx="10" fill="{gc}" fill-opacity="{bg_op_title}"/>'
-    )
     for line in title_lines:
         els.append(
             f'<text x="40" y="{ty}" '
-            f'font-family="{FONT}" '
-            f'font-size="{title_fs}" font-weight="900" fill="{title_color}">{line}</text>'
+            f'font-family="{FONT}" font-size="{title_fs}" font-weight="900" '
+            f'fill="{title_color}" '
+            f'stroke="{stroke_col}" stroke-width="2.5" stroke-opacity="{stroke_op}" '
+            f'paint-order="stroke fill" filter="url(#ts)">{line}</text>'
         )
         ty += title_lh
 
-    # ── Subtitle — separate tight backdrop ───────────────────
+    # ── Subtitle: lighter stroke + shadow ───────────────────
     if subtitle_raw:
-        sub_lines = _svg_wrap(subtitle_raw, max_chars=11)
         sy = ty + 10
-        sb_y = sy - 22
-        sb_h = len(sub_lines) * 28 + 16
-        sb_w = 300
-        els.append(
-            f'<rect x="24" y="{sb_y}" width="{sb_w}" height="{sb_h}" '
-            f'rx="10" fill="{gc}" fill-opacity="{bg_op_sub}"/>'
-        )
-        for line in sub_lines:
+        for line in _svg_wrap(subtitle_raw, max_chars=11):
             els.append(
                 f'<text x="40" y="{sy}" '
-                f'font-family="{FONT}" '
-                f'font-size="20" fill="{sub_color}">{line}</text>'
+                f'font-family="{FONT}" font-size="20" '
+                f'fill="{sub_color}" '
+                f'stroke="{stroke_col}" stroke-width="1.5" stroke-opacity="{stroke_op}" '
+                f'paint-order="stroke fill" filter="url(#ts)">{line}</text>'
             )
             sy += 28
 
-    # ── Features — individual backdrop per row ───────────────
+    # ── Features: shadow only (stroke too heavy at small size) ─
     if feats:
         feats = feats[:4]
         feat_h    = 78
@@ -752,20 +749,11 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         for idx, feat in enumerate(feats):
             cy = fz_top + idx * feat_h + 24
 
-            # Tight backdrop behind icon circle + text
-            row_y = cy - feat_r - 8
-            row_h = feat_r * 2 + 16
-            row_w = 258
-            els.append(
-                f'<rect x="36" y="{row_y}" width="{row_w}" height="{row_h}" '
-                f'rx="14" fill="{gc}" fill-opacity="{bg_op_feat}"/>'
-            )
-
             els.append(f'<circle cx="{feat_cx}" cy="{cy}" r="{feat_r}" fill="{accent}"/>')
             els.append(
                 f'<text x="{feat_cx}" y="{cy + 7}" text-anchor="middle" '
-                f'font-family="{FONT_EMOJI}" '
-                f'font-size="{feat_icon}">{feat["icon"]}</text>'
+                f'font-family="{FONT_EMOJI}" font-size="{feat_icon}" '
+                f'filter="url(#ts)">{feat["icon"]}</text>'
             )
 
             flines = _svg_wrap(feat["text"], max_chars=13)[:2]
@@ -774,8 +762,8 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             for li, fl in enumerate(flines):
                 els.append(
                     f'<text x="{feat_tx}" y="{start_y + li * feat_lh}" '
-                    f'font-family="{FONT}" '
-                    f'font-size="{feat_fs}" font-weight="700" fill="{feat_color}">{fl}</text>'
+                    f'font-family="{FONT}" font-size="{feat_fs}" font-weight="700" '
+                    f'fill="{feat_color}" filter="url(#ts)">{fl}</text>'
                 )
 
     # ── Thumbnail (bottom-right corner, away from features) ──
