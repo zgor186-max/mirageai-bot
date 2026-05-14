@@ -647,7 +647,11 @@ function mpCardHandlePhoto(input) {
         // Показываем описание только для режима "С текстом"
         const descCell = document.getElementById("mp-card-analysis-cell");
         if (descCell) descCell.style.display = mpCardWithText ? "block" : "none";
-        mpCardAnalyze(mpCardPhotoBase64);
+        // Сначала анализируем (название/категория), потом автоматически AI идея
+        await mpCardAnalyze(mpCardPhotoBase64);
+        if (mpCardWithText) {
+            await mpCardAiIdea();
+        }
     };
     reader.readAsDataURL(file);
 }
