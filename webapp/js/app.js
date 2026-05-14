@@ -695,6 +695,13 @@ const LOCATION_SEEDS = {
         "терраса с видом на зелёный сад",
         "современная квартира с панорамными окнами ночью"
     ],
+    footwear: [
+        "бетонная набережная с мягким рассеянным светом заката",
+        "уличная площадка с граффити на стенах и чистым бетоном",
+        "деревянный пирс с размытым фоном из воды",
+        "городская улица с боке-огнями заднего плана",
+        "чистая студия с нейтральным серым фоном и тенью"
+    ],
     other: [
         "профессиональная деревянная мастерская с инструментами",
         "гаражный бокс с бетонным полом и неоновым светом",
@@ -726,6 +733,7 @@ async function mpCardAnalyze(base64) {
 
 Доступные локации (по одной на каждую категорию, ИСПОЛЬЗУЙ именно эти варианты):
 clothing: ${LOCATION_SEEDS.clothing[Math.floor(Math.random()*LOCATION_SEEDS.clothing.length)]}
+footwear: ${LOCATION_SEEDS.footwear[Math.floor(Math.random()*LOCATION_SEEDS.footwear.length)]}
 accessories: ${LOCATION_SEEDS.accessories[Math.floor(Math.random()*LOCATION_SEEDS.accessories.length)]}
 food: ${LOCATION_SEEDS.food[Math.floor(Math.random()*LOCATION_SEEDS.food.length)]}
 beauty: ${LOCATION_SEEDS.beauty[Math.floor(Math.random()*LOCATION_SEEDS.beauty.length)]}
@@ -735,7 +743,7 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
 
 {
   "name": "Название товара по-русски, МАКСИМУМ 2 слова, ЗАГЛАВНЫМИ буквами. Примеры: КРОССОВКИ ASICS, ШУРУПОВЁРТ MAKITA, СМАРТФОН SAMSUNG",
-  "category": "один из: clothing, accessories, food, beauty, gadgets, home, other",
+  "category": "один из: clothing, footwear, accessories, food, beauty, gadgets, home, other. ВАЖНО: кроссовки/ботинки/сапоги/туфли/кеды = footwear (НЕ clothing)",
   "location": "скопируй ТОЧНО выбранную локацию из списка выше — ту что лучше всего подходит для этого товара",
   "props": "перечисли 3-4 предмета которые логично окружают этот товар в реальной жизни. Только предметы через запятую на английском. Примеры: для пижамы — folded linen blanket, wooden tray with pine cones, steaming mug of tea, soft candles. Для шуруповёрта — wooden planks, screws, work gloves, sawdust. Для крема — rolled towel, eucalyptus branches, smooth stones, candles.",
   "background_prompt": "переведи выбранную локацию на английский, добавь реквизит из поля props и технические параметры съёмки. Только окружение без самого товара. Максимум 40 слов.",
@@ -785,7 +793,7 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
 
         // Цветовая схема по категории
         const schemeMap = {
-            clothing: "warm", accessories: "dark", food: "nature",
+            clothing: "warm", footwear: "dark", accessories: "dark", food: "nature",
             beauty: "nature", gadgets: "tech", home: "warm", other: "workshop"
         };
         mpCardColorScheme = schemeMap[data.category] || "warm";
@@ -814,6 +822,7 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
 // Маппинг пользовательских категорий на фоны BACKGROUNDS_DB (3-4 варианта)
 const CATEGORY_TO_BG = {
     clothing:    ["cozy", "scandinavian", "cafe", "kids"],
+    footwear:    ["darktech", "workshop", "gaming", "collector"],
     accessories: ["marble", "collector", "spa", "scandinavian"],
     food:        ["kitchen", "cafe", "cozy", "scandinavian"],
     beauty:      ["spa", "marble", "scandinavian", "cozy"],
@@ -908,7 +917,10 @@ async function mpCardGenerate() {
     const useAiIdea = mpCardSlogan && mpCardFeatures.length > 0;
     const cardTitle    = name;   // всегда название товара
     const cardSubtitle = useAiIdea ? mpCardSlogan : document.getElementById("mp-card-subtitle").value.trim();
-    const badge = useAiIdea ? (mpCardTagline || name) : (document.getElementById("mp-card-badge").value.trim() || name);
+    // Бейдж: при AI идее берём слоган (2-4 слова), иначе — автоанализ
+    const badge = useAiIdea
+        ? name
+        : (document.getElementById("mp-card-badge").value.trim() || name);
     const features = useAiIdea
         ? mpCardFeatures
         : [

@@ -97,6 +97,13 @@ async def generate_card_handler(request):
                 "NO hanger anywhere. Viewed from slightly above (40-degree angle). "
                 "The LEFT third of the frame remains open with scene background for text overlay."
             ),
+            "footwear": (
+                "is placed on the RIGHT side of the frame at a natural 3/4 angle (from the front-side). "
+                "The shoe/sneaker/boot stands upright on the surface — NOT flat, NOT disassembled. "
+                "Show the complete shoe as one intact unit, filling 55% of the total frame. "
+                "The LEFT third of the frame remains open with scene background for text overlay. "
+                "CRITICAL: the shoe must look EXACTLY like the original — same shape, same sole."
+            ),
             "accessories": (
                 "is placed upright on the RIGHT side of the frame, filling 50% of the total frame. "
                 "Firmly on the surface. The LEFT third stays open with scene background. NOT floating."
@@ -727,7 +734,7 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
                 f'filter="url(#ts)">{feat["icon"]}</text>'
             )
 
-            flines = _svg_wrap(feat["text"], max_chars=13)[:2]
+            flines = _svg_wrap(feat["text"], max_chars=22)[:2]
             n = len(flines)
             start_y = cy - (n - 1) * feat_lh // 2
             for li, fl in enumerate(flines):
