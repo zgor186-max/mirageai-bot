@@ -5,90 +5,6 @@ tg.expand();
 // ── API сервер (Replicate через наш сервер) ──
 const API_SERVER = "https://mirageai.duckdns.org";
 
-// ── КАТЕГОРИИ ТОВАРОВ (WB/Ozon) ──
-const CATEGORIES = [
-    {
-        id: "clothing", name: "Одежда", emoji: "👗", scheme: "warm",
-        photoPrompt: "Professional e-commerce fashion photography. The clothing item is worn naturally by an attractive slim model, neutral expression, full body or 3/4 shot. Soft three-point studio lighting: key light upper-left at 45 degrees, fill light reducing shadows to 2:1 ratio, subtle rim light separating model from background. Clean seamless white background. 85mm lens equivalent, f/8 aperture. Sharp fabric texture and fit clearly visible. Model pose highlights drape and silhouette. Photorealistic, marketplace hero shot, 3:4 ratio, NO text NO logos NO watermarks.",
-        bgDesc: {
-            dark: "cozy Scandinavian living room, warm oak wooden floor with visible grain, linen sofa with cushions softly blurred at f/2.8 bokeh in background, warm amber table lamp glow, realistic photorealistic interior",
-            light: "bright Nordic apartment, white painted walls, light ash wood floor, floor-to-ceiling window with soft natural daylight streaming in, minimal Scandinavian furniture blurred at f/2.8, airy clean atmosphere"
-        }
-    },
-    {
-        id: "shoes", name: "Обувь", emoji: "👟", scheme: "warm",
-        photoPrompt: "Professional footwear e-commerce photography. Shoe positioned at elegant 3/4 side angle slightly turned left, showing full silhouette profile, sole edge and heel detail. Placed on clean white acrylic surface. Soft diffused studio lighting with natural grounding shadow underneath. Key light from upper-left. Clean white seamless background. 85mm macro lens equivalent, f/11 aperture for full product sharpness. Shoe occupies 75% of frame. Sharp stitching and texture details. Photorealistic, marketplace-ready, 3:4 ratio, NO text NO logos.",
-        bgDesc: {
-            dark: "elegant dark premium interior, warm walnut wood floor with subtle grain, low warm accent lighting from floor lamp, luxurious blurred background at f/2.8 bokeh, premium home atmosphere",
-            light: "bright minimalist room, light birch wood floor, large window with diffused natural daylight, white walls, minimal Scandinavian decor blurred in background"
-        }
-    },
-    {
-        id: "beauty", name: "Красота", emoji: "💄", scheme: "nature",
-        photoPrompt: "Professional cosmetics product photography. Product centered on white Carrara marble surface with subtle natural veining. Fresh water droplets scattered elegantly around it suggesting purity and freshness. Botanical ingredient elements softly arranged nearby. Soft diffused studio lighting from upper-left, subtle specular highlights on packaging showing premium quality. 85mm macro lens, f/5.6 aperture. Product sharp with fully readable label. Photorealistic, high-end beauty editorial quality, 3:4 ratio, NO text NO logos NO watermarks.",
-        bgDesc: {
-            dark: "luxury spa bathroom counter, soft ambient candlelight creating warm glow, white marble surfaces, fresh eucalyptus branches and white towels softly blurred at f/2.8 in background, premium spa atmosphere",
-            light: "bright white marble bathroom, large window with soft natural daylight, fresh white flowers and green plants blurred in background at f/2.8, clean minimal luxury atmosphere"
-        }
-    },
-    {
-        id: "home", name: "Дом", emoji: "🏠", scheme: "warm",
-        photoPrompt: "Professional interior lifestyle product photography. Home decor item placed naturally as the clear focal point in a modern Scandinavian living space. Minimal neutral styled props supporting product without competing. Soft natural window light from left supplemented with studio fill. 85mm lens f/8. Sharp product with softly blurred interior context at f/2.8 bokeh. Warm neutral color temperature 5500K. Editorial home magazine quality. Photorealistic, 3:4 ratio, NO text NO logos.",
-        bgDesc: {
-            dark: "cozy Scandinavian living room, warm evening amber light from table lamp, stylish linen sofa and oak coffee table blurred at f/2.8 in background, tasteful minimal decor, warm photorealistic atmosphere",
-            light: "bright Nordic interior, white walls, light oak furniture, large window with daylight, natural green plants blurred at f/2.8 in background, clean airy Scandinavian atmosphere"
-        }
-    },
-    {
-        id: "electronics", name: "Электроника", emoji: "📱", scheme: "tech",
-        photoPrompt: "Professional consumer electronics product photography. Device shown at 45-degree isometric hero angle revealing front, top and side simultaneously. Deep charcoal background with subtle blue-purple gradient. Dramatic key light from upper-right creating sharp specular highlight along product edge, fill light preventing shadow loss. Screen showing subtle active UI glow. 85mm lens f/8. Razor-sharp focus on buttons, ports and surface finish. Sleek premium tech commercial quality. Photorealistic, 3:4 ratio, NO text NO logos.",
-        bgDesc: {
-            dark: "modern dark home office, matte black desk surface, subtle RGB underglow creating atmospheric cyan and purple glow, dual monitors with UI interface blurred at f/2.8 in background, professional dark tech workspace",
-            light: "clean modern workspace, white birch wood desk, large window with soft natural daylight, minimal MacBook and tech accessories blurred at f/2.8 in background, bright professional atmosphere"
-        }
-    },
-    {
-        id: "kids", name: "Детские", emoji: "🧸", scheme: "warm",
-        photoPrompt: "Professional children's product photography. Item shown naturally with a happy smiling child aged 5-7 in a bright cheerful home environment. Warm diffused window light from left. Pastel color palette: soft yellows, light blues, gentle pinks. Product clearly visible and child interaction looks natural and joyful. 85mm lens f/5.6. Both child and product sharp. Safe, trustworthy and playful atmosphere. Photorealistic, 3:4 ratio, NO text NO logos.",
-        bgDesc: {
-            dark: "cozy children's bedroom, soft warm nightlight glow, colorful plush toys and pastel decor blurred at f/2.8 in background, gentle warm atmosphere, safe and cozy feeling",
-            light: "bright cheerful children's room, white walls with colorful pastel accents, natural daylight from large window, wooden toys and books blurred in background at f/2.8, playful and safe atmosphere"
-        }
-    },
-    {
-        id: "food", name: "Продукты", emoji: "🍎", scheme: "nature",
-        photoPrompt: "Professional food product photography. Item on white Carrara marble surface or warm rustic oak wooden board. Fresh natural product-relevant ingredients (herbs, fruits, spices) arranged elegantly around packaging using controlled scatter technique. Warm appetizing key light from upper-left with soft fill. Condensation water droplets on cold products for freshness. Rich vibrant colors with accurate color reproduction. 85mm macro lens f/8. Product label sharp and fully readable. Food styling editorial quality. Photorealistic, 3:4 ratio, NO text NO logos.",
-        bgDesc: {
-            dark: "cozy kitchen counter, natural oak wooden surface, fresh herbs in terracotta pots and colorful vegetables blurred at f/2.8 in background, warm under-cabinet evening light, organic natural atmosphere",
-            light: "bright kitchen with white Carrara marble countertop, fresh botanical plants and colorful seasonal fruits blurred at f/2.8 in background, natural sunlight streaming in from window, clean fresh atmosphere"
-        }
-    },
-    {
-        id: "auto", name: "Автотовары", emoji: "🚗", scheme: "workshop",
-        photoPrompt: "Professional automotive accessories product photography. Item shown installed or in functional context of a premium car interior or clean professional garage. Dramatic directional key light from upper-right creating depth and dimension. Sharp detail on surface finish, engineering and functional elements. Masculine premium commercial feel. Size reference element visible for scale. 85mm lens f/8. Photorealistic, 3:4 ratio, NO text NO logos.",
-        bgDesc: {
-            dark: "industrial professional garage workshop, grey concrete floor with subtle texture, high-quality power tools hanging on organized pegboard wall blurred at f/2.8 in background, focused overhead spotlight on product, masculine atmosphere",
-            light: "bright professional workshop, light concrete floor, organized tool storage and clean car visible in background at f/2.8, industrial windows with daylight, clean professional atmosphere"
-        }
-    },
-    {
-        id: "sport", name: "Спорт", emoji: "🏋️", scheme: "tech",
-        photoPrompt: "Professional sports equipment product photography. Item shown in dynamic active context with an athletic person in motion in gym or outdoor setting. Natural bright energetic lighting suggesting performance and energy. Sharp product details visible with motion-freeze quality. Vibrant saturated colors with accurate reproduction. 85mm lens f/5.6. Active lifestyle background softly blurred at f/2.8 bokeh. Photorealistic, 3:4 ratio, NO text NO logos.",
-        bgDesc: {
-            dark: "modern professional gym interior, dramatic overhead spotlighting, black rubber floor, premium fitness equipment blurred at f/2.8 in background, dark energetic motivational atmosphere",
-            light: "bright outdoor sports setting, natural morning sunlight, green nature and sports track blurred at f/2.8 in background, active healthy lifestyle atmosphere"
-        }
-    },
-    {
-        id: "accessories", name: "Аксессуары", emoji: "💍", scheme: "dark",
-        photoPrompt: "Professional jewelry and accessories product photography. Item worn by an elegant model or placed on premium dark velvet or polished grey stone surface. Macro close-up revealing fine craftsmanship and material quality. Three-point studio lighting with subtle specular highlights showing metal shine and gemstone refraction. 85mm macro lens f/8. Razor-sharp product detail. Luxurious atmosphere with clean controlled background. Photorealistic, 3:4 ratio, NO text NO logos.",
-        bgDesc: {
-            dark: "luxury high-end boutique interior, polished black marble surface with subtle reflection, soft dramatic spotlights creating pools of light from above, dark mahogany shelving blurred at f/2.8 in background, premium store atmosphere",
-            light: "premium bright showroom interior, light grey polished concrete floor with subtle reflection, clean white walls, professional retail lighting from above, minimal luxury props blurred at f/2.8 in background"
-        }
-    }
-];
-
 // ── БАЗА ФОНОВ И ПРЕИМУЩЕСТВ ──
 const BACKGROUNDS_DB = [
     { id:"workshop", name:"Мастерская", emoji:"🔨", scheme:"workshop",
@@ -323,13 +239,6 @@ function findAdvantages(productName) {
         }
     }
     return bg.def;
-}
-
-function autoFillAdvantages(productName) {
-    const advs = findAdvantages(productName);
-    if (advs[0]) document.getElementById("mp-card-feat1").value = advs[0];
-    if (advs[1]) document.getElementById("mp-card-feat2").value = advs[1];
-    if (advs[2]) document.getElementById("mp-card-feat3").value = advs[2];
 }
 
 let selectedTemplate = null;
@@ -664,21 +573,10 @@ function selectTool(tool) {
 // ── КАРТОЧКИ МАРКЕТПЛЕЙС ──
 let mpSelectedStyle = "model";
 let mpPhotoBase64 = null;
-let mpSelectedCategory = "clothing";
-
-function mpSelectCategory(id, el) {
-    mpSelectedCategory = id;
-    document.querySelectorAll(".mp-cat-chip").forEach(c => c.classList.remove("active"));
-    el.classList.add("active");
-    // Автоматически меняем цветовую схему карточки под категорию
-    const cat = CATEGORIES.find(c => c.id === id);
-    if (cat) mpCardColorScheme = cat.scheme;
-}
 
 function showMarketplace() {
     switchScreen("marketplace");
     setActiveNav("");
-    setTimeout(renderBgSelector, 50);
 }
 
 function mpSwitchTab(tab) {
@@ -710,13 +608,9 @@ function mpSelectStyle(style, el) {
 
 let mpCardPhotoBase64 = null;
 let mpCardColorScheme = "warm";
-let mpCardBgStyle = "dark";
 let mpSelectedBg = "workshop";
 let mpCardBgPrompt = "";
 let mpCardCategory = "clothing";
-let mpCardIcon1 = "✦";
-let mpCardIcon2 = "✦";
-let mpCardIcon3 = "✦";
 let mpCardWithText = true;  // режим: с текстом или без
 let mpCardSlogan = "";      // слоган (заголовок карточки)
 let mpCardTagline = "";     // подзаголовок
@@ -728,92 +622,6 @@ function mpSetTextMode(withText) {
     document.getElementById("mp-tt-without").classList.toggle("active", !withText);
     const descCell = document.getElementById("mp-card-analysis-cell");
     if (descCell) descCell.style.display = withText ? "block" : "none";
-}
-
-function mpSelectBg(style, el) {
-    mpCardBgStyle = style;
-    document.querySelectorAll(".mp-bg-btn").forEach(b => b.classList.remove("active"));
-    el.classList.add("active");
-}
-
-function mpSelectBackground(bgId, el) {
-    mpSelectedBg = bgId;
-    document.querySelectorAll(".mp-bg-scene-item").forEach(i => i.classList.remove("active"));
-    if (el) el.classList.add("active");
-    else {
-        const row = document.getElementById("mp-bg-scene-row");
-        if (row) {
-            const idx = BACKGROUNDS_DB.findIndex(b => b.id === bgId);
-            if (row.children[idx]) row.children[idx].classList.add("active");
-        }
-    }
-    // Sync dots
-    document.querySelectorAll(".mp-bg-dot").forEach(d => {
-        d.classList.toggle("active", d.dataset.bgid === bgId);
-    });
-    const bg = BACKGROUNDS_DB.find(b => b.id === bgId);
-    if (bg) {
-        mpCardColorScheme = bg.scheme;
-        const name = document.getElementById("mp-card-name").value.trim();
-        if (name) autoFillAdvantages(name);
-    }
-}
-
-function renderBgSelector() {
-    const row = document.getElementById("mp-bg-scene-row");
-    if (!row) return;
-    const bgColors = { warm:"#1a1100", dark:"#0a0a10", tech:"#060c1e", workshop:"#120e00", nature:"#061006" };
-    row.innerHTML = BACKGROUNDS_DB.map(bg => {
-        const isActive = bg.id === mpSelectedBg ? " active" : "";
-        const fallback = bgColors[bg.scheme] || "#111";
-        return `<div class="mp-bg-scene-item${isActive}" onclick="mpSelectBackground('${bg.id}',this)">
-            <div class="mp-bg-scene-thumb" style="background-color:${fallback};background-image:url('${bg.image}')"><span class="mp-bg-scene-emoji">${bg.emoji}</span></div>
-            <div class="mp-bg-scene-name">${bg.name}</div>
-        </div>`;
-    }).join("");
-
-    // Dots
-    const dotsEl = document.getElementById("mp-bg-dots");
-    if (dotsEl) {
-        dotsEl.innerHTML = BACKGROUNDS_DB.map((bg, i) =>
-            `<div class="mp-bg-dot${bg.id === mpSelectedBg ? " active" : ""}" data-bgid="${bg.id}" onclick="mpDotClick('${bg.id}')"></div>`
-        ).join("");
-    }
-
-    // Fades + scroll listener
-    const scroll = document.getElementById("mp-bg-scene-scroll");
-    if (scroll) {
-        const updateFades = () => {
-            const fadeR = document.getElementById("mp-bg-fade-right");
-            const fadeL = document.getElementById("mp-bg-fade-left");
-            if (fadeR) fadeR.style.opacity = scroll.scrollLeft + scroll.clientWidth < scroll.scrollWidth - 4 ? "1" : "0";
-            if (fadeL) fadeL.style.opacity = scroll.scrollLeft > 4 ? "1" : "0";
-        };
-        scroll.removeEventListener("scroll", scroll._fadeHandler);
-        scroll._fadeHandler = updateFades;
-        scroll.addEventListener("scroll", updateFades, { passive: true });
-        updateFades();
-    }
-}
-
-function mpDotClick(bgId) {
-    mpSelectBackground(bgId, null);
-    // Scroll the item into view
-    const scroll = document.getElementById("mp-bg-scene-scroll");
-    const row = document.getElementById("mp-bg-scene-row");
-    if (!scroll || !row) return;
-    const idx = BACKGROUNDS_DB.findIndex(b => b.id === bgId);
-    const item = row.children[idx];
-    if (item) {
-        const itemLeft = item.offsetLeft;
-        const itemW = item.offsetWidth;
-        const scrollW = scroll.clientWidth;
-        scroll.scrollTo({ left: itemLeft - scrollW / 2 + itemW / 2, behavior: "smooth" });
-    }
-    // Update dots active state
-    document.querySelectorAll(".mp-bg-dot").forEach(d => {
-        d.classList.toggle("active", d.dataset.bgid === bgId);
-    });
 }
 
 function mpCardHandlePhoto(input) {
@@ -896,11 +704,6 @@ const LOCATION_SEEDS = {
     ]
 };
 
-function pickLocationSeed(category) {
-    const list = LOCATION_SEEDS[category] || LOCATION_SEEDS.other;
-    return list[Math.floor(Math.random() * list.length)];
-}
-
 async function mpCardAnalyze(base64) {
     const loadingEl = document.getElementById("mp-analysis-loading");
     const resultEl  = document.getElementById("mp-analysis-result");
@@ -977,11 +780,8 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
             ? data.background_prompt + (data.props && !data.background_prompt.includes(data.props.split(",")[0]) ? `, ${data.props}` : "")
             : "";
 
-        // Сохраняем категорию и иконки для generate-card запроса
+        // Сохраняем категорию для generate-card запроса
         mpCardCategory = data.category || "clothing";
-        mpCardIcon1 = data.icon1 || "✦";
-        mpCardIcon2 = data.icon2 || "✦";
-        mpCardIcon3 = data.icon3 || "✦";
 
         // Цветовая схема по категории
         const schemeMap = {
@@ -1048,23 +848,6 @@ function mpCategoryChange(categoryId) {
     // Синхронизируем select если вызвано программно
     const catEl = document.getElementById("mp-card-category");
     if (catEl && catEl.value !== categoryId) catEl.value = categoryId;
-}
-
-let mpAiToggleActive = false;
-
-function mpToggleAiIdea() {
-    if (!mpCardPhotoBase64) {
-        tg.showAlert("Сначала загрузи фото товара!");
-        return;
-    }
-    mpAiToggleActive = !mpAiToggleActive;
-    const toggle = document.getElementById("mp-ai-toggle");
-    const label = document.getElementById("mp-ai-label");
-    toggle.classList.toggle("active", mpAiToggleActive);
-    label.classList.toggle("active", mpAiToggleActive);
-    if (mpAiToggleActive) {
-        mpCardAnalyze(mpCardPhotoBase64);
-    }
 }
 
 async function mpCardAiIdea() {
@@ -1188,234 +971,6 @@ async function mpCardGenerate() {
         tg.showAlert("❌ Ошибка: " + (err.message || String(err)));
         showMarketplace();
     }
-}
-
-function getIconType(feat) {
-    const f = feat.toLowerCase();
-    if (/мощн|скоро|энерги|быстр|сила\s*удар|герцовк/.test(f)) return "bolt";
-    if (/автоном|аккумул|ёмкост|зарядк/.test(f)) return "battery";
-    if (/прочн|долговечн|надёжн|износ|защит|безопасн|стойк|фиксац/.test(f)) return "shield";
-    if (/качест|дизайн|эстетик|стиль|коллекц|ценност|детализац|натур/.test(f)) return "diamond";
-    if (/точн/.test(f)) return "target";
-    if (/звук|шумо|аудио|микрофон/.test(f)) return "sound";
-    if (/комфорт|хват|мягкост|тепло|уют|расслабл|удобств/.test(f)) return "comfort";
-    if (/компактн|мобильн|вместит|органи|порядок/.test(f)) return "box";
-    if (/аромат|натур|органик/.test(f)) return "leaf";
-    if (/развит|обучен|творчест|инновац|функцион|универсальн|эффективн|производительн/.test(f)) return "arrows";
-    return "check";
-}
-
-function drawAdvIcon(ctx, cx, cy, r, type, clr) {
-    ctx.save();
-    ctx.strokeStyle = clr; ctx.fillStyle = clr;
-    ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    const s = r * 0.52;
-    if (type === "bolt") {
-        ctx.beginPath();
-        ctx.moveTo(cx+s*0.4,cy-s*1.1); ctx.lineTo(cx-s*0.6,cy+s*0.2); ctx.lineTo(cx+s*0.1,cy+s*0.1);
-        ctx.lineTo(cx-s*0.4,cy+s*1.1); ctx.lineTo(cx+s*0.6,cy-s*0.2); ctx.lineTo(cx-s*0.1,cy-s*0.1);
-        ctx.closePath(); ctx.fill();
-    } else if (type === "battery") {
-        ctx.beginPath(); ctx.roundRect(cx-s*0.9,cy-s*0.5,s*1.6,s*1.0,s*0.15); ctx.stroke();
-        ctx.fillRect(cx+s*0.7,cy-s*0.28,s*0.22,s*0.56);
-        ctx.fillRect(cx-s*0.8,cy-s*0.38,s*1.05,s*0.76);
-    } else if (type === "shield") {
-        ctx.beginPath();
-        ctx.moveTo(cx,cy-s*1.1); ctx.lineTo(cx+s*0.9,cy-s*0.4);
-        ctx.lineTo(cx+s*0.9,cy+s*0.2);
-        ctx.quadraticCurveTo(cx+s*0.8,cy+s*1.0,cx,cy+s*1.3);
-        ctx.quadraticCurveTo(cx-s*0.8,cy+s*1.0,cx-s*0.9,cy+s*0.2);
-        ctx.lineTo(cx-s*0.9,cy-s*0.4); ctx.closePath(); ctx.stroke();
-        ctx.lineWidth=1.8; ctx.beginPath();
-        ctx.moveTo(cx-s*0.38,cy+s*0.08); ctx.lineTo(cx-s*0.05,cy+s*0.42); ctx.lineTo(cx+s*0.42,cy-s*0.28); ctx.stroke();
-    } else if (type === "diamond") {
-        ctx.beginPath();
-        ctx.moveTo(cx,cy-s*1.1); ctx.lineTo(cx+s*0.9,cy); ctx.lineTo(cx,cy+s*1.1); ctx.lineTo(cx-s*0.9,cy); ctx.closePath(); ctx.stroke();
-        ctx.lineWidth=1; ctx.beginPath();
-        ctx.moveTo(cx-s*0.9,cy); ctx.lineTo(cx-s*0.32,cy-s*1.1);
-        ctx.moveTo(cx+s*0.9,cy); ctx.lineTo(cx+s*0.32,cy-s*1.1);
-        ctx.moveTo(cx-s*0.32,cy-s*1.1); ctx.lineTo(cx,cy+s*0.42); ctx.lineTo(cx+s*0.32,cy-s*1.1); ctx.stroke();
-    } else if (type === "target") {
-        ctx.beginPath(); ctx.arc(cx,cy,s*0.95,0,Math.PI*2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(cx,cy,s*0.35,0,Math.PI*2); ctx.fill();
-        ctx.lineWidth=1.4; ctx.beginPath();
-        ctx.moveTo(cx,cy-s*0.95); ctx.lineTo(cx,cy-s*0.5);
-        ctx.moveTo(cx,cy+s*0.5);  ctx.lineTo(cx,cy+s*0.95);
-        ctx.moveTo(cx-s*0.95,cy); ctx.lineTo(cx-s*0.5,cy);
-        ctx.moveTo(cx+s*0.5,cy);  ctx.lineTo(cx+s*0.95,cy); ctx.stroke();
-    } else if (type === "sound") {
-        ctx.beginPath();
-        ctx.moveTo(cx-s*0.6,cy-s*0.5); ctx.lineTo(cx-s*0.15,cy-s*0.5);
-        ctx.lineTo(cx+s*0.5,cy-s*1.0); ctx.lineTo(cx+s*0.5,cy+s*1.0);
-        ctx.lineTo(cx-s*0.15,cy+s*0.5); ctx.lineTo(cx-s*0.6,cy+s*0.5); ctx.closePath(); ctx.stroke();
-        ctx.beginPath(); ctx.arc(cx+s*0.5,cy,s*0.65,-Math.PI*0.4,Math.PI*0.4); ctx.stroke();
-    } else if (type === "comfort") {
-        ctx.beginPath(); ctx.arc(cx,cy,s*0.9,0,Math.PI*2); ctx.stroke();
-        ctx.lineWidth=2.5; ctx.beginPath();
-        ctx.moveTo(cx-s*0.48,cy+s*0.1); ctx.lineTo(cx-s*0.1,cy+s*0.5); ctx.lineTo(cx+s*0.55,cy-s*0.35); ctx.stroke();
-    } else if (type === "box") {
-        ctx.beginPath();
-        ctx.moveTo(cx,cy-s*1.05); ctx.lineTo(cx+s*0.85,cy-s*0.5);
-        ctx.lineTo(cx+s*0.85,cy+s*0.65); ctx.lineTo(cx,cy+s*1.05);
-        ctx.lineTo(cx-s*0.85,cy+s*0.65); ctx.lineTo(cx-s*0.85,cy-s*0.5); ctx.closePath(); ctx.stroke();
-        ctx.lineWidth=1.4; ctx.beginPath();
-        ctx.moveTo(cx-s*0.85,cy-s*0.5); ctx.lineTo(cx,cy); ctx.lineTo(cx+s*0.85,cy-s*0.5);
-        ctx.moveTo(cx,cy); ctx.lineTo(cx,cy+s*1.05); ctx.stroke();
-    } else if (type === "leaf") {
-        ctx.beginPath();
-        ctx.moveTo(cx,cy+s*1.0);
-        ctx.quadraticCurveTo(cx-s*1.0,cy-s*0.2,cx-s*0.2,cy-s*1.0);
-        ctx.quadraticCurveTo(cx+s*1.0,cy-s*0.2,cx,cy+s*1.0); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx-s*0.1,cy-s*0.8); ctx.lineTo(cx-s*0.2,cy+s*0.9); ctx.stroke();
-    } else if (type === "arrows") {
-        ctx.lineWidth=2.3; ctx.beginPath();
-        ctx.moveTo(cx-s*0.9,cy+s*0.7); ctx.lineTo(cx-s*0.3,cy+s*0.1);
-        ctx.lineTo(cx+s*0.2,cy+s*0.5); ctx.lineTo(cx+s*0.9,cy-s*0.7); ctx.stroke();
-        ctx.lineWidth=2; ctx.beginPath();
-        ctx.moveTo(cx+s*0.42,cy-s*0.7); ctx.lineTo(cx+s*0.9,cy-s*0.7); ctx.lineTo(cx+s*0.9,cy-s*0.2); ctx.stroke();
-    } else { // check (default)
-        ctx.beginPath(); ctx.arc(cx,cy,s*0.9,0,Math.PI*2); ctx.stroke();
-        ctx.lineWidth=2.5; ctx.beginPath();
-        ctx.moveTo(cx-s*0.48,cy+s*0.1); ctx.lineTo(cx-s*0.1,cy+s*0.5); ctx.lineTo(cx+s*0.55,cy-s*0.35); ctx.stroke();
-    }
-    ctx.restore();
-}
-
-async function drawCardOverlay(imageUrl, { name, subtitle, badge, feat1, feat2, feat3 }) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        if (!imageUrl.startsWith("data:")) img.crossOrigin = "anonymous";
-        img.onload = async () => {
-            try {
-            await document.fonts.load("700 60px 'Oswald'");
-            const W = 800, H = 1100;
-            const canvas = document.createElement("canvas");
-            canvas.width = W; canvas.height = H;
-            const ctx = canvas.getContext("2d");
-            const scheme = mpCardColorScheme || "warm";
-            const PAD = 28;
-            const feats = [feat1, feat2, feat3].filter(Boolean);
-
-            const ACCENTS = { warm:"#d4a017", dark:"#c9a84c", tech:"#00c8ff", workshop:"#ffc200", nature:"#4caf50" };
-            const accent = ACCENTS[scheme] || "#d4a017";
-            const TINTS  = { warm:[16,11,3], dark:[6,5,8], tech:[3,9,22], workshop:[12,9,0], nature:[4,14,5] };
-            const [tr,tg,tb] = TINTS[scheme] || [16,11,3];
-
-            const TITLE_H = 130;
-            const PAD_TOP = 22;
-
-            function autoSz(text, maxW, max, min) {
-                let sz = max;
-                ctx.font = `700 ${sz}px 'Oswald', Arial`;
-                while (sz > min && ctx.measureText(text).width > maxW) sz--;
-                return sz;
-            }
-
-            // 1. Product image — full canvas height
-            ctx.filter = "brightness(1.1)";
-            ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, W, H);
-            ctx.filter = "none";
-
-            // 2. No gradient — text shadow ensures readability on any background
-
-            // 3. Badge pill (top-right)
-            if (badge) {
-                const bt = badge.toUpperCase();
-                ctx.font = "bold 12px Arial";
-                const bpx = 13, bpy = 7;
-                const btw = ctx.measureText(bt).width;
-                const bw = btw + bpx*2, bh = 12 + bpy*2;
-                const bx = W - PAD - bw, by = 18;
-                ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, bh/2);
-                ctx.fillStyle = accent; ctx.fill();
-                ctx.fillStyle = "#111"; ctx.textAlign = "left";
-                ctx.fillText(bt, bx + bpx, by + bpy + 11);
-            }
-
-            // 4. Title text
-            ctx.textAlign = "left";
-            const fullTitle = (name || "").toUpperCase();
-            const tMaxW = W - PAD*2 - (badge ? 175 : 10);
-            const tsz = autoSz(fullTitle, tMaxW, 70, 26);
-            ctx.font = `700 ${tsz}px 'Oswald', Arial`;
-            ctx.fillStyle = "#ffffff";
-            ctx.shadowColor = "rgba(0,0,0,0.85)";
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetX = 1;
-            ctx.shadowOffsetY = 1;
-            const titleY = PAD_TOP + tsz;
-            ctx.fillText(fullTitle, PAD, titleY);
-
-            // 5. Subtitle below title
-            if (subtitle) {
-                let ssz = 17;
-                ctx.font = `400 ${ssz}px Arial`;
-                while (ssz > 11 && ctx.measureText(subtitle).width > W - PAD*2) ssz--;
-                ctx.font = `400 ${ssz}px Arial`;
-                ctx.fillStyle = "rgba(255,255,255,0.9)";
-                ctx.shadowBlur = 8;
-                ctx.fillText(subtitle.substring(0, 90), PAD, titleY + ssz + 6);
-            }
-            ctx.shadowColor = "transparent";
-            ctx.shadowBlur = 0;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 0;
-
-            // 6. Left gradient for advantages readability (full height)
-            if (feats.length > 0) {
-                const lGrad = ctx.createLinearGradient(0, 0, 275, 0);
-                lGrad.addColorStop(0,   `rgba(${tr},${tg},${tb},0.82)`);
-                lGrad.addColorStop(0.6, `rgba(${tr},${tg},${tb},0.42)`);
-                lGrad.addColorStop(1,   `rgba(${tr},${tg},${tb},0)`);
-                ctx.fillStyle = lGrad;
-                ctx.fillRect(0, TITLE_H, 275, H - TITLE_H);
-
-                // 7. Three advantages on left, evenly distributed over full image height
-                const availH = H - TITLE_H - 50;
-                const spacing = availH / (feats.length + 1);
-                const ICR = 22, ICX = 50, TXT_X = ICX + ICR + 12, TXT_W = 186;
-
-                feats.forEach((feat, i) => {
-                    const cy = TITLE_H + spacing * (i + 1);
-
-                    // Circle background
-                    ctx.beginPath(); ctx.arc(ICX, cy, ICR, 0, Math.PI*2);
-                    ctx.fillStyle = accent + "26"; ctx.fill();
-                    ctx.strokeStyle = accent; ctx.lineWidth = 1.8; ctx.stroke();
-
-                    // Vector icon
-                    drawAdvIcon(ctx, ICX, cy, ICR, getIconType(feat), accent);
-
-                    // Advantage text
-                    ctx.textAlign = "left";
-                    ctx.fillStyle = "#ffffff";
-                    const words = feat.split(" ");
-                    let fsz = 20;
-                    ctx.font = `600 ${fsz}px Arial`;
-                    while (fsz > 12 && ctx.measureText(feat).width > TXT_W) fsz--;
-                    if (ctx.measureText(feat).width <= TXT_W) {
-                        ctx.font = `600 ${fsz}px Arial`;
-                        ctx.fillText(feat, TXT_X, cy + fsz * 0.36);
-                    } else {
-                        const mid = Math.ceil(words.length / 2);
-                        const l1 = words.slice(0, mid).join(" ");
-                        const l2 = words.slice(mid).join(" ");
-                        let sz2 = 18;
-                        ctx.font = `600 ${sz2}px Arial`;
-                        while (sz2 > 11 && (ctx.measureText(l1).width > TXT_W || ctx.measureText(l2).width > TXT_W)) sz2--;
-                        ctx.font = `600 ${sz2}px Arial`;
-                        ctx.fillText(l1, TXT_X, cy - 4);
-                        ctx.fillText(l2, TXT_X, cy + sz2 + 4);
-                    }
-                });
-            }
-
-            resolve(canvas.toDataURL("image/jpeg", 0.93));
-            } catch(e) { reject(e); }
-        };
-        img.onerror = (e) => reject(new Error("Image load failed"));
-        img.src = imageUrl;
-    });
 }
 
 async function mpGenerate() {
@@ -1552,39 +1107,6 @@ async function fetchImageAsBase64(url) {
     const resp = await fetch(url);
     const blob = await resp.blob();
     return resizeImageToBase64(blob, 800);
-}
-
-async function callPolzaAPI(templateBase64, userBase64) {
-    const POLZA_KEY = "pza_Y_e6drIevLO8ptUDrT2T5srYMGIrIEgP";
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 180000);
-    const resp = await fetch("https://polza.ai/api/v1/media", {
-        signal: controller.signal,
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${POLZA_KEY}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            model: "google/gemini-3.1-flash-image-preview",
-            input: {
-                prompt: "Face swap: replace the face of the person in the first image with the face from the second image. Keep everything else in the first image exactly the same — pose, background, clothes, lighting.",
-                images: [
-                    { type: "base64", data: "data:image/jpeg;base64," + templateBase64 },
-                    { type: "base64", data: "data:image/jpeg;base64," + userBase64 }
-                ]
-            }
-        })
-    });
-    clearTimeout(timeout);
-    const result = await resp.json();
-    console.log("Polza response:", JSON.stringify(result).substring(0, 400));
-
-    if (result?.data?.[0]?.url) return result.data[0].url;
-    if (result?.url) return result.url;
-    if (result?.data?.url) return result.data.url;
-
-    throw new Error("No image in response: " + JSON.stringify(result).substring(0, 300));
 }
 
 async function generate() {
