@@ -132,12 +132,13 @@ async def generate_card_handler(request):
         placement_instruction = PLACEMENT.get(category, PLACEMENT["other"])
 
         place_prompt = (
-            f"Take the COMPLETE product shown in the reference image (every part, every component, the entire item as shown) "
-            f"and integrate it fully into this scene: {scene_prompt}. "
+            f"Take the COMPLETE product shown in the reference image and integrate it into this scene: {scene_prompt}. "
             f"The product {placement_instruction} "
-            f"CRITICAL COMPOSITION: the product must be in the RIGHT half of the frame — "
-            f"the left 40% of the image must remain as clean scene background (no product there). "
-            f"IMPORTANT: reproduce ALL parts of the product — do not crop or cut any component. "
+            f"CRITICAL — QUANTITY: the reference image shows a specific number of items (e.g. a pair of shoes = 2 shoes). "
+            f"You MUST show EXACTLY the same number of items as in the reference — do NOT reduce, merge or remove any. "
+            f"CRITICAL — INTEGRITY: reproduce every part, every component exactly — do not crop, cut or simplify anything. "
+            f"CRITICAL — COMPOSITION: product must be in the RIGHT half of the frame — "
+            f"left 40% remains clean scene background. "
             f"Preserve exact colors, patterns, textures of the original product. "
             f"Photorealistic commercial product photography, warm cinematic lighting. NO text, NO watermarks."
         )
