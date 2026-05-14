@@ -136,8 +136,9 @@ async def generate_card_handler(request):
         print("[Card] Step 4 — kontext: generate background around placed product")
         is_clothing = category in ("clothing", "footwear")
         hanging_note = (
-            "If the product is on a hanger, add a wall-mounted clothing rod or ceiling hook at the top — "
-            "so the hanger is physically connected to something, not floating in air. "
+            "If the product is on a hanger, add a wall-mounted horizontal clothing rod at the very top of the image. "
+            "The hanger hook must hang FROM the rod (hook goes OVER the rod from above), not pierce or pass through it. "
+            "Rod is above, hanger hook hangs below it — physically correct. "
         ) if is_clothing else ""
         bg_prompt = (
             f"This image shows a product placed on a plain neutral background. "
@@ -255,7 +256,7 @@ def _remove_bg(photo_b64: str) -> str | None:
 # y_offset_ratio  — смещение от верха (0 = прижать вверх, 0.5 = по центру)
 CATEGORY_SIZING = {
     # (target_h_ratio, max_w_ratio, y_offset_ratio)
-    "clothing":    (0.97, 0.72, 0.01),   # на всю высоту сверху вниз
+    "clothing":    (0.90, 0.60, 0.01),   # вытянуть по вертикали, правее
     "footwear":    (0.55, 0.48, 0.35),   # обувь ниже центра
     "accessories": (0.62, 0.46, 0.20),
     "food":        (0.65, 0.44, 0.18),
@@ -304,14 +305,20 @@ def _composite_product_right(
 
     target_h_r, max_w_r, y_off_r = CATEGORY_SIZING.get(category, CATEGORY_SIZING["other"])
     target_h = int(out_h * target_h_r)
-    max_w   = int(out_w * max_w_r)
+    target_w = int(out_w * max_w_r)
 
-    # Масштабируем по высоте, но ограничиваем максимальную ширину
-    scale_by_h = target_h / prod_h
-    scale_by_w = max_w / prod_w
-    scale = min(scale_by_h, scale_by_w)
-    new_h = int(prod_h * scale)
-    new_w = int(prod_w * scale)
+    if category == "clothing":
+        # Non-proportional: фиксируем ширину и высоту независимо
+        # Лёгкая вертикальная растяжка (~20%) — для одежды выглядит естественно
+        new_w = target_w
+        new_h = target_h
+    else:
+        # Остальные категории — пропорциональное масштабирование
+        scale_by_h = target_h / prod_h
+        scale_by_w = target_w / prod_w
+        scale = min(scale_by_h, scale_by_w)
+        new_h = int(prod_h * scale)
+        new_w = int(prod_w * scale)
 
     prod_resized = prod.resize((new_w, new_h), Image.LANCZOS)
 
