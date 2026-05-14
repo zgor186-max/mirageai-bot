@@ -124,21 +124,71 @@ async def generate_card_handler(request):
 
         print("[Card] Step 2 done ✓")
 
-        # ── Step 3: Composite product on RIGHT side ───────────────────
-        print("[Card] Step 3 — compositing product on right side")
-        composited_b64, _ = await asyncio.get_event_loop().run_in_executor(
-            None, _composite_product_right, product_no_bg, bg_b64, category
+        # ── Step 3: Kontext — рендерим товар в сцене (оба по отдельности) ─
+        print("[Card] Step 3 — kontext: product + background separately")
+
+        # Конвертируем rembg PNG → JPEG на нейтральном фоне для kontext
+        product_jpg_b64 = await asyncio.get_event_loop().run_in_executor(
+            None, _png_to_jpg_neutral, product_no_bg
         )
-        print("[Card] Step 3 done ✓")
+
+        kontext_prompt = (
+            f"Take the product from the first image and place it naturally into the background scene from the second image. "
+            f"COMPOSITION: product must hang on the RIGHT side of the frame — occupying x=45% to x=100%, "
+            f"full height from top to bottom (90% of frame height). "
+            f"The LEFT 40% of the frame must stay completely clean and empty — no product there. "
+            f"LIGHTING: match the scene lighting exactly — shadows and highlights on the fabric must match the background light source. "
+            f"REALISM: natural hanging drape, cast shadow on the surface below, soft edges. "
+            f"CRITICAL: place EXACTLY ONE product — do NOT duplicate or multiply it. "
+            f"Photorealistic commercial product photography. NO text, NO watermarks."
+        )
+
+        result_b64 = None
+        try:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=300)) as session:
+                product_url = await upload_image_to_replicate(session, product_jpg_b64)
+                bg_upload_url = await upload_image_to_replicate(session, bg_b64) if bg_b64 else None
+                kontext_url = await call_kontext_two_images(session, product_url, bg_upload_url, kontext_prompt)
+                if kontext_url:
+                    result_b64 = await download_image_as_base64(kontext_url)
+                    if result_b64:
+                        result_b64 = result_b64.split(",", 1)[1] if result_b64.startswith("data:") else result_b64
+                        print("[Card] Step 3 kontext done ✓")
+        except Exception as e:
+            print(f"[Card] Step 3 kontext error: {e}")
+
+        # Fallback: PIL composite если kontext не сработал
+        if not result_b64:
+            print("[Card] Step 3 fallback — PIL composite")
+            result_b64, _ = await asyncio.get_event_loop().run_in_executor(
+                None, _composite_product_right, product_no_bg, bg_b64, category
+            )
 
         # ── Step 4: Apply text overlay ────────────────────────────────
-        final = await _apply_card_overlay(composited_b64, card_data)
+        final = await _apply_card_overlay(result_b64, card_data)
         return web.json_response({"url": final}, headers=CORS_HEADERS)
 
     except Exception as e:
         import traceback
         traceback.print_exc()
         return web.json_response({"error": str(e)}, status=500, headers=CORS_HEADERS)
+
+
+def _png_to_jpg_neutral(png_b64: str, bg_color=(240, 240, 238)) -> str:
+    """Convert transparent PNG to JPEG on neutral background for kontext input."""
+    import io as _io
+    from PIL import Image
+    raw = base64.b64decode(png_b64)
+    prod = Image.open(_io.BytesIO(raw)).convert("RGBA")
+    # Обрезаем прозрачные отступы
+    bbox = prod.getbbox()
+    if bbox:
+        prod = prod.crop(bbox)
+    bg = Image.new("RGBA", prod.size, bg_color + (255,))
+    bg.paste(prod, (0, 0), prod)
+    out = _io.BytesIO()
+    bg.convert("RGB").save(out, format="JPEG", quality=95)
+    return base64.b64encode(out.getvalue()).decode()
 
 
 def _remove_bg(photo_b64: str) -> str | None:
@@ -216,25 +266,17 @@ def _composite_product_right(
     target_h_r, _, y_off_r = CATEGORY_SIZING.get(category, CATEGORY_SIZING["other"])
     target_h = int(out_h * target_h_r)
 
-    # Шаг 1: масштабируем по высоте
+    # Масштабируем строго по высоте — никаких ограничений по ширине
     scale = target_h / prod_h
     new_h = target_h
     new_w = int(prod_w * scale)
 
-    # Шаг 2: минимальный x = 340 (левее нельзя — текст)
-    min_x = 340
-    max_product_w = out_w - min_x  # максимальная ширина товара чтобы не обрезался
-
-    # Если товар не влезает — уменьшаем масштаб по ширине
-    if new_w > max_product_w:
-        scale = max_product_w / prod_w
-        new_w = max_product_w
-        new_h = int(prod_h * scale)
-
     prod_resized = prod.resize((new_w, new_h), Image.LANCZOS)
 
-    # ── Позиция: прижат к правому краю, полностью в кадре ────────
-    x = out_w - new_w  # правый край товара = правый край холста
+    # ── Позиция: правый край = правый край холста ─────────────────
+    # Если товар шире половины — левая часть уходит под текст,
+    # градиент на левой зоне защищает читаемость текста
+    x = out_w - new_w
     y = int(out_h * y_off_r)
     y = min(y, out_h - new_h - 5)
 
@@ -828,9 +870,10 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         f'flood-color="#000" flood-opacity="{shd_op}"/>'
         f'</filter>'
         f'<linearGradient id="textbg" x1="0" y1="0" x2="1" y2="0">'
-        f'<stop offset="0%" stop-color="#000000" stop-opacity="0.58"/>'
-        f'<stop offset="42%" stop-color="#000000" stop-opacity="0.28"/>'
-        f'<stop offset="62%" stop-color="#000000" stop-opacity="0"/>'
+        f'<stop offset="0%" stop-color="#000000" stop-opacity="0.65"/>'
+        f'<stop offset="38%" stop-color="#000000" stop-opacity="0.40"/>'
+        f'<stop offset="55%" stop-color="#000000" stop-opacity="0.10"/>'
+        f'<stop offset="68%" stop-color="#000000" stop-opacity="0"/>'
         f'</linearGradient>'
         f'</defs>'
     )
