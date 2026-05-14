@@ -643,6 +643,10 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     best_zone = min(zone_std, key=zone_std.get)
     ZONE_Y = {"mid": 380, "lower": 640, "bottom": 890}
     feat_zone_top = ZONE_Y[best_zone]
+    # Guarantee all 4 features fit: cap so last feature (idx=3) stays above y=1080
+    row_gap_check = 68
+    max_top = 1080 - 3 * row_gap_check - 30   # = 826
+    feat_zone_top = min(feat_zone_top, max_top)
     print(f"[Cairo] feature zone={best_zone} stds={zone_std} top_y={feat_zone_top}, scheme={scheme}")
 
     # ── Circular thumbnail: pre-crop in PIL (more reliable than SVG clip-path) ──
@@ -699,42 +703,42 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             f'fill="{badge_text_c}">{badge}</text>'
         )
 
-    # ── Title: Bebas Neue — bold display font ────────────────────
+    # ── Title: Bebas Neue — centered, bold ───────────────────────
     title_lines = _svg_wrap(name, max_chars=14)
-    title_fs = 80
-    title_lh = 84
-    ty = 95
+    title_fs = 85
+    title_lh = 90
+    ty = 100
     for line in title_lines:
         els.append(
-            f'<text x="40" y="{ty}" '
+            f'<text x="400" y="{ty}" text-anchor="middle" '
             f'font-family="{FONT_TITLE}" font-size="{title_fs}" font-weight="700" '
             f'fill="{title_color}" '
-            f'stroke="{stroke_col}" stroke-width="3" stroke-opacity="{stroke_op}" '
+            f'stroke="{stroke_col}" stroke-width="6" stroke-opacity="{stroke_op}" '
             f'paint-order="stroke fill" filter="url(#ts)">{line}</text>'
         )
         ty += title_lh
 
-    # ── Tagline: продающая фраза под заголовком ───────────────
+    # ── Tagline: продающая фраза под заголовком (italic) ──────
     if tagline_raw:
         els.append(
-            f'<text x="40" y="{ty + 10}" '
+            f'<text x="400" y="{ty + 12}" text-anchor="middle" '
             f'font-family="{FONT}" font-size="17" font-style="italic" '
             f'fill="{sub_color}" '
             f'stroke="{stroke_col}" stroke-width="1.2" stroke-opacity="0.7" '
-            f'paint-order="stroke fill" filter="url(#ts)">{_svg_wrap(tagline_raw, max_chars=45)[0]}</text>'
+            f'paint-order="stroke fill" filter="url(#ts)">{_svg_wrap(tagline_raw, max_chars=50)[0]}</text>'
         )
-        ty += 36
+        ty += 38
 
-    # ── Subtitle (слоган): короткая фраза под tagline ─────────
+    # ── Subtitle (слоган): короткий акцент под tagline ────────
     if subtitle_raw:
         els.append(
-            f'<text x="40" y="{ty + 10}" '
+            f'<text x="400" y="{ty + 12}" text-anchor="middle" '
             f'font-family="{FONT}" font-size="19" font-weight="600" '
             f'fill="{sub_color}" '
             f'stroke="{stroke_col}" stroke-width="1.5" stroke-opacity="{stroke_op}" '
-            f'paint-order="stroke fill" filter="url(#ts)">{_svg_wrap(subtitle_raw, max_chars=32)[0]}</text>'
+            f'paint-order="stroke fill" filter="url(#ts)">{_svg_wrap(subtitle_raw, max_chars=36)[0]}</text>'
         )
-        ty += 36
+        ty += 38
 
     # ── Features: single LEFT column, zone chosen by image analysis ─
     # feat_zone_top = cleanest y in left half (product always in right half).
