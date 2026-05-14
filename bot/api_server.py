@@ -261,7 +261,9 @@ def _composite_product_right(
     if bbox:
         prod = prod.crop(bbox)
     prod_w, prod_h = prod.size
-    print(f"[Composite] product size after trim: {prod_w}x{prod_h}")
+    print(f"[Composite] ── РАЗМЕРЫ ──────────────────────────────────")
+    print(f"[Composite] Холст:               {out_w}x{out_h} px")
+    print(f"[Composite] Товар после обрезки: {prod_w}x{prod_h} px")
 
     target_h_r, _, y_off_r = CATEGORY_SIZING.get(category, CATEGORY_SIZING["other"])
     target_h = int(out_h * target_h_r)
@@ -274,11 +276,19 @@ def _composite_product_right(
     prod_resized = prod.resize((new_w, new_h), Image.LANCZOS)
 
     # ── Позиция: правый край = правый край холста ─────────────────
-    # Если товар шире половины — левая часть уходит под текст,
-    # градиент на левой зоне защищает читаемость текста
     x = out_w - new_w
     y = int(out_h * y_off_r)
     y = min(y, out_h - new_h - 5)
+
+    print(f"[Composite] Категория:           {category}")
+    print(f"[Composite] Цель высота:         {target_h} px = {target_h_r*100:.0f}% холста")
+    print(f"[Composite] Итог товар:          {new_w}x{new_h} px")
+    print(f"[Composite] Итог товар высота:   {new_h/out_h*100:.1f}% холста")
+    print(f"[Composite] Итог товар ширина:   {new_w/out_w*100:.1f}% холста")
+    print(f"[Composite] Позиция X:           {x} px (от левого края)")
+    print(f"[Composite] Позиция Y:           {y} px (от верха) = {y/out_h*100:.1f}%")
+    print(f"[Composite] Товар занимает Y:    {y} → {y+new_h} px ({y/out_h*100:.1f}% → {(y+new_h)/out_h*100:.1f}%)")
+    print(f"[Composite] ────────────────────────────────────────────")
 
     # Мягкая тень под товаром (для одежды — тень под вешалкой)
     shadow = Image.new("RGBA", (out_w, out_h), (0, 0, 0, 0))
