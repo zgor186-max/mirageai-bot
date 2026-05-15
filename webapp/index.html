@@ -164,15 +164,7 @@
         <button class="back-btn" onclick="showHome()">← Назад</button>
         <div class="page-header">Карточки WB и Ozon</div>
 
-        <!-- Табы -->
-        <div class="mp-tabs">
-            <button class="mp-tab active" id="tab-photo" onclick="mpSwitchTab('photo')">📷 Фото</button>
-            <button class="mp-tab" id="tab-card" onclick="mpSwitchTab('card')">🏷 Карточка</button>
-        </div>
-
-        <!-- Контент таба Фото -->
-        <div id="mp-tab-photo">
-
+        <!-- Единая загрузка фото -->
         <div class="mp-section">
             <div class="mp-section-num">01</div>
             <div class="mp-section-title">Фото товара</div>
@@ -180,7 +172,7 @@
         <div class="mp-upload-area" id="mp-upload-area" onclick="document.getElementById('mp-photo-input').click()">
             <div class="mp-upload-icon">📦</div>
             <div class="mp-upload-text">Нажми чтобы загрузить фото товара</div>
-            <div class="mp-upload-hint">До 4 фото с разных сторон</div>
+            <div class="mp-upload-hint">Лучше на белом или прозрачном фоне</div>
             <input type="file" id="mp-photo-input" accept="image/*" style="display:none" onchange="mpHandlePhoto(this)">
         </div>
         <div id="mp-preview-container" style="display:none;padding:0 16px;">
@@ -188,10 +180,20 @@
             <button class="change-photo-btn" onclick="document.getElementById('mp-photo-input').click()">Изменить фото</button>
         </div>
 
+        <!-- Табы -->
+        <div class="mp-tabs" style="margin-top:20px;">
+            <button class="mp-tab active" id="tab-photo" onclick="mpSwitchTab('photo')">📷 Фото</button>
+            <button class="mp-tab" id="tab-card" onclick="mpSwitchTab('card')">🏷 Карточка</button>
+        </div>
+
+        <!-- Контент таба Фото -->
+        <div id="mp-tab-photo">
+
         <div class="mp-section" style="margin-top:20px;">
             <div class="mp-section-num">02</div>
             <div class="mp-section-title">Как показать товар?</div>
         </div>
+
         <div class="mp-styles">
             <div class="mp-style-card selected" id="mp-style-model" onclick="mpSelectStyle('model', this)">
                 <div class="mp-style-icon">👗</div>
@@ -247,21 +249,6 @@
 
         <!-- Контент таба Карточка -->
         <div id="mp-tab-card" style="display:none">
-
-            <div class="mp-section">
-                <div class="mp-section-num">01</div>
-                <div class="mp-section-title">Фото товара</div>
-            </div>
-            <div class="mp-upload-area" id="mp-card-upload-area" onclick="document.getElementById('mp-card-photo-input').click()">
-                <div class="mp-upload-icon">🏷</div>
-                <div class="mp-upload-text">Нажми чтобы загрузить фото товара</div>
-                <div class="mp-upload-hint">Лучше на белом или прозрачном фоне</div>
-                <input type="file" id="mp-card-photo-input" accept="image/*" style="display:none" onchange="mpCardHandlePhoto(this)">
-            </div>
-            <div id="mp-card-preview-container" style="display:none;padding:0 16px;">
-                <img id="mp-card-photo-preview" style="width:100%;border-radius:14px;max-height:180px;object-fit:cover;">
-                <button class="change-photo-btn" onclick="document.getElementById('mp-card-photo-input').click()">Изменить фото</button>
-            </div>
 
             <!-- Название и категория — всегда видны -->
             <div id="mp-card-base-fields" class="mp-analysis-cell" style="display:none;">

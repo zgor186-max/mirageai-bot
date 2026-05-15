@@ -592,10 +592,30 @@ function mpHandlePhoto(input) {
     const reader = new FileReader();
     reader.onload = async (ev) => {
         mpPhotoBase64 = await resizeImageToBase64(file, 800);
+        // Показываем превью
         document.getElementById("mp-photo-preview").src = ev.target.result;
         document.getElementById("mp-upload-area").style.display = "none";
         document.getElementById("mp-preview-container").style.display = "block";
-        document.getElementById("mp-generate-btn").disabled = false;
+        // Включаем обе кнопки генерации
+        const genBtn = document.getElementById("mp-generate-btn");
+        if (genBtn) genBtn.disabled = false;
+        const cardBtn = document.getElementById("mp-card-generate-btn");
+        if (cardBtn) cardBtn.disabled = false;
+        // Показываем поля карточки и запускаем анализ
+        const textToggle = document.getElementById("mp-text-toggle-wrap");
+        if (textToggle) textToggle.style.display = "block";
+        const baseFields = document.getElementById("mp-card-base-fields");
+        if (baseFields) {
+            baseFields.style.display = "block";
+            const loading = document.getElementById("mp-analysis-loading");
+            if (loading) loading.style.display = "flex";
+            const result = document.getElementById("mp-analysis-result");
+            if (result) result.style.display = "none";
+        }
+        const descCell = document.getElementById("mp-card-analysis-cell");
+        if (descCell) descCell.style.display = mpCardWithText ? "block" : "none";
+        await mpCardAnalyze(mpPhotoBase64);
+        if (mpCardWithText) await mpCardAiIdea();
     };
     reader.readAsDataURL(file);
 }
@@ -617,7 +637,7 @@ function mpSelectDirection(dir, el) {
     el.classList.add("selected");
 }
 
-let mpCardPhotoBase64 = null;
+// mpPhotoBase64 удалён — используем общий mpPhotoBase64
 let mpCardColorScheme = "warm";
 let mpSelectedBg = "workshop";
 let mpCardBgPrompt = "";
@@ -635,37 +655,7 @@ function mpSetTextMode(withText) {
     if (descCell) descCell.style.display = withText ? "block" : "none";
 }
 
-function mpCardHandlePhoto(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-        mpCardPhotoBase64 = await resizeImageToBase64(file, 800);
-        document.getElementById("mp-card-photo-preview").src = ev.target.result;
-        document.getElementById("mp-card-upload-area").style.display = "none";
-        document.getElementById("mp-card-preview-container").style.display = "block";
-        document.getElementById("mp-card-generate-btn").disabled = false;
-        // Показываем переключатель режима
-        document.getElementById("mp-text-toggle-wrap").style.display = "block";
-        // Показываем ячейку анализа и запускаем анализ (если режим "с текстом")
-        // Всегда показываем базовые поля (название + категория)
-        const baseFields = document.getElementById("mp-card-base-fields");
-        const loading = document.getElementById("mp-analysis-loading");
-        const result = document.getElementById("mp-analysis-result");
-        if (baseFields) baseFields.style.display = "block";
-        if (loading) loading.style.display = "flex";
-        if (result) result.style.display = "none";
-        // Показываем описание только для режима "С текстом"
-        const descCell = document.getElementById("mp-card-analysis-cell");
-        if (descCell) descCell.style.display = mpCardWithText ? "block" : "none";
-        // Сначала анализируем (название/категория), потом автоматически AI идея
-        await mpCardAnalyze(mpCardPhotoBase64);
-        if (mpCardWithText) {
-            await mpCardAiIdea();
-        }
-    };
-    reader.readAsDataURL(file);
-}
+// mpCardHandlePhoto удалён — загрузка фото теперь общая через mpHandlePhoto
 
 const LOCATION_SEEDS = {
     clothing: [
@@ -875,7 +865,7 @@ function mpCategoryChange(categoryId) {
 }
 
 async function mpCardAiIdea() {
-    if (!mpCardPhotoBase64) {
+    if (!mpPhotoBase64) {
         tg.showAlert("Сначала загрузи фото товара!");
         return;
     }
@@ -893,7 +883,7 @@ async function mpCardAiIdea() {
                 messages: [{
                     role: "user",
                     content: [
-                        { type: "image_url", image_url: { url: "data:image/jpeg;base64," + mpCardPhotoBase64 } },
+                        { type: "image_url", image_url: { url: "data:image/jpeg;base64," + mpPhotoBase64 } },
                         { type: "text", text: `Ты копирайтер для маркетплейса (WB/Ozon). Товар: "${name}". Посмотри на фото и ответь ТОЛЬКО валидным JSON без markdown. ОБЯЗАТЕЛЬНО ровно 4 элемента в features — не меньше, не больше.\n\nВАЖНО: используй ТОЛЬКО простые слова понятные любому покупателю. ЗАПРЕЩЕНЫ: профессиональные термины, редкие слова, жаргон (примеры запрещённых слов: стежок, крепление, армирование, перфорация, ламинация, анатомический). Пиши как говорят обычные люди.\n\n{\n  "slogan": "эмоциональный слоган СТРОГО 2-3 слова ЗАГЛАВНЫМИ. НЕ название товара. Только простые слова. Примеры: ДЛЯ УЮТНЫХ ВЕЧЕРОВ, ТЕПЛО И СТИЛЬ, КОМФОРТ КАЖДЫЙ ДЕНЬ, МЯГКО И УДОБНО",\n  "tagline": "конкретная фраза СТРОГО 3-5 слов — только суть, без воды, только простые слова. Примеры: мягкий хлопок для крепкого сна, тёплая и удобная каждый день, лёгкая ткань не сковывает движения",\n  "features": [\n    {"icon": "эмодзи1", "text": "СТРОГО 1-2 слова в именительном падеже. ТОЛЬКО прилагательное+существительное ИЛИ одно прилагательное. ЗАПРЕЩЕНЫ: предлоги, союзы, слова в косвенных падежах (тела, ткани, крою и т.д.). Примеры ПРАВИЛЬНО: МЯГКАЯ ТКАНЬ, ТЁПЛЫЙ, СВОБОДНЫЙ КРОЙ, ЛЁГКАЯ. Не повторять слова из названия"},\n    {"icon": "эмодзи2", "text": "СТРОГО 1-2 слова в именительном падеже. Прилагательное+существительное или одно прилагательное. Не повторять feat1. Примеры: УДОБНЫЙ КРОЙ, НЕЖНАЯ ТКАНЬ, ДЫШАЩИЙ"},\n    {"icon": "эмодзи3", "text": "СТРОГО 1-2 слова в именительном падеже. Не повторять feat1-2. Примеры: КРЕПКИЙ СОН, НАТУРАЛЬНЫЙ СОСТАВ, ПРИЯТНАЯ"},\n    {"icon": "эмодзи4", "text": "СТРОГО 1-2 слова в именительном падеже. Не повторять feat1-3. Примеры: ДОМАШНИЙ КОМФОРТ, ЛЁГКИЙ УХОД, ТЁПЛАЯ"}\n  ]\n}\nВ features СТРОГО 4 объекта. Всё на русском.` }
                     ]
                 }]
@@ -923,7 +913,7 @@ async function mpCardAiIdea() {
 }
 
 async function mpCardGenerate() {
-    if (!mpCardPhotoBase64) return;
+    if (!mpPhotoBase64) return;
 
     const name = document.getElementById("mp-card-name").value.trim();
 
@@ -959,7 +949,7 @@ async function mpCardGenerate() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                photo: mpCardPhotoBase64,
+                photo: mpPhotoBase64,
                 scene_prompt: scenePrompt,
                 product_name: name || "product",
                 category: mpCardCategory || "clothing",
