@@ -180,6 +180,32 @@
             <button class="change-photo-btn" onclick="document.getElementById('mp-photo-input').click()">Изменить фото</button>
         </div>
 
+        <!-- Общие поля: Название + Категория -->
+        <div id="mp-card-base-fields" class="mp-analysis-cell" style="display:none;">
+            <div class="mp-section" style="margin-top:16px;">
+                <div class="mp-section-num">02</div>
+                <div class="mp-section-title">Товар</div>
+            </div>
+            <div id="mp-analysis-loading" class="mp-analysis-loading">
+                <div class="mp-analysis-spinner"></div>
+                <span>Определяю товар...</span>
+            </div>
+            <div id="mp-analysis-result" class="mp-analysis-result" style="display:none;">
+                <input id="mp-card-name" class="mp-input" type="text" placeholder="Название товара" maxlength="25">
+                <select id="mp-card-category" class="mp-select" onchange="mpCategoryChange(this.value)">
+                    <option value="">Категория</option>
+                    <option value="clothing">👕 Одежда</option>
+                    <option value="footwear">👟 Обувь</option>
+                    <option value="accessories">👜 Аксессуары</option>
+                    <option value="food">🍽 Еда и напитки</option>
+                    <option value="beauty">💄 Косметика и уход</option>
+                    <option value="gadgets">📱 Гаджеты и техника</option>
+                    <option value="home">🏠 Дом и мебель</option>
+                    <option value="other">📦 Прочее</option>
+                </select>
+            </div>
+        </div>
+
         <!-- Табы -->
         <div class="mp-tabs" style="margin-top:20px;">
             <button class="mp-tab active" id="tab-photo" onclick="mpSwitchTab('photo')">📷 Фото</button>
@@ -190,7 +216,7 @@
         <div id="mp-tab-photo">
 
         <div class="mp-section" style="margin-top:20px;">
-            <div class="mp-section-num">02</div>
+            <div class="mp-section-num">03</div>
             <div class="mp-section-title">Как показать товар?</div>
         </div>
 
@@ -231,7 +257,7 @@
         </div>
 
         <div class="mp-section" style="margin-top:20px;">
-            <div class="mp-section-num">03</div>
+            <div class="mp-section-num">04</div>
             <div class="mp-section-title">Пожелания</div>
         </div>
         <div style="padding:0 16px;">
@@ -249,28 +275,6 @@
 
         <!-- Контент таба Карточка -->
         <div id="mp-tab-card" style="display:none">
-
-            <!-- Название и категория — всегда видны -->
-            <div id="mp-card-base-fields" class="mp-analysis-cell" style="display:none;">
-                <div id="mp-analysis-loading" class="mp-analysis-loading">
-                    <div class="mp-analysis-spinner"></div>
-                    <span>Определяю товар...</span>
-                </div>
-                <div id="mp-analysis-result" class="mp-analysis-result" style="display:none;">
-                    <input id="mp-card-name" class="mp-input" type="text" placeholder="Название товара" maxlength="25">
-                    <select id="mp-card-category" class="mp-select" onchange="mpCategoryChange(this.value)">
-                        <option value="">Категория</option>
-                        <option value="clothing">👕 Одежда</option>
-                        <option value="footwear">👟 Обувь</option>
-                        <option value="accessories">👜 Аксессуары</option>
-                        <option value="food">🍽 Еда и напитки</option>
-                        <option value="beauty">💄 Косметика и уход</option>
-                        <option value="gadgets">📱 Гаджеты и техника</option>
-                        <option value="home">🏠 Дом и мебель</option>
-                        <option value="other">📦 Прочее</option>
-                    </select>
-                </div>
-            </div>
 
             <!-- Переключатель С текстом / Без текста -->
             <div id="mp-text-toggle-wrap" style="display:none;padding:0 16px 12px;">
