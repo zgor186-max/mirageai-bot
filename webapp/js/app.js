@@ -642,6 +642,8 @@ let mpCardColorScheme = "warm";
 let mpSelectedBg = "workshop";
 let mpCardBgPrompt = "";
 let mpCardCategory = "clothing";
+let mpCardWrinkleScore = 0;    // 1-10: насколько мятая одежда (0 = не одежда)
+let mpClothingDetail = "";     // детальное описание одежды для регенерации
 let mpCardWithText = true;  // режим: с текстом или без
 let mpCardSlogan = "";      // слоган (заголовок карточки)
 let mpCardTagline = "";     // подзаголовок
@@ -759,7 +761,9 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
   "feat3": "УНИКАЛЬНОЕ преимущество 3, максимум 2 слова. Не повторять feat1 и feat2",
   "icon1": "одна emoji иконка подходящая к feat1. Примеры: ☁️🌙✂️🔥💧⚡🎯🛡️🌿",
   "icon2": "одна emoji иконка подходящая к feat2",
-  "icon3": "одна emoji иконка подходящая к feat3"
+  "icon3": "одна emoji иконка подходящая к feat3",
+  "wrinkle_score": "ТОЛЬКО для category=clothing: число от 1 до 10 — насколько товар мятый/неправильно отображён. 1=идеально (висит ровно, без складок), 10=сильно скомкан/смят/лежит плашмя/форма не видна. Для других категорий — 0",
+  "clothing_detail": "ТОЛЬКО для category=clothing: подробное описание товара на английском для AI-генерации. Укажи: тип одежды, точный цвет и оттенок, узор/принт, материал, фасон, застёжки, особые детали. Пример: dark navy blue slim-fit jeans with slight distressing at knees, five pockets, silver button fly, mid-rise waist. Для других категорий — пустая строка"
 }` }
                     ]
                 }]
@@ -795,6 +799,11 @@ other: ${LOCATION_SEEDS.other[Math.floor(Math.random()*LOCATION_SEEDS.other.leng
 
         // Сохраняем категорию для generate-card запроса
         mpCardCategory = data.category || "clothing";
+        mpCardWrinkleScore = parseInt(data.wrinkle_score) || 0;
+        mpClothingDetail = data.clothing_detail || "";
+        if (mpCardWrinkleScore > 0) {
+            console.log(`[Analyze] wrinkle_score=${mpCardWrinkleScore}, detail="${mpClothingDetail.substring(0, 80)}..."`);
+        }
 
         // Цветовая схема по категории
         const schemeMap = {
@@ -953,6 +962,8 @@ async function mpCardGenerate() {
                 scene_prompt: scenePrompt,
                 product_name: name || "product",
                 category: mpCardCategory || "clothing",
+                wrinkle_score: mpCardWrinkleScore,
+                clothing_detail: mpClothingDetail,
                 card: mpCardWithText ? (() => {
                     const c = { name: cardTitle, subtitle: cardSubtitle, tagline: useAiIdea ? mpCardTagline : "", badge, scheme: mpCardColorScheme || "warm" };
                     features.forEach((f, i) => {
