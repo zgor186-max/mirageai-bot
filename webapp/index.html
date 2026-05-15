@@ -212,6 +212,19 @@
             </div>
         </div>
 
+        <!-- Ракурс — только для "На модели" -->
+        <div id="mp-model-direction" style="display:none; padding: 0 16px; margin-top: 4px; margin-bottom: 4px;">
+            <div style="font-size:12px; color:#888; margin-bottom:8px; font-weight:600; letter-spacing:0.5px;">РАКУРС</div>
+            <div style="display:flex; gap:10px;">
+                <button class="mp-dir-btn selected" id="mp-dir-front" onclick="mpSelectDirection('front', this)">
+                    👤 Спереди
+                </button>
+                <button class="mp-dir-btn" id="mp-dir-back" onclick="mpSelectDirection('back', this)">
+                    🔄 Сзади
+                </button>
+            </div>
+        </div>
+
         <div class="mp-section" style="margin-top:20px;">
             <div class="mp-section-num">03</div>
             <div class="mp-section-title">Пожелания</div>

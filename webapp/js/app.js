@@ -600,9 +600,20 @@ function mpHandlePhoto(input) {
     reader.readAsDataURL(file);
 }
 
+let mpModelDirection = 'front';
+
 function mpSelectStyle(style, el) {
     mpSelectedStyle = style;
     document.querySelectorAll(".mp-style-card").forEach(c => c.classList.remove("selected"));
+    el.classList.add("selected");
+    // Показываем выбор ракурса только для "На модели"
+    const dirBlock = document.getElementById("mp-model-direction");
+    if (dirBlock) dirBlock.style.display = style === 'model' ? 'block' : 'none';
+}
+
+function mpSelectDirection(dir, el) {
+    mpModelDirection = dir;
+    document.querySelectorAll(".mp-dir-btn").forEach(b => b.classList.remove("selected"));
     el.classList.add("selected");
 }
 
@@ -992,8 +1003,12 @@ async function mpCardGenerate() {
 async function mpGenerate() {
     if (!mpPhotoBase64) return;
 
+    const modelPrompts = {
+        front: "Professional fashion e-commerce photography. This exact product worn naturally by an attractive slim model, neutral studio expression, front view, full body or 3/4 shot, product is the clear focus. Soft three-point studio lighting: key light upper-left 45 degrees, fill light at 2:1 ratio, rim light separating model from background. Clean white seamless background. 85mm lens f/8. Sharp fabric texture and fit clearly visible. Model pose highlights product silhouette and drape. Photorealistic, Wildberries Ozon marketplace hero shot, 3:4 ratio, NO text NO logos NO watermarks.",
+        back:  "Professional fashion e-commerce photography. This exact product worn naturally by an attractive slim model, neutral studio expression, BACK VIEW shot showing rear of garment, full body or 3/4 shot from behind, product is the clear focus. Soft three-point studio lighting: key light upper-left 45 degrees, fill light at 2:1 ratio, rim light separating model from background. Clean white seamless background. 85mm lens f/8. Sharp fabric texture and back details clearly visible. Model pose highlights product silhouette. Photorealistic, Wildberries Ozon marketplace hero shot, 3:4 ratio, NO text NO logos NO watermarks."
+    };
     const stylePrompts = {
-        model:  "Professional fashion e-commerce photography. This exact product worn naturally by an attractive slim model, neutral studio expression, full body or 3/4 shot, product is the clear focus. Soft three-point studio lighting: key light upper-left 45 degrees, fill light at 2:1 ratio, rim light separating model from background. Clean white seamless background. 85mm lens f/8. Sharp fabric texture and fit clearly visible. Model pose highlights product silhouette and drape. Photorealistic, Wildberries Ozon marketplace hero shot, 3:4 ratio, NO text NO logos NO watermarks.",
+        model:  modelPrompts[mpModelDirection] || modelPrompts.front,
         store:  "Professional retail product photography. This exact item displayed naturally on a premium wooden or chrome hanger against clean white seamless studio background. Soft diffused studio lighting from upper-left with fill light. Product hangs naturally showing silhouette and drape. Subtle grounding shadow for realism. 85mm lens f/8. Sharp fabric texture detail across entire product. Catalog-ready quality. Photorealistic, 3:4 ratio, NO text NO logos.",
         flat:   "Professional flat lay product photography. This exact item arranged on clean white seamless surface, shot from directly overhead at 90 degrees bird's eye view. Soft even lighting with no harsh shadows using diffused softbox from directly above. Product occupies 70% of frame centered. Razor-sharp detail across entire product surface. 50mm lens equivalent f/11. Editorial flat lay styling quality. Photorealistic, 3:4 ratio, NO text NO logos.",
         studio: "Professional studio catalog product photography. This exact item centered on clean light grey acrylic sweep background. Three-point studio lighting: key light upper-left, fill light eliminating harsh shadows, subtle rim light. No shadows on background. Product occupies 75% of frame. Razor-sharp focus across entire product. Accurate color reproduction. 85mm lens f/11. Pure product catalog quality for Wildberries Ozon marketplace. Photorealistic, 3:4 ratio, NO text NO logos NO watermarks."

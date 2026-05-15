@@ -988,6 +988,23 @@ body {
 .mp-style-icon { font-size: 22px; margin-bottom: 6px; }
 .mp-style-name { font-size: 13px; font-weight: 700; color: var(--text); }
 .mp-style-desc { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.mp-dir-btn {
+    flex: 1;
+    background: var(--bg3);
+    border: 2px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 10px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.mp-dir-btn.selected {
+    border-color: var(--accent2);
+    background: rgba(124,90,247,0.15);
+    color: var(--text);
+}
 .mp-textarea {
     width: 100%;
     background: var(--bg3);
