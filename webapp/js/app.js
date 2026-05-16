@@ -753,6 +753,91 @@ function rbShare() {
 }
 
 // ── Генерация по промту ───────────────────────────────────────────────
+// ── РАЗГЛАЖИВАНИЕ ОДЕЖДЫ ──────────────────────────────────────────
+let smPhotoBase64 = null;
+
+function showSmoothing() {
+    switchScreen("smooth");
+    setActiveNav("");
+}
+
+function smHandlePhoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        smPhotoBase64 = e.target.result;
+        document.getElementById("sm-preview").src = smPhotoBase64;
+        document.getElementById("sm-preview-wrap").style.display = "block";
+        document.getElementById("sm-upload-area").style.display = "none";
+        const btn = document.getElementById("sm-generate-btn");
+        btn.disabled = false;
+        btn.style.opacity = "1";
+    };
+    reader.readAsDataURL(file);
+}
+
+function smClearPhoto() {
+    smPhotoBase64 = null;
+    document.getElementById("sm-preview-wrap").style.display = "none";
+    document.getElementById("sm-upload-area").style.display = "flex";
+    document.getElementById("sm-photo-input").value = "";
+    const btn = document.getElementById("sm-generate-btn");
+    btn.disabled = true;
+    btn.style.opacity = "0.4";
+}
+
+async function smGenerate() {
+    if (!smPhotoBase64) return;
+
+    const titleEl = document.querySelector("#screen-loading .loading-title");
+    const s1 = document.getElementById("step-1");
+    const s2 = document.getElementById("step-2");
+    const s3 = document.getElementById("step-3");
+    if (titleEl) titleEl.textContent = "Разглаживаю одежду...";
+    if (s1) s1.textContent = "🖼️ Загружаю фото";
+    if (s2) s2.textContent = "👕 Разглаживаю складки";
+    if (s3) s3.textContent = "✨ Финальная обработка";
+
+    switchScreen("loading");
+    animateSteps();
+
+    let resultData = null;
+    try {
+        const resp = await fetch(API_SERVER + "/generate-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                image: smPhotoBase64,
+                prompt: "Remove all wrinkles and creases from the clothing item. Make the fabric perfectly smooth and flat. Keep the same clothing item, same color, same style. Professional clean product photography.",
+                aspect_ratio: "2:3"
+            })
+        });
+        const data = await resp.json();
+        if (data.image) {
+            resultData = data.image;
+        } else {
+            finishProgress();
+            switchScreen("smooth");
+            tg.showAlert("Ошибка: " + (data.error || "неизвестная ошибка"));
+            return;
+        }
+    } catch (e) {
+        finishProgress();
+        switchScreen("smooth");
+        tg.showAlert("Ошибка соединения с сервером");
+        return;
+    }
+
+    finishProgress();
+    await new Promise(r => setTimeout(r, 400));
+
+    currentResultUrl = resultData;
+    document.getElementById("result-image").src = resultData;
+    switchScreen("result");
+}
+
+// ── ГЕНЕРАЦИЯ ПО ПРОМТУ ───────────────────────────────────────────
 let giPhotoBase64 = null;
 let giAspectRatio = "1:1";
 let giStrength = 0.15;

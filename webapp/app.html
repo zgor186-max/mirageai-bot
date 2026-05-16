@@ -60,7 +60,7 @@
                 <span class="tool-label" style="position:relative;z-index:1;color:#fff;">Удаление фона</span>
             </button>
             <!-- Разглаживание одежды -->
-            <button class="tool-btn-large tool-btn-photo" onclick="tg.showAlert('Скоро!')" style="background-image:url('img/tool_iron.jpg');">
+            <button class="tool-btn-large tool-btn-photo" onclick="showSmoothing()" style="background-image:url('img/tool_iron.jpg');">
                 <div class="tool-btn-photo-grad"></div>
                 <span class="tool-label" style="position:relative;z-index:1;color:#fff;">Разглаживание одежды</span>
             </button>
@@ -123,6 +123,31 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Разглаживание одежды -->
+    <div id="screen-smooth" class="screen">
+        <button class="back-btn" onclick="showHome()">← Назад</button>
+        <div style="padding:0 16px;">
+            <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;">Разглаживание одежды</div>
+            <div style="font-size:13px;color:#aaa;margin-bottom:20px;">Загрузи фото мятого товара — нейросеть разгладит складки и морщины</div>
+
+            <!-- Upload -->
+            <div class="upload-area" id="sm-upload-area" onclick="document.getElementById('sm-photo-input').click()" style="margin-bottom:14px;min-height:140px;">
+                <div class="upload-icon">👕</div>
+                <div class="upload-text">Нажми чтобы загрузить фото</div>
+                <input type="file" id="sm-photo-input" accept="image/*" style="display:none" onchange="smHandlePhoto(this)">
+            </div>
+            <div id="sm-preview-wrap" style="display:none;margin-bottom:14px;position:relative;">
+                <img id="sm-preview" style="width:100%;border-radius:14px;max-height:300px;object-fit:cover;" alt="preview">
+                <button onclick="smClearPhoto()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:none;color:#fff;border-radius:50%;width:28px;height:28px;font-size:14px;cursor:pointer;">✕</button>
+            </div>
+
+            <!-- Button -->
+            <button id="sm-generate-btn" onclick="smGenerate()" disabled style="width:100%;padding:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#7b2ff7,#0055ff);color:#fff;font-size:16px;font-weight:700;cursor:pointer;opacity:0.4;transition:opacity .2s;">
+                👕 Разгладить
+            </button>
         </div>
     </div>
 
@@ -460,6 +485,6 @@
     </div>
 
     <script src="js/templates.js?v=202605160204"></script>
-    <script src="js/app.js?v=202605170015"></script>
+    <script src="js/app.js?v=202605170016"></script>
 </body>
 </html>
