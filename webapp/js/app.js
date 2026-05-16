@@ -380,23 +380,30 @@ async function sendToChat() {
 
     try {
         const blob = await fetch(currentResultUrl).then(r => r.blob());
+        const isPng = currentResultUrl.startsWith("data:image/png");
+        const filename = isPng ? "MirageAI.png" : "MirageAI.jpg";
+        const BOT_TOKEN = "8783691026:AAEzeRqVkCcXlwgqc0bhjZ4N-fOGcmoQ_nI";
+
         const formData = new FormData();
         formData.append("chat_id", chatId);
-        formData.append("photo", blob, "MirageAI.jpg");
-        formData.append("caption", "✅ Карточка товара готова! — *MirageAI*");
         formData.append("parse_mode", "Markdown");
 
-        const BOT_TOKEN = "8783691026:AAEzeRqVkCcXlwgqc0bhjZ4N-fOGcmoQ_nI";
-        const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-            method: "POST",
-            body: formData
-        });
-        const result = await resp.json();
-
-        if (result.ok) {
-            tg.showAlert("✅ Фото отправлено в чат!");
+        if (isPng) {
+            // PNG с прозрачностью — отправляем как документ
+            formData.append("document", blob, filename);
+            formData.append("caption", "✅ Фон удалён! — *MirageAI*");
+            const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, { method: "POST", body: formData });
+            const result = await resp.json();
+            if (result.ok) tg.showAlert("✅ Файл отправлен в чат!");
+            else tg.showAlert("❌ Ошибка: " + (result.description || "Попробуй ещё раз"));
         } else {
-            tg.showAlert("❌ Ошибка: " + (result.description || "Попробуй ещё раз"));
+            // JPEG — отправляем как фото
+            formData.append("photo", blob, filename);
+            formData.append("caption", "✅ Готово! — *MirageAI*");
+            const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: "POST", body: formData });
+            const result = await resp.json();
+            if (result.ok) tg.showAlert("✅ Фото отправлено в чат!");
+            else tg.showAlert("❌ Ошибка: " + (result.description || "Попробуй ещё раз"));
         }
     } catch (e) {
         tg.showAlert("❌ Ошибка отправки. Попробуй ещё раз.");
@@ -409,14 +416,15 @@ async function sendToChat() {
 function downloadResult() {
     if (!currentResultUrl) return;
     if (currentResultUrl.startsWith("data:")) {
-        // Base64 — создаём blob и скачиваем
+        const isPng = currentResultUrl.startsWith("data:image/png");
+        const ext = isPng ? ".png" : ".jpg";
         fetch(currentResultUrl)
             .then(r => r.blob())
             .then(blob => {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = "MirageAI_" + Date.now() + ".jpg";
+                a.download = "MirageAI_" + Date.now() + ext;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -648,6 +656,7 @@ async function rbGenerate() {
     finishProgress();
     await new Promise(r => setTimeout(r, 400));
 
+    currentResultUrl = resultData;
     document.getElementById("result-image").src = resultData;
     switchScreen("result");
 }
@@ -785,15 +794,13 @@ async function giGenerate() {
         return;
     }
 
-    // Успех — завершаем прогресс, возвращаемся на экран и показываем результат
+    // Успех — показываем на screen-result как карточки WB/OZON
     finishProgress();
     await new Promise(r => setTimeout(r, 400));
-    switchScreen("image-prompt");
 
-    document.getElementById("gi-result-img").src = resultData;
-    document.getElementById("gi-result").style.display = "block";
-    document.getElementById("gi-result").scrollIntoView({ behavior: "smooth" });
-    giCheckReady();
+    currentResultUrl = resultData;
+    document.getElementById("result-image").src = resultData;
+    switchScreen("result");
 }
 
 function giDownload() {
