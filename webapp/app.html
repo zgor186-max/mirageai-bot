@@ -20,7 +20,7 @@
     </script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Oswald:wght@600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=10">
+    <link rel="stylesheet" href="css/style.css?v=11">
 </head>
 <body>
 
@@ -55,7 +55,7 @@
         <!-- Инструменты -->
         <div class="tools-row">
             <!-- Удаление фона -->
-            <button class="tool-btn-large tool-btn-photo" onclick="tg.showAlert('Скоро!')" style="background-image:url('img/tool_bg.jpg');">
+            <button class="tool-btn-large tool-btn-photo" onclick="showRemoveBg()" style="background-image:url('img/tool_bg.jpg');">
                 <div class="tool-btn-photo-grad"></div>
                 <span class="tool-label" style="position:relative;z-index:1;color:#fff;">Удаление фона</span>
             </button>
@@ -82,6 +82,48 @@
             <div class="trends-subtitle">Создавай уникальные образы с помощью AI</div>
         </div>
         <div class="templates-grid" id="templates-grid"></div>
+    </div>
+
+    <!-- Удаление фона -->
+    <div id="screen-remove-bg" class="screen">
+        <button class="back-btn" onclick="showHome()">← Назад</button>
+        <div style="padding:0 16px;">
+            <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;">Удаление фона</div>
+            <div style="font-size:13px;color:#aaa;margin-bottom:20px;">Загрузи фото — нейросеть удалит фон автоматически</div>
+
+            <!-- Upload -->
+            <div class="upload-area" id="rb-upload-area" onclick="document.getElementById('rb-photo-input').click()" style="margin-bottom:14px;min-height:140px;">
+                <div class="upload-icon">📷</div>
+                <div class="upload-text">Нажми чтобы загрузить фото</div>
+                <input type="file" id="rb-photo-input" accept="image/*" style="display:none" onchange="rbHandlePhoto(this)">
+            </div>
+            <div id="rb-preview-wrap" style="display:none;margin-bottom:14px;position:relative;">
+                <img id="rb-preview" style="width:100%;border-radius:14px;max-height:300px;object-fit:cover;" alt="preview">
+                <button onclick="rbClearPhoto()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:none;color:#fff;border-radius:50%;width:28px;height:28px;font-size:14px;cursor:pointer;">✕</button>
+            </div>
+
+            <!-- Button -->
+            <button id="rb-generate-btn" onclick="rbGenerate()" disabled style="width:100%;padding:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#7b2ff7,#0055ff);color:#fff;font-size:16px;font-weight:700;cursor:pointer;opacity:0.4;transition:opacity .2s;">
+                ✂️ Удалить фон
+            </button>
+
+            <!-- Result -->
+            <div id="rb-result" style="display:none;margin-top:20px;">
+                <div style="font-size:14px;color:#aaa;margin-bottom:8px;">Результат:</div>
+                <img id="rb-result-img" style="width:100%;border-radius:14px;background:repeating-conic-gradient(#333 0% 25%, #222 0% 50%) 0 0 / 20px 20px;" alt="result">
+                <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                    <button onclick="rbDownload()" style="flex:1;padding:13px;border:1px solid #7b2ff7;border-radius:14px;background:transparent;color:#a78bfa;font-size:14px;font-weight:600;cursor:pointer;">
+                        ⬇ Скачать
+                    </button>
+                    <button onclick="rbSendToChat()" style="flex:1;padding:13px;border:1px solid #7b2ff7;border-radius:14px;background:transparent;color:#a78bfa;font-size:14px;font-weight:600;cursor:pointer;">
+                        ✈ В чат
+                    </button>
+                    <button onclick="rbShare()" style="flex:1;padding:13px;border:1px solid #7b2ff7;border-radius:14px;background:transparent;color:#a78bfa;font-size:14px;font-weight:600;cursor:pointer;">
+                        ↗ Поделиться
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Фото по промту -->
@@ -418,6 +460,6 @@
     </div>
 
     <script src="js/templates.js?v=202605160204"></script>
-    <script src="js/app.js?v=202605170006"></script>
+    <script src="js/app.js?v=202605170007"></script>
 </body>
 </html>

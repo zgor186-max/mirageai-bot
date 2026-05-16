@@ -571,6 +571,118 @@ function selectTool(tool) {
 }
 
 // ── ФОТО ПО ПРОМТУ ────────────────────────────────────────────────────
+// ── Удаление фона ────────────────────────────────────────────────────
+let rbPhotoBase64 = null;
+
+function showRemoveBg() {
+    switchScreen("remove-bg");
+    setActiveNav("");
+}
+
+function rbHandlePhoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        rbPhotoBase64 = e.target.result;
+        document.getElementById("rb-preview").src = rbPhotoBase64;
+        document.getElementById("rb-preview-wrap").style.display = "block";
+        document.getElementById("rb-upload-area").style.display = "none";
+        document.getElementById("rb-result").style.display = "none";
+        const btn = document.getElementById("rb-generate-btn");
+        btn.disabled = false;
+        btn.style.opacity = "1";
+    };
+    reader.readAsDataURL(file);
+}
+
+function rbClearPhoto() {
+    rbPhotoBase64 = null;
+    document.getElementById("rb-preview-wrap").style.display = "none";
+    document.getElementById("rb-upload-area").style.display = "flex";
+    document.getElementById("rb-photo-input").value = "";
+    document.getElementById("rb-result").style.display = "none";
+    const btn = document.getElementById("rb-generate-btn");
+    btn.disabled = true;
+    btn.style.opacity = "0.4";
+}
+
+async function rbGenerate() {
+    if (!rbPhotoBase64) return;
+
+    const titleEl = document.querySelector("#screen-loading .loading-title");
+    const s1 = document.getElementById("step-1");
+    const s2 = document.getElementById("step-2");
+    const s3 = document.getElementById("step-3");
+    if (titleEl) titleEl.textContent = "Удаляю фон...";
+    if (s1) s1.textContent = "🖼️ Загружаю фото";
+    if (s2) s2.textContent = "✂️ Вырезаю фон";
+    if (s3) s3.textContent = "✨ Финальная обработка";
+
+    switchScreen("loading");
+    animateSteps();
+
+    let resultData = null;
+    try {
+        const resp = await fetch(API_SERVER + "/remove-bg", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: rbPhotoBase64 })
+        });
+        const data = await resp.json();
+        if (data.image) {
+            resultData = data.image;
+        } else {
+            finishProgress();
+            switchScreen("remove-bg");
+            tg.showAlert("Ошибка: " + (data.error || "неизвестная ошибка"));
+            return;
+        }
+    } catch (e) {
+        finishProgress();
+        switchScreen("remove-bg");
+        tg.showAlert("Ошибка соединения с сервером");
+        return;
+    }
+
+    finishProgress();
+    await new Promise(r => setTimeout(r, 400));
+    switchScreen("remove-bg");
+
+    document.getElementById("rb-result-img").src = resultData;
+    document.getElementById("rb-result").style.display = "block";
+    document.getElementById("rb-result").scrollIntoView({ behavior: "smooth" });
+}
+
+function rbDownload() {
+    const img = document.getElementById("rb-result-img");
+    if (!img.src) return;
+    const a = document.createElement("a");
+    a.href = img.src;
+    a.download = "removed_bg.png";
+    a.click();
+}
+
+function rbSendToChat() {
+    const img = document.getElementById("rb-result-img");
+    if (!img.src) return;
+    tg.sendData(JSON.stringify({ type: "remove_bg", image: img.src }));
+}
+
+function rbShare() {
+    const img = document.getElementById("rb-result-img");
+    if (!img.src) return;
+    if (navigator.share) {
+        fetch(img.src).then(r => r.blob()).then(blob => {
+            const file = new File([blob], "removed_bg.png", { type: "image/png" });
+            navigator.share({ files: [file] });
+        });
+    } else {
+        rbDownload();
+    }
+}
+
+// ── Генерация по промту ───────────────────────────────────────────────
 let giPhotoBase64 = null;
 let giAspectRatio = "1:1";
 let giStrength = 0.15;
