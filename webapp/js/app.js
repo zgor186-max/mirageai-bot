@@ -572,6 +572,13 @@ function selectTool(tool) {
 
 // ── ФОТО ПО ПРОМТУ ────────────────────────────────────────────────────
 let giPhotoBase64 = null;
+let giAspectRatio = "auto";
+
+function giSetRatio(btn, ratio) {
+    document.querySelectorAll(".gi-ratio-btn").forEach(b => b.classList.remove("gi-ratio-active"));
+    btn.classList.add("gi-ratio-active");
+    giAspectRatio = ratio;
+}
 
 function showImagePrompt() {
     switchScreen("image-prompt");
@@ -625,7 +632,8 @@ async function giGenerate() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 image: giPhotoBase64,
-                prompt: prompt
+                prompt: prompt,
+                aspect_ratio: giAspectRatio
             })
         });
         const data = await resp.json();

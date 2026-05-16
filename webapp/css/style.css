@@ -1171,3 +1171,22 @@ body {
     color: var(--accent3);
     margin-top: 4px;
 }
+
+/* ── Ratio selector ─────────────────────────────────────────── */
+.gi-ratio-btn {
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1.5px solid #333;
+    background: transparent;
+    color: #ccc;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+}
+.gi-ratio-btn:active { transform: scale(0.95); }
+.gi-ratio-active {
+    border-color: #7b2ff7;
+    color: #7b2ff7;
+    background: rgba(123,47,247,0.1);
+}

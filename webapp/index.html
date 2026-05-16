@@ -104,6 +104,24 @@
             <!-- Prompt -->
             <textarea id="gi-prompt" placeholder="Опиши что хочешь получить... например: сделай фон белым, добавь закат за окном, измени цвет платья на красный" style="width:100%;box-sizing:border-box;background:#1e1e2e;border:1px solid #333;border-radius:14px;color:#fff;font-size:14px;padding:14px;min-height:100px;resize:none;font-family:inherit;outline:none;margin-bottom:14px;" oninput="giCheckReady()"></textarea>
 
+            <!-- Соотношение сторон -->
+            <div style="margin-bottom:16px;">
+                <div style="font-size:13px;color:#aaa;margin-bottom:10px;">Соотношение сторон</div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;" id="gi-ratio-group">
+                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'1:1')">1:1</button>
+                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'2:3')">2:3</button>
+                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'3:2')">3:2</button>
+                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'3:4')">3:4</button>
+                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'4:3')">4:3</button>
+                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'4:5')">4:5</button>
+                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'5:4')">5:4</button>
+                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'9:16')">9:16</button>
+                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'16:9')">16:9</button>
+                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'21:9')">21:9</button>
+                    <button class="gi-ratio-btn gi-ratio-active" onclick="giSetRatio(this,'auto')">auto</button>
+                </div>
+            </div>
+
             <!-- Button -->
             <button id="gi-generate-btn" onclick="giGenerate()" disabled style="width:100%;padding:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#7b2ff7,#0055ff);color:#fff;font-size:16px;font-weight:700;cursor:pointer;opacity:0.4;transition:opacity .2s;">
                 ⚡ Генерировать
@@ -386,6 +404,6 @@
     </div>
 
     <script src="js/templates.js?v=202605160204"></script>
-    <script src="js/app.js?v=202605170001"></script>
+    <script src="js/app.js?v=202605170002"></script>
 </body>
 </html>
