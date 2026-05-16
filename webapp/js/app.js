@@ -471,11 +471,10 @@ async function downloadResult() {
             return;
         }
 
-        // tg.downloadFile — нативный Telegram, работает и на PC и на мобильных
-        if (tg.downloadFile) {
-            tg.downloadFile(httpUrl, filename);
+        // Открываем в браузере — там можно сохранить (работает везде: PC, мобильный, веб)
+        if (tg.openLink) {
+            tg.openLink(httpUrl);
         } else {
-            // Старые версии — открыть в браузере, пользователь сохранит вручную
             window.open(httpUrl, "_blank");
         }
     } catch(e) {
