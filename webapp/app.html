@@ -55,14 +55,9 @@
         <!-- Инструменты -->
         <div class="tools-row">
             <!-- Удаление фона -->
-            <button class="tool-btn-large" onclick="tg.showAlert('Скоро!')">
-                <div class="tool-icon" style="display:flex;align-items:center;justify-content:center;">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20.37 8.91l-1 1.73-12.13-7 1-1.73a2 2 0 0 1 2.73-.73l1.34.77 1.45-2.51 1.73 1-1.45 2.51 3.46 2 1.45-2.52 1.72 1-1.45 2.51 1.34.77a2 2 0 0 1 .81 2.67z"/>
-                        <path d="M5 21a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2z"/>
-                    </svg>
-                </div>
-                <span class="tool-label">Удаление фона</span>
+            <button class="tool-btn-large tool-btn-photo" onclick="tg.showAlert('Скоро!')" style="background-image:url('img/tool_bg.jpg');">
+                <div class="tool-btn-photo-grad"></div>
+                <span class="tool-label" style="position:relative;z-index:1;color:#fff;">Удаление фона</span>
             </button>
             <!-- Разглаживание одежды -->
             <button class="tool-btn-large" onclick="tg.showAlert('Скоро!')">
