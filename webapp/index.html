@@ -130,9 +130,8 @@
                 <input type="range" id="gi-strength" min="5" max="60" value="15" step="5"
                     oninput="giUpdateStrength(this.value)"
                     style="width:100%;accent-color:#7b2ff7;cursor:pointer;">
-                <div style="display:flex;justify-content:space-between;font-size:11px;color:#555;margin-top:4px;">
-                    <span>меньше (свободнее)</span>
-                    <span>больше (ближе к фото)</span>
+                <div id="gi-strength-hint" style="font-size:12px;color:#777;margin-top:6px;line-height:1.4;">
+                    🎨 Модель свободно интерпретирует фото — результат может сильно отличаться
                 </div>
             </div>
 
@@ -418,6 +417,6 @@
     </div>
 
     <script src="js/templates.js?v=202605160204"></script>
-    <script src="js/app.js?v=202605170005"></script>
+    <script src="js/app.js?v=202605170006"></script>
 </body>
 </html>

@@ -584,6 +584,13 @@ function giSetRatio(btn, ratio) {
 function giUpdateStrength(val) {
     giStrength = parseInt(val) / 100;
     document.getElementById("gi-strength-val").textContent = val + "%";
+    const hint = document.getElementById("gi-strength-hint");
+    if (!hint) return;
+    const n = parseInt(val);
+    if (n <= 15)      hint.textContent = "🎨 Модель свободно интерпретирует фото — результат может сильно отличаться";
+    else if (n <= 30) hint.textContent = "✨ Баланс между творчеством и сходством с референсом";
+    else if (n <= 45) hint.textContent = "🖼️ Результат будет близок к референсу по стилю и цветам";
+    else              hint.textContent = "📌 Сильное влияние — модель держится максимально близко к исходнику";
 }
 
 function showImagePrompt() {
