@@ -627,7 +627,7 @@ async function giGenerate() {
     document.getElementById("gi-result").style.display = "none";
 
     try {
-        const resp = await fetch(API_BASE + "/generate-image", {
+        const resp = await fetch(API_SERVER + "/generate-image", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
