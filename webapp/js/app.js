@@ -620,12 +620,21 @@ async function giGenerate() {
     const prompt = document.getElementById("gi-prompt").value.trim();
     if (!giPhotoBase64 || !prompt) return;
 
-    const btn = document.getElementById("gi-generate-btn");
-    btn.disabled = true;
-    btn.textContent = "⏳ Генерируется...";
-    btn.style.opacity = "0.7";
-    document.getElementById("gi-result").style.display = "none";
+    // Настраиваем тексты загрузочного экрана под контекст
+    const titleEl = document.querySelector("#screen-loading .loading-title");
+    const s1 = document.getElementById("step-1");
+    const s2 = document.getElementById("step-2");
+    const s3 = document.getElementById("step-3");
+    if (titleEl) titleEl.textContent = "Генерирую изображение...";
+    if (s1) s1.textContent = "🖼️ Загружаю фото";
+    if (s2) s2.textContent = "🤖 Применяю промт";
+    if (s3) s3.textContent = "✨ Финальная обработка";
 
+    // Показываем экран загрузки с глазом
+    switchScreen("loading");
+    animateSteps();
+
+    let resultData = null;
     try {
         const resp = await fetch(API_SERVER + "/generate-image", {
             method: "POST",
@@ -638,20 +647,29 @@ async function giGenerate() {
         });
         const data = await resp.json();
         if (data.image) {
-            document.getElementById("gi-result-img").src = data.image;
-            document.getElementById("gi-result").style.display = "block";
-            document.getElementById("gi-result").scrollIntoView({ behavior: "smooth" });
+            resultData = data.image;
         } else {
+            finishProgress();
+            switchScreen("image-prompt");
             tg.showAlert("Ошибка генерации: " + (data.error || "неизвестная ошибка"));
+            return;
         }
     } catch (e) {
+        finishProgress();
+        switchScreen("image-prompt");
         tg.showAlert("Ошибка соединения с сервером");
-    } finally {
-        btn.disabled = false;
-        btn.textContent = "⚡ Генерировать";
-        btn.style.opacity = "1";
-        giCheckReady();
+        return;
     }
+
+    // Успех — завершаем прогресс, возвращаемся на экран и показываем результат
+    finishProgress();
+    await new Promise(r => setTimeout(r, 400));
+    switchScreen("image-prompt");
+
+    document.getElementById("gi-result-img").src = resultData;
+    document.getElementById("gi-result").style.display = "block";
+    document.getElementById("gi-result").scrollIntoView({ behavior: "smooth" });
+    giCheckReady();
 }
 
 function giDownload() {
