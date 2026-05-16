@@ -413,30 +413,38 @@ async function sendToChat() {
     }
 }
 
+function _downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
 function downloadResult() {
     if (!currentResultUrl) return;
     const isPng = currentResultUrl.startsWith("data:image/png");
     const ext = isPng ? ".png" : ".jpg";
     const filename = "MirageAI_" + Date.now() + ext;
-    if (tg.downloadFile && !currentResultUrl.startsWith("data:")) {
-        tg.downloadFile(currentResultUrl, filename);
-    } else if (currentResultUrl.startsWith("data:")) {
-        // Сохраняем на сервер → получаем URL → tg.downloadFile
-        fetch(API_SERVER + "/save-temp", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: currentResultUrl })
-        }).then(r => r.json()).then(d => {
-            if (d.url) {
-                if (tg.downloadFile) {
-                    tg.downloadFile(d.url, d.filename || filename);
-                } else {
-                    window.open(d.url, "_blank");
-                }
-            }
-        }).catch(() => window.open(currentResultUrl, "_blank"));
+
+    if (currentResultUrl.startsWith("data:")) {
+        // base64 → blob → скачать напрямую
+        fetch(currentResultUrl)
+            .then(r => r.blob())
+            .then(blob => _downloadBlob(blob, filename))
+            .catch(() => tg.showAlert("Не удалось скачать. Используй кнопку 'В чат'."));
     } else {
-        window.open(currentResultUrl, "_blank");
+        // URL → fetch через CORS → blob → скачать
+        fetch(currentResultUrl)
+            .then(r => r.blob())
+            .then(blob => _downloadBlob(blob, filename))
+            .catch(() => {
+                if (tg.downloadFile) tg.downloadFile(currentResultUrl, filename);
+                else window.open(currentResultUrl, "_blank");
+            });
     }
 }
 
