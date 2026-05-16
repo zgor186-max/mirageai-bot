@@ -456,11 +456,13 @@ function downloadResult() {
     const filename = "MirageAI_" + Date.now() + ext;
 
     if (currentResultUrl.startsWith("data:")) {
-        // base64 → blob → скачать напрямую
-        fetch(currentResultUrl)
-            .then(r => r.blob())
-            .then(blob => _downloadBlob(blob, filename))
-            .catch(() => tg.showAlert("Не удалось скачать. Используй кнопку 'В чат'."));
+        // base64 → blob напрямую (fetch("data:") падает в Telegram WebView)
+        try {
+            const blob = _dataUrlToBlob(currentResultUrl);
+            _downloadBlob(blob, filename);
+        } catch(e) {
+            tg.showAlert("Не удалось скачать. Используй кнопку 'В чат'.");
+        }
     } else {
         // URL → fetch через CORS → blob → скачать
         fetch(currentResultUrl)
@@ -473,27 +475,53 @@ function downloadResult() {
     }
 }
 
-function forwardResult() {
+async function forwardResult() {
     if (!currentResultUrl) return;
-    if (currentResultUrl.startsWith("data:")) {
-        // Сохраняем на сервер → получаем URL → share
-        fetch(API_SERVER + "/save-temp", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: currentResultUrl })
-        }).then(r => r.json()).then(d => {
-            if (d.url && navigator.share) {
-                navigator.share({ url: d.url, title: "MirageAI" });
-            } else if (d.url) {
-                window.open(d.url, "_blank");
-            }
-        }).catch(() => downloadResult());
-    } else {
-        if (navigator.share) {
-            navigator.share({ url: currentResultUrl, title: "MirageAI" });
-        } else {
-            window.open(currentResultUrl, "_blank");
+
+    const btn = document.querySelector(".result-btn-forward");
+    if (btn) { btn.innerHTML = "⏳..."; btn.disabled = true; }
+
+    try {
+        let shareUrl = currentResultUrl;
+
+        // Если base64 — сначала сохраняем на сервер чтобы получить нормальный URL
+        if (currentResultUrl.startsWith("data:")) {
+            const resp = await fetch(API_SERVER + "/save-temp", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: currentResultUrl })
+            });
+            const d = await resp.json();
+            if (d.url) shareUrl = d.url;
         }
+
+        // Пробуем navigator.share
+        if (navigator.share) {
+            try {
+                await navigator.share({ url: shareUrl, title: "MirageAI" });
+                return;
+            } catch(e) { /* пользователь отменил или не поддерживается */ }
+        }
+
+        // Fallback: копируем ссылку в буфер обмена
+        if (shareUrl.startsWith("http")) {
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                tg.showAlert("✅ Ссылка скопирована в буфер обмена!");
+                return;
+            } catch(e) {}
+        }
+
+        // Последний fallback — открыть в браузере
+        if (shareUrl.startsWith("http")) {
+            window.open(shareUrl, "_blank");
+        } else {
+            tg.showAlert("Поделиться недоступно. Используй кнопку 'Скачать' или 'В чат'.");
+        }
+    } catch(e) {
+        tg.showAlert("❌ Ошибка: " + e.message);
+    } finally {
+        if (btn) { btn.innerHTML = "📤 Поделиться"; btn.disabled = false; }
     }
 }
 
