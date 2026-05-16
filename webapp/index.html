@@ -43,9 +43,32 @@
     <div id="screen-home" class="screen active">
         <!-- Инструменты -->
         <div class="tools-row">
+            <!-- Удаление фона -->
+            <button class="tool-btn-large" onclick="tg.showAlert('Скоро!')">
+                <div class="tool-icon" style="display:flex;align-items:center;justify-content:center;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20.37 8.91l-1 1.73-12.13-7 1-1.73a2 2 0 0 1 2.73-.73l1.34.77 1.45-2.51 1.73 1-1.45 2.51 3.46 2 1.45-2.52 1.72 1-1.45 2.51 1.34.77a2 2 0 0 1 .81 2.67z"/>
+                        <path d="M5 21a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2z"/>
+                    </svg>
+                </div>
+                <span class="tool-label">Удаление фона</span>
+            </button>
+            <!-- Выравнивание товара -->
+            <button class="tool-btn-large" onclick="tg.showAlert('Скоро!')">
+                <div class="tool-icon" style="display:flex;align-items:center;justify-content:center;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                </div>
+                <span class="tool-label">Выравнивание товара</span>
+            </button>
+            <!-- Генерация по промту -->
             <button class="tool-btn-large" onclick="selectTool('image')">
-                <div class="tool-icon">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8">
+                <div class="tool-icon" style="display:flex;align-items:center;justify-content:center;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="3"/>
                         <circle cx="8.5" cy="8.5" r="1.5"/>
                         <path d="M21 15l-5-5L5 21"/>
@@ -53,6 +76,7 @@
                 </div>
                 <span class="tool-label">Генерация по промту</span>
             </button>
+            <!-- Изображения для WB и OZON -->
             <button class="tool-btn-large" onclick="selectTool('marketplace')">
                 <div class="tool-icon" style="background:linear-gradient(135deg,#7b2ff7,#0055ff);display:flex;flex-direction:column;align-items:center;justify-content:center;width:43px;height:43px;border-radius:12px;gap:1px;">
                     <span style="font-size:8px;font-weight:900;color:#ff00ff;letter-spacing:0.5px;line-height:1;">WB</span>
@@ -60,6 +84,18 @@
                     <span style="font-size:8px;font-weight:900;color:#ffffff;letter-spacing:0.5px;line-height:1;">OZON</span>
                 </div>
                 <span class="tool-label">Изображения для WB и OZON</span>
+            </button>
+            <!-- Выравнивание товара -->
+            <button class="tool-btn-large" onclick="tg.showAlert('Скоро!')">
+                <div class="tool-icon" style="display:flex;align-items:center;justify-content:center;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                </div>
+                <span class="tool-label">Выравнивание товара</span>
             </button>
         </div>
 
