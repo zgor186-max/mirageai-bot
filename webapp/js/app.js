@@ -804,14 +804,10 @@ async function smGenerate() {
 
     let resultData = null;
     try {
-        const resp = await fetch(API_SERVER + "/generate-image", {
+        const resp = await fetch(API_SERVER + "/smooth-clothing", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                image: smPhotoBase64,
-                prompt: "Iron out all wrinkles and creases in the fabric of this clothing item. Keep everything else identical: same background, same lighting, same position, same color, same clothing style. Only change: make the fabric perfectly smooth as if professionally steamed. Do not add knots, folds, twists or any new deformations.",
-                aspect_ratio: "1:1"
-            })
+            body: JSON.stringify({ image: smPhotoBase64 })
         });
         const data = await resp.json();
         if (data.image) {
