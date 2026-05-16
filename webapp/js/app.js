@@ -367,6 +367,15 @@ function viewGalleryItem(url) {
     switchScreen("result");
 }
 
+function _dataUrlToBlob(dataUrl) {
+    const arr = dataUrl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    const u8arr = new Uint8Array(bstr.length);
+    for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+    return new Blob([u8arr], { type: mime });
+}
+
 async function sendToChat() {
     if (!currentResultUrl) return;
 
@@ -379,34 +388,50 @@ async function sendToChat() {
     btn.disabled = true;
 
     try {
-        const blob = await fetch(currentResultUrl).then(r => r.blob());
         const isPng = currentResultUrl.startsWith("data:image/png");
         const filename = isPng ? "MirageAI.png" : "MirageAI.jpg";
         const BOT_TOKEN = "8783691026:AAEzeRqVkCcXlwgqc0bhjZ4N-fOGcmoQ_nI";
+
+        let blob;
+        if (currentResultUrl.startsWith("data:")) {
+            blob = _dataUrlToBlob(currentResultUrl);
+        } else {
+            blob = await fetch(currentResultUrl).then(r => r.blob());
+        }
 
         const formData = new FormData();
         formData.append("chat_id", chatId);
         formData.append("parse_mode", "Markdown");
 
+        let apiMethod, fieldName, caption;
         if (isPng) {
-            // PNG с прозрачностью — отправляем как документ
-            formData.append("document", blob, filename);
-            formData.append("caption", "✅ Фон удалён! — *MirageAI*");
-            const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, { method: "POST", body: formData });
-            const result = await resp.json();
-            if (result.ok) tg.showAlert("✅ Файл отправлен в чат!");
-            else tg.showAlert("❌ Ошибка: " + (result.description || "Попробуй ещё раз"));
+            apiMethod = "sendDocument";
+            fieldName = "document";
+            caption = "✅ Фон удалён! — *MirageAI*";
         } else {
-            // JPEG — отправляем как фото
-            formData.append("photo", blob, filename);
-            formData.append("caption", "✅ Готово! — *MirageAI*");
-            const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: "POST", body: formData });
-            const result = await resp.json();
-            if (result.ok) tg.showAlert("✅ Фото отправлено в чат!");
-            else tg.showAlert("❌ Ошибка: " + (result.description || "Попробуй ещё раз"));
+            apiMethod = "sendPhoto";
+            fieldName = "photo";
+            caption = "✅ Готово! — *MirageAI*";
+        }
+
+        formData.append(fieldName, blob, filename);
+        formData.append("caption", caption);
+
+        const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${apiMethod}`, {
+            method: "POST",
+            body: formData
+        });
+        const result = await resp.json();
+
+        if (result.ok) {
+            tg.showAlert("✅ Отправлено в чат!");
+        } else {
+            tg.showAlert("❌ Ошибка: " + (result.description || "Попробуй ещё раз"));
+            console.error("Telegram API error:", result);
         }
     } catch (e) {
-        tg.showAlert("❌ Ошибка отправки. Попробуй ещё раз.");
+        tg.showAlert("❌ Ошибка: " + e.message);
+        console.error("sendToChat error:", e);
     } finally {
         btn.innerHTML = origText;
         btn.disabled = false;
