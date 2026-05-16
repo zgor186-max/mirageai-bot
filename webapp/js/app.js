@@ -438,40 +438,50 @@ async function sendToChat() {
     }
 }
 
-function _downloadBlob(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
+// Сохраняет base64 на сервер и возвращает HTTP URL
+async function _saveToServer(dataUrl) {
+    const resp = await fetch(API_SERVER + "/save-temp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataUrl })
+    });
+    const d = await resp.json();
+    return d.url || null;
 }
 
-function downloadResult() {
+async function downloadResult() {
     if (!currentResultUrl) return;
-    const isPng = currentResultUrl.startsWith("data:image/png");
-    const ext = isPng ? ".png" : ".jpg";
-    const filename = "MirageAI_" + Date.now() + ext;
 
-    if (currentResultUrl.startsWith("data:")) {
-        // base64 → blob напрямую (fetch("data:") падает в Telegram WebView)
-        try {
-            const blob = _dataUrlToBlob(currentResultUrl);
-            _downloadBlob(blob, filename);
-        } catch(e) {
-            tg.showAlert("Не удалось скачать. Используй кнопку 'В чат'.");
+    const btn = document.querySelector(".result-btn-download");
+    const origText = btn ? btn.innerHTML : "";
+    if (btn) { btn.innerHTML = "⏳..."; btn.disabled = true; }
+
+    try {
+        const isPng = currentResultUrl.startsWith("data:image/png");
+        const ext = isPng ? ".png" : ".jpg";
+        const filename = "MirageAI_" + Date.now() + ext;
+
+        // Получаем HTTP URL (сохраняем на сервер если base64)
+        let httpUrl = currentResultUrl.startsWith("data:")
+            ? await _saveToServer(currentResultUrl)
+            : currentResultUrl;
+
+        if (!httpUrl) {
+            tg.showAlert("Не удалось подготовить файл. Используй 'В чат'.");
+            return;
         }
-    } else {
-        // URL → fetch через CORS → blob → скачать
-        fetch(currentResultUrl)
-            .then(r => r.blob())
-            .then(blob => _downloadBlob(blob, filename))
-            .catch(() => {
-                if (tg.downloadFile) tg.downloadFile(currentResultUrl, filename);
-                else window.open(currentResultUrl, "_blank");
-            });
+
+        // tg.downloadFile — нативный Telegram, работает и на PC и на мобильных
+        if (tg.downloadFile) {
+            tg.downloadFile(httpUrl, filename);
+        } else {
+            // Старые версии — открыть в браузере, пользователь сохранит вручную
+            window.open(httpUrl, "_blank");
+        }
+    } catch(e) {
+        tg.showAlert("❌ Ошибка: " + e.message);
+    } finally {
+        if (btn) { btn.innerHTML = origText; btn.disabled = false; }
     }
 }
 
@@ -479,45 +489,38 @@ async function forwardResult() {
     if (!currentResultUrl) return;
 
     const btn = document.querySelector(".result-btn-forward");
+    const origText = btn ? btn.innerHTML : "";
     if (btn) { btn.innerHTML = "⏳..."; btn.disabled = true; }
 
     try {
-        let shareUrl = currentResultUrl;
+        // Получаем HTTP URL
+        let shareUrl = currentResultUrl.startsWith("data:")
+            ? await _saveToServer(currentResultUrl)
+            : currentResultUrl;
 
-        // Если base64 — сначала сохраняем на сервер чтобы получить нормальный URL
-        if (currentResultUrl.startsWith("data:")) {
-            const resp = await fetch(API_SERVER + "/save-temp", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ image: currentResultUrl })
-            });
-            const d = await resp.json();
-            if (d.url) shareUrl = d.url;
+        if (!shareUrl) {
+            tg.showAlert("Не удалось подготовить ссылку.");
+            return;
         }
 
-        // Пробуем navigator.share
+        // Пробуем navigator.share (iOS Safari, некоторые Android)
         if (navigator.share) {
             try {
                 await navigator.share({ url: shareUrl, title: "MirageAI" });
                 return;
-            } catch(e) { /* пользователь отменил или не поддерживается */ }
+            } catch(e) { /* отменено или не поддерживается */ }
         }
 
         // Fallback: копируем ссылку в буфер обмена
-        if (shareUrl.startsWith("http")) {
-            try {
-                await navigator.clipboard.writeText(shareUrl);
-                tg.showAlert("✅ Ссылка скопирована в буфер обмена!");
-                return;
-            } catch(e) {}
-        }
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            tg.showAlert("✅ Ссылка скопирована в буфер обмена!");
+            return;
+        } catch(e) {}
 
         // Последний fallback — открыть в браузере
-        if (shareUrl.startsWith("http")) {
-            window.open(shareUrl, "_blank");
-        } else {
-            tg.showAlert("Поделиться недоступно. Используй кнопку 'Скачать' или 'В чат'.");
-        }
+        window.open(shareUrl, "_blank");
+
     } catch(e) {
         tg.showAlert("❌ Ошибка: " + e.message);
     } finally {
