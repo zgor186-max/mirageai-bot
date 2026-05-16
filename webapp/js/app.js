@@ -809,8 +809,8 @@ async function smGenerate() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 image: smPhotoBase64,
-                prompt: "Remove all wrinkles and creases from the clothing item. Make the fabric perfectly smooth and flat. Keep the same clothing item, same color, same style. Professional clean product photography.",
-                aspect_ratio: "2:3"
+                prompt: "Iron out all wrinkles and creases in the fabric of this clothing item. Keep everything else identical: same background, same lighting, same position, same color, same clothing style. Only change: make the fabric perfectly smooth as if professionally steamed. Do not add knots, folds, twists or any new deformations.",
+                aspect_ratio: "1:1"
             })
         });
         const data = await resp.json();
