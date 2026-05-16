@@ -415,51 +415,51 @@ async function sendToChat() {
 
 function downloadResult() {
     if (!currentResultUrl) return;
-    if (currentResultUrl.startsWith("data:")) {
-        const isPng = currentResultUrl.startsWith("data:image/png");
-        const ext = isPng ? ".png" : ".jpg";
-        fetch(currentResultUrl)
-            .then(r => r.blob())
-            .then(blob => {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "MirageAI_" + Date.now() + ext;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
-            });
+    const isPng = currentResultUrl.startsWith("data:image/png");
+    const ext = isPng ? ".png" : ".jpg";
+    const filename = "MirageAI_" + Date.now() + ext;
+    if (tg.downloadFile && !currentResultUrl.startsWith("data:")) {
+        tg.downloadFile(currentResultUrl, filename);
+    } else if (currentResultUrl.startsWith("data:")) {
+        // Сохраняем на сервер → получаем URL → tg.downloadFile
+        fetch(API_SERVER + "/save-temp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: currentResultUrl })
+        }).then(r => r.json()).then(d => {
+            if (d.url) {
+                if (tg.downloadFile) {
+                    tg.downloadFile(d.url, d.filename || filename);
+                } else {
+                    window.open(d.url, "_blank");
+                }
+            }
+        }).catch(() => window.open(currentResultUrl, "_blank"));
     } else {
-        // Обычный URL
-        if (tg.downloadFile) {
-            tg.downloadFile(currentResultUrl, "MirageAI.jpg");
-        } else {
-            window.open(currentResultUrl, "_blank");
-        }
+        window.open(currentResultUrl, "_blank");
     }
 }
 
 function forwardResult() {
     if (!currentResultUrl) return;
-    // Если это base64 — конвертируем в blob и шарим
     if (currentResultUrl.startsWith("data:")) {
-        fetch(currentResultUrl)
-            .then(r => r.blob())
-            .then(blob => {
-                const file = new File([blob], "MirageAI.jpg", { type: "image/jpeg" });
-                if (navigator.share && navigator.canShare({ files: [file] })) {
-                    navigator.share({ files: [file], title: "MirageAI" });
-                } else {
-                    // Fallback — скачиваем
-                    downloadResult();
-                }
-            });
+        // Сохраняем на сервер → получаем URL → share
+        fetch(API_SERVER + "/save-temp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: currentResultUrl })
+        }).then(r => r.json()).then(d => {
+            if (d.url && navigator.share) {
+                navigator.share({ url: d.url, title: "MirageAI" });
+            } else if (d.url) {
+                window.open(d.url, "_blank");
+            }
+        }).catch(() => downloadResult());
     } else {
         if (navigator.share) {
             navigator.share({ url: currentResultUrl, title: "MirageAI" });
         } else {
-            downloadResult();
+            window.open(currentResultUrl, "_blank");
         }
     }
 }
