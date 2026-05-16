@@ -83,6 +83,43 @@
         <div class="templates-grid" id="templates-grid"></div>
     </div>
 
+    <!-- Фото по промту -->
+    <div id="screen-image-prompt" class="screen">
+        <button class="back-btn" onclick="showHome()">← Назад</button>
+        <div style="padding:0 16px;">
+            <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;">Фото по промту</div>
+            <div style="font-size:13px;color:#aaa;margin-bottom:20px;">Загрузи фото и опиши что хочешь изменить</div>
+
+            <!-- Upload -->
+            <div class="upload-area" id="gi-upload-area" onclick="document.getElementById('gi-photo-input').click()" style="margin-bottom:14px;min-height:140px;">
+                <div class="upload-icon">📷</div>
+                <div class="upload-text">Нажми чтобы загрузить фото</div>
+                <input type="file" id="gi-photo-input" accept="image/*" style="display:none" onchange="giHandlePhoto(this)">
+            </div>
+            <div id="gi-preview-wrap" style="display:none;margin-bottom:14px;position:relative;">
+                <img id="gi-preview" style="width:100%;border-radius:14px;max-height:280px;object-fit:cover;" alt="preview">
+                <button onclick="giClearPhoto()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:none;color:#fff;border-radius:50%;width:28px;height:28px;font-size:14px;cursor:pointer;">✕</button>
+            </div>
+
+            <!-- Prompt -->
+            <textarea id="gi-prompt" placeholder="Опиши что хочешь получить... например: сделай фон белым, добавь закат за окном, измени цвет платья на красный" style="width:100%;box-sizing:border-box;background:#1e1e2e;border:1px solid #333;border-radius:14px;color:#fff;font-size:14px;padding:14px;min-height:100px;resize:none;font-family:inherit;outline:none;margin-bottom:14px;" oninput="giCheckReady()"></textarea>
+
+            <!-- Button -->
+            <button id="gi-generate-btn" onclick="giGenerate()" disabled style="width:100%;padding:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#7b2ff7,#0055ff);color:#fff;font-size:16px;font-weight:700;cursor:pointer;opacity:0.4;transition:opacity .2s;">
+                ⚡ Генерировать
+            </button>
+
+            <!-- Result -->
+            <div id="gi-result" style="display:none;margin-top:20px;">
+                <div style="font-size:14px;color:#aaa;margin-bottom:8px;">Результат:</div>
+                <img id="gi-result-img" style="width:100%;border-radius:14px;" alt="result">
+                <button onclick="giDownload()" style="width:100%;margin-top:10px;padding:13px;border:1px solid #7b2ff7;border-radius:14px;background:transparent;color:#a78bfa;font-size:14px;font-weight:600;cursor:pointer;">
+                    ⬇ Сохранить изображение
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Загрузка фото -->
     <div id="screen-upload" class="screen">
         <button class="back-btn" onclick="showHome()">← Назад</button>
@@ -349,6 +386,6 @@
     </div>
 
     <script src="js/templates.js?v=202605160204"></script>
-    <script src="js/app.js?v=202605160204"></script>
+    <script src="js/app.js?v=202605170001"></script>
 </body>
 </html>

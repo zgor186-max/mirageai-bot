@@ -562,12 +562,96 @@ function setLang(lang) {
 // ── ИНСТРУМЕНТЫ ──
 function selectTool(tool) {
     if (tool === "image") {
-        showHome();
+        showImagePrompt();
     } else if (tool === "marketplace") {
         showMarketplace();
     } else {
         tg.showAlert("Этот раздел появится скоро! 🚀");
     }
+}
+
+// ── ФОТО ПО ПРОМТУ ────────────────────────────────────────────────────
+let giPhotoBase64 = null;
+
+function showImagePrompt() {
+    switchScreen("image-prompt");
+    setActiveNav("");
+}
+
+function giHandlePhoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        giPhotoBase64 = e.target.result;
+        document.getElementById("gi-preview").src = giPhotoBase64;
+        document.getElementById("gi-preview-wrap").style.display = "block";
+        document.getElementById("gi-upload-area").style.display = "none";
+        document.getElementById("gi-result").style.display = "none";
+        giCheckReady();
+    };
+    reader.readAsDataURL(file);
+}
+
+function giClearPhoto() {
+    giPhotoBase64 = null;
+    document.getElementById("gi-photo-input").value = "";
+    document.getElementById("gi-preview-wrap").style.display = "none";
+    document.getElementById("gi-upload-area").style.display = "flex";
+    giCheckReady();
+}
+
+function giCheckReady() {
+    const hasPhoto  = !!giPhotoBase64;
+    const hasPrompt = document.getElementById("gi-prompt").value.trim().length > 3;
+    const btn = document.getElementById("gi-generate-btn");
+    btn.disabled = !(hasPhoto && hasPrompt);
+    btn.style.opacity = (hasPhoto && hasPrompt) ? "1" : "0.4";
+}
+
+async function giGenerate() {
+    const prompt = document.getElementById("gi-prompt").value.trim();
+    if (!giPhotoBase64 || !prompt) return;
+
+    const btn = document.getElementById("gi-generate-btn");
+    btn.disabled = true;
+    btn.textContent = "⏳ Генерируется...";
+    btn.style.opacity = "0.7";
+    document.getElementById("gi-result").style.display = "none";
+
+    try {
+        const resp = await fetch(API_BASE + "/generate-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                image: giPhotoBase64,
+                prompt: prompt
+            })
+        });
+        const data = await resp.json();
+        if (data.image) {
+            document.getElementById("gi-result-img").src = data.image;
+            document.getElementById("gi-result").style.display = "block";
+            document.getElementById("gi-result").scrollIntoView({ behavior: "smooth" });
+        } else {
+            tg.showAlert("Ошибка генерации: " + (data.error || "неизвестная ошибка"));
+        }
+    } catch (e) {
+        tg.showAlert("Ошибка соединения с сервером");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "⚡ Генерировать";
+        btn.style.opacity = "1";
+        giCheckReady();
+    }
+}
+
+function giDownload() {
+    const img = document.getElementById("gi-result-img");
+    const a = document.createElement("a");
+    a.href = img.src;
+    a.download = "mirageai_result.jpg";
+    a.click();
 }
 
 // ── КАРТОЧКИ МАРКЕТПЛЕЙС ──

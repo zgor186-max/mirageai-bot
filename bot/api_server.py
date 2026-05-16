@@ -126,71 +126,78 @@ async def generate_card_handler(request):
 
         # ── Step 3: PIL — размещаем товар справа на нейтральном фоне ─
         print("[Card] Step 3 — placing product on neutral background")
-        staged_b64, _ = await asyncio.get_event_loop().run_in_executor(
+        staged_b64, paste_info = await asyncio.get_event_loop().run_in_executor(
             None, _composite_product_right, product_no_bg, None, category
         )
         print("[Card] Step 3 done ✓")
 
-        # ── Step 4: Kontext — генерирует фон вокруг товара ────────────
-        # Товар уже на месте. Kontext только заполняет фон.
-        print("[Card] Step 4 — kontext: generate background around placed product")
-        is_clothing = category in ("clothing", "footwear")
-        hanging_note = (
-            "If the product is on a hanger, add a wall-mounted horizontal clothing rod at the very top of the image. "
-            "The hanger hook must hang FROM the rod (hook goes OVER the rod from above), not pierce or pass through it. "
-            "Rod is above, hanger hook hangs below it — physically correct. "
-        ) if is_clothing else ""
+        # ── Step 4: Kontext — улучшает фон (БЕЗ товара) ──────────────
+        # Вариант 2.5: отправляем в Kontext только фон (bg_b64 из Step 2),
+        # Kontext не видит товар → не может его сдвинуть → нет дублей.
+        # После Kontext вставляем товар PIL на правильное место.
+        print("[Card] Step 4 — kontext: enhance background (no product)")
+        accessories_note = (
+            "STRICTLY FORBIDDEN: mannequin heads, head-shaped holders, acrylic stands, transparent stands, busts, pedestals of any kind. "
+            "The cap or hat MUST lie flat on a wooden table or shelf surface — brim resting on the surface, crown tilted naturally toward camera. "
+            "NO stands. NO holders. Product rests directly on a flat surface only. "
+        ) if category == "accessories" else ""
         bg_prompt = (
-            f"This image shows a product placed on a plain neutral background. "
-            f"Replace ONLY the plain background with a beautiful photorealistic scene: {scene_prompt}. "
-            f"CRITICAL RULES: "
-            f"1. PRODUCT COLORS: Do NOT change product colors, patterns or textures in any way. Preserve exact original colors. "
-            f"2. PRODUCT SIZE: The product MUST remain the same large size as in the input image. Do NOT scale it down. "
-            f"3. PRODUCT POSITION: Product is a large foreground element, close to camera, fills the right side of frame. Keep it exactly where it is. "
-            f"4. Do NOT move, resize or duplicate the product. "
-            f"5. The LEFT 40% of the image must be CLEAN, EMPTY and slightly dark — absolutely NO furniture, NO objects, NO patterns in that zone. Only smooth dark gradient. This zone is reserved for text. "
-            f"6. All scene elements (furniture, decor, plants) go ONLY in the right half and bottom of the image. "
-            f"7. {hanging_note}"
-            f"8. SHADOWS: add realistic cast shadow from the product onto the wall behind it — soft, slightly offset to the right and downward. Also add shadow on the floor beneath the product. "
-            f"9. LIGHTING: bright and even illumination, average scene brightness 140-180/255. Light-colored walls (white, beige, light grey). Natural daylight or warm indoor lamp. NO dark rooms, NO night scenes. "
-            f"10. NO duplicate products. NO text. NO watermarks."
+            f"Enhance this interior scene to make it a perfect photorealistic background for product photography: {scene_prompt}. "
+            f"RULES: "
+            f"1. The LEFT 40% of the image must be CLEAN and slightly darker — smooth gradient, absolutely NO furniture, NO objects, NO patterns. This zone is reserved for text overlay. "
+            f"2. All decorative elements (furniture, plants, decor) go ONLY in the RIGHT 60% and BOTTOM of the image. "
+            f"3. {accessories_note}"
+            f"4. Bright even illumination, average brightness 140-180/255. Light-colored walls (white, beige, light grey). Natural daylight or warm lamp. NO dark rooms. "
+            f"5. NO people, NO products, NO text, NO watermarks."
         )
 
         result_b64 = None
+        # Kontext получает фон из Step 2 (без товара)
+        kontext_input = bg_b64  # может быть None если Step 2 упал
         try:
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=300)) as session:
-                staged_url = await upload_image_to_replicate(session, staged_b64)
-                kontext_url = await call_kontext_single(session, staged_url, bg_prompt)
-                if kontext_url:
-                    dl = await download_image_as_base64(kontext_url)
-                    if dl:
-                        result_b64 = dl.split(",", 1)[1] if dl.startswith("data:") else dl
-                        print("[Card] Step 4 kontext done ✓")
+            if kontext_input:
+                async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=300)) as session:
+                    bg_url_up = await upload_image_to_replicate(session, kontext_input)
+                    kontext_url = await call_kontext_single(session, bg_url_up, bg_prompt)
+                    if kontext_url:
+                        dl = await download_image_as_base64(kontext_url)
+                        if dl:
+                            kontext_bg = dl.split(",", 1)[1] if dl.startswith("data:") else dl
+                            print("[Card] Step 4 kontext bg done ✓")
+                            # Вставляем товар точно на нужное место поверх Kontext-фона
+                            result_b64 = await asyncio.get_event_loop().run_in_executor(
+                                None, _repaste_product, kontext_bg, product_no_bg, paste_info
+                            )
+                            print("[Card] Step 4.1 repaste done ✓")
         except Exception as e:
             print(f"[Card] Step 4 kontext error: {e}")
 
-        # Fallback: используем PIL composite с готовым фоном
+        # Fallback: PIL composite — товар на фоне из Step 2 (или нейтральном)
         if not result_b64:
             print("[Card] Step 4 fallback — PIL composite with bg")
             result_b64, _ = await asyncio.get_event_loop().run_in_executor(
                 None, _composite_product_right, product_no_bg, bg_b64, category
             )
 
-        # ── Step 4.5: Адаптивная яркость (3 уровня) ──────────────────
-        # Цель: итоговая яркость 130–160 (51–63%)
-        # avg < 80  → очень тёмно → +35%
-        # avg 80–120 → немного тёмно → +20%
-        # avg > 120  → светло → без изменений
+        # ── Step 4.5: Адаптивная яркость (4 уровня) ──────────────────
+        # Цель: итоговая яркость 120–160 (47–63%)
+        # avg < 60  → очень тёмно → +60%
+        # avg 60–90 → тёмно → +40%
+        # avg 90–130 → немного тёмно → +20%
+        # avg > 130  → светло → без изменений
         def _adaptive_brighten(b64: str) -> str:
             import io as _io
             from PIL import Image as _Img, ImageEnhance as _IE
             import numpy as _np
             img = _Img.open(_io.BytesIO(base64.b64decode(b64))).convert("RGB")
             avg_brightness = _np.array(img).mean()
-            if avg_brightness < 80:
-                factor = 1.35
-                level = f"very dark → +35%"
-            elif avg_brightness < 120:
+            if avg_brightness < 60:
+                factor = 1.60
+                level = f"very dark → +60%"
+            elif avg_brightness < 90:
+                factor = 1.45
+                level = f"dark → +45%"
+            elif avg_brightness < 130:
                 factor = 1.20
                 level = f"slightly dark → +20%"
             else:
@@ -213,6 +220,22 @@ async def generate_card_handler(request):
         import traceback
         traceback.print_exc()
         return web.json_response({"error": str(e)}, status=500, headers=CORS_HEADERS)
+
+
+def _blank_product_area(staged_b64: str, paste_info: dict, out_w: int = 800, out_h: int = 1100) -> str:
+    """Затирает область товара нейтральным цветом перед отправкой в Kontext.
+    Kontext видит только фон → генерирует только фон → нет двойного товара при repaste."""
+    import io as _io
+    from PIL import Image, ImageDraw
+    img = Image.open(_io.BytesIO(base64.b64decode(staged_b64))).convert("RGB")
+    x, y, w, h = paste_info["x"], paste_info["y"], paste_info["w"], paste_info["h"]
+    draw = ImageDraw.Draw(img)
+    # Затираем с небольшим запасом по краям
+    draw.rectangle([max(0, x - 10), max(0, y - 10), min(out_w, x + w + 10), min(out_h, y + h + 10)],
+                   fill=(235, 233, 229))
+    out = _io.BytesIO()
+    img.save(out, format="JPEG", quality=93)
+    return base64.b64encode(out.getvalue()).decode()
 
 
 def _png_to_jpg_neutral(png_b64: str, bg_color=(240, 240, 238)) -> str:
@@ -257,9 +280,9 @@ def _remove_bg(photo_b64: str) -> str | None:
 # y_offset_ratio  — смещение от верха (0 = прижать вверх, 0.5 = по центру)
 CATEGORY_SIZING = {
     # (target_h_ratio, max_w_ratio, y_offset_ratio)
-    "clothing":    (0.95, 0.65, 0.01),   # крупнее — ближе к зрителю
+    "clothing":    (1.0, 0.58, 0.01),   # пропорционально — ближе к зрителю
     "footwear":    (0.55, 0.48, 0.35),   # обувь ниже центра
-    "accessories": (0.62, 0.46, 0.20),
+    "accessories": (0.55, 0.46, 0.38),   # y_offset увеличен — на поверхности
     "food":        (0.65, 0.44, 0.18),
     "beauty":      (0.68, 0.40, 0.16),
     "gadgets":     (0.62, 0.46, 0.20),
@@ -308,25 +331,33 @@ def _composite_product_right(
     target_h = int(out_h * target_h_r)
     target_w = int(out_w * max_w_r)
 
+    # Пропорциональное масштабирование для всех категорий
+    scale_by_h = target_h / prod_h
+    scale_by_w = target_w / prod_w
+    scale = min(scale_by_h, scale_by_w)
+    new_h = int(prod_h * scale)
+    new_w = int(prod_w * scale)
+
+    # ── Клэмп ширины: одежда не шире 65% холста, остальные — не шире правой зоны ──
     if category == "clothing":
-        # Non-proportional: фиксируем ширину и высоту независимо
-        # Лёгкая вертикальная растяжка (~20%) — для одежды выглядит естественно
-        new_w = target_w
-        new_h = target_h
+        max_product_w = int(out_w * 0.65)      # 520px — для одежды чуть шире
+        min_x_ratio  = 0.50                    # левый край товара минимум 50%
     else:
-        # Остальные категории — пропорциональное масштабирование
-        scale_by_h = target_h / prod_h
-        scale_by_w = target_w / prod_w
-        scale = min(scale_by_h, scale_by_w)
-        new_h = int(prod_h * scale)
-        new_w = int(prod_w * scale)
+        max_product_w = int(out_w * 0.58)      # 464px — другие категории
+        min_x_ratio  = 0.42                    # левый край товара минимум 42%
 
-    prod_resized = prod.resize((new_w, new_h), Image.LANCZOS)
+    if new_w > max_product_w:
+        scale_down = max_product_w / new_w
+        new_w = max_product_w
+        new_h = int(new_h * scale_down)
 
-    # ── Позиция: правый край = правый край холста ─────────────────
-    x = out_w - new_w
+    # ── Позиция: центр на 77%, но не левее min_x_ratio (выход за правый край допустим) ──
+    x = int(out_w * 0.77) - new_w // 2
+    x = max(x, int(out_w * min_x_ratio))      # гарантируем левую зону для текста
     y = int(out_h * y_off_r)
     y = min(y, out_h - new_h - 5)
+
+    prod_resized = prod.resize((new_w, new_h), Image.LANCZOS)
 
     _sys.stdout.write(
         f"[PIL] canvas={out_w}x{out_h} "
@@ -902,10 +933,25 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
     feat_zone_top = min(ZONE_Y[best_zone], 1080 - 4 * row_gap_calc - 20)
 
     # ── 4. Данные карточки ───────────────────────────────────────
-    badge        = _svg_esc(card.get("badge", ""))
-    name         = _svg_esc(card.get("name", "")).upper()
+    # badge = тип товара (ПИЖАМА из "ПИЖАМА В КЛЕТКУ")
+    import re as _re2
+    _raw = card.get("name", "")
+    _parts = _raw.strip().upper().replace("-", " ").replace("–", " ").replace("—", " ").split()
+    _PREP = {"В","НА","К","С","ДЛЯ","ПО","ОТ","ДО","ЗА","ИЗ","ПРИ","НАД","ПОД","ОБ","ПРО","У","О","А","И","НО"}
+    _adj  = _re2.compile(r"АЯ$|ЯЯ$|ОЕ$|ЕЕ$|ЫЙ$|ИЙ$|ОЙ$|ЫЕ$|ИЕ$|ЫХ$|ИХ$")
+    _case = _re2.compile(r"[УЮ]$")
+    _cyr  = _re2.compile(r"^[А-ЯЁ\-]+$")
+    _lat  = _re2.compile(r"[a-zA-Z]")
+    _lat_p   = [w for w in _parts if _lat.search(w)]
+    _cyr_ok  = [w for w in _parts if _cyr.match(w) and w not in _PREP
+                and not _adj.search(w) and not (_case.search(w) and len(w) > 3)]
+    _noun    = _cyr_ok[0] if _cyr_ok else next((w for w in _parts if _cyr.match(w)), _parts[0] if _parts else _raw)
+    badge    = _svg_esc(f"{_noun} {_lat_p[0]}" if _lat_p else _noun)
+
+    # name (большой заголовок) = слоган из subtitle
+    name         = _svg_esc(card.get("subtitle", "") or card.get("name", "")).upper()
     tagline_raw  = _svg_esc(card.get("tagline", ""))
-    subtitle_raw = _svg_esc(card.get("subtitle", ""))
+    subtitle_raw = ""  # переехал в name
 
     feats = []
     for i in range(1, 6):
@@ -917,10 +963,10 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             txt = txt[0].upper() + txt[1:].lower() if txt else txt
             feats.append({"icon": icon, "text": _svg_esc(txt)})
 
-    FONT_TITLE    = "'Playfair Display', serif"           # заголовок — serif bold
-    FONT_SEMI     = "'Montserrat SemiBold', 'Montserrat', sans-serif"  # фичи
-    FONT_MEDIUM   = "'Montserrat Medium', 'Montserrat', sans-serif"    # бейдж
-    FONT_LIGHT    = "'Montserrat Light', 'Montserrat', sans-serif"     # tagline
+    FONT_TITLE    = "'Russo One', sans-serif"
+    FONT_SEMI     = "'Montserrat SemiBold', 'Montserrat', sans-serif"
+    FONT_MEDIUM   = "'Montserrat Medium', 'Montserrat', sans-serif"
+    FONT_LIGHT    = "'Montserrat Light', 'Montserrat', sans-serif"
     FONT          = FONT_SEMI   # fallback для совместимости
     FONT_EMOJI    = "Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, sans-serif"
 
@@ -934,9 +980,9 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         f'flood-color="#000" flood-opacity="{shd_op}"/>'
         f'</filter>'
         f'<linearGradient id="textbg" x1="0" y1="0" x2="1" y2="0">'
-        f'<stop offset="0%" stop-color="#000000" stop-opacity="0.65"/>'
-        f'<stop offset="38%" stop-color="#000000" stop-opacity="0.40"/>'
-        f'<stop offset="55%" stop-color="#000000" stop-opacity="0.10"/>'
+        f'<stop offset="0%" stop-color="#000000" stop-opacity="0.50"/>'
+        f'<stop offset="38%" stop-color="#000000" stop-opacity="0.28"/>'
+        f'<stop offset="55%" stop-color="#000000" stop-opacity="0.06"/>'
         f'<stop offset="68%" stop-color="#000000" stop-opacity="0"/>'
         f'</linearGradient>'
         f'</defs>'
@@ -955,29 +1001,30 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
             f'letter-spacing="1.5" fill="#ffffff">{badge}</text>'
         )
 
-    # ── Заголовок: Playfair Display Bold ─────────────────────────
-    ty = 155 if badge_shown else 100
-    for line in _svg_wrap(name, max_chars=14):
+    # ── Заголовок: Montserrat ExtraBold 68px ─────────────────────
+    title_fs, title_lh = 68, 75
+    ty = 120 if badge_shown else 100
+    for line in _svg_wrap(name, max_chars=10):
         els.append(
             f'<text x="28" y="{ty}" '
-            f'font-family="{FONT_TITLE}" font-size="90" font-weight="700" '
+            f'font-family="{FONT_TITLE}" font-size="{title_fs}" font-weight="800" '
             f'fill="{t_col}" stroke="{sk_col}" stroke-width="{sk_w_t}" '
             f'stroke-opacity="{sk_op}" paint-order="stroke fill" '
             f'filter="url(#ts)">{line}</text>'
         )
-        ty += 100
+        ty += title_lh
 
-    # ── Tagline: italic, макс 3 слова на строку, 2 строки ────────
+    # ── Tagline: сразу после заголовка, без воздуха ───────────────
     if tagline_raw:
-        ty += 10
-        for line in _svg_wrap(tagline_raw, max_chars=18)[:2]:
+        ty = ty - title_lh + 40
+        for line in _svg_wrap(tagline_raw, max_chars=22)[:2]:
             els.append(
-                f'<text x="28" y="{ty}" font-family="{FONT_LIGHT}" font-size="18" '
+                f'<text x="28" y="{ty}" font-family="{FONT_LIGHT}" font-size="16" '
                 f'font-weight="300" fill="{s_col}" '
                 f'stroke="{sk_col}" stroke-width="0.6" stroke-opacity="0.15" '
                 f'paint-order="stroke fill">{line}</text>'
             )
-            ty += 24
+            ty += 23
 
     # ── Слоган ───────────────────────────────────────────────────
     if subtitle_raw:
@@ -990,22 +1037,20 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
         )
         ty += 32
 
-    # ── Фичи: начинаются строго НИЖЕ текстового блока ────────────
-    feat_row_gap  = 95
-    # feat_zone_top не может быть выше конца текстового блока + отступ 30px
-    feat_zone_top = max(feat_zone_top, ty + 30)
-    # И не выходить за нижний край при 4 фичах
-    feat_zone_top = min(feat_zone_top, 1100 - 4 * feat_row_gap - 20)
+    # ── Фичи: конкурентская раскладка y=340, шаг 100px, 5 фич ───
+    FEAT_START_Y = 340
+    FEAT_ROW_GAP = 100
+    feat_zone_top = max(FEAT_START_Y, ty + 40)
 
     if feats:
-        feats = feats[:4]
+        feats = feats[:5]
         feat_r    = 26
-        feat_fs   = 22
-        feat_lh   = 26
+        feat_fs   = 17
+        feat_lh   = 24
         feat_icon = 20
         cx_f      = 54
         tx_f      = 92
-        row_gap   = feat_row_gap
+        row_gap   = FEAT_ROW_GAP
 
         for idx, feat in enumerate(feats):
             cy = feat_zone_top + idx * row_gap
@@ -1023,26 +1068,18 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
                 f'font-family="{FONT_EMOJI}" font-size="{feat_icon}" '
                 f'filter="url(#ts)">{feat["icon"]}</text>'
             )
-            # Текст: каждое слово на отдельной строке, ЗАГЛАВНЫМИ
-            # Фильтруем предлоги, союзы и частицы русского языка
-            _RU_STOPWORDS = {
-                "В","НА","К","С","У","О","А","И","НО","ИЛИ","НЕ","НИ","БЫ","ЖЕ",
-                "ДЛЯ","ПО","ОТ","ДО","ЗА","ПОД","НАД","ПРИ","ИЗ","БЕЗ","ДО","ОБ",
-                "ПРО","ЧТО","КАК","ТАК","ВОТ","УЖЕ","ЕЩЁ","ЕЩЕ","ВСЕ","ВСЁ","ТО",
-            }
-            _all_words = feat["text"].upper().split()
-            words = [w for w in _all_words if w not in _RU_STOPWORDS][:2]
-            if not words:
-                words = _all_words[:2] if _all_words else [feat["text"].upper()]
-            start_y = cy - (len(words) - 1) * feat_lh // 2
-            for li, word in enumerate(words):
+            # Текст: 1 слово на строку, макс 3 строки
+            _all_words = feat["text"].upper().split()[:3]
+            feat_lines = _all_words
+            start_y = cy - (len(feat_lines) - 1) * feat_lh // 2
+            for li, fline in enumerate(feat_lines):
                 els.append(
                     f'<text x="{tx_f}" y="{start_y + li * feat_lh}" '
                     f'font-family="{FONT_SEMI}" font-size="{feat_fs}" font-weight="600" '
                     f'letter-spacing="1.0" '
                     f'fill="{f_col}" stroke="{sk_col}" stroke-width="{sk_w_f}" '
                     f'stroke-opacity="{sk_op}" paint-order="stroke fill" '
-                    f'filter="url(#ts)">{word}</text>'
+                    f'filter="url(#ts)">{fline}</text>'
                 )
 
     # Макро-кружок удалён навсегда — не восстанавливать
