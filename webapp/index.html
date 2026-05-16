@@ -88,7 +88,7 @@
         <button class="back-btn" onclick="showHome()">← Назад</button>
         <div style="padding:0 16px;">
             <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;">Фото по промту</div>
-            <div style="font-size:13px;color:#aaa;margin-bottom:20px;">Загрузи фото и опиши что хочешь изменить</div>
+            <div style="font-size:13px;color:#aaa;margin-bottom:20px;">Загрузи фото-референс и опиши что хочешь сгенерировать</div>
 
             <!-- Upload -->
             <div class="upload-area" id="gi-upload-area" onclick="document.getElementById('gi-photo-input').click()" style="margin-bottom:14px;min-height:140px;">
@@ -108,7 +108,7 @@
             <div style="margin-bottom:16px;">
                 <div style="font-size:13px;color:#aaa;margin-bottom:10px;">Соотношение сторон</div>
                 <div style="display:flex;flex-wrap:wrap;gap:8px;" id="gi-ratio-group">
-                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'1:1')">1:1</button>
+                    <button class="gi-ratio-btn gi-ratio-active" onclick="giSetRatio(this,'1:1')">1:1</button>
                     <button class="gi-ratio-btn" onclick="giSetRatio(this,'2:3')">2:3</button>
                     <button class="gi-ratio-btn" onclick="giSetRatio(this,'3:2')">3:2</button>
                     <button class="gi-ratio-btn" onclick="giSetRatio(this,'3:4')">3:4</button>
@@ -118,7 +118,21 @@
                     <button class="gi-ratio-btn" onclick="giSetRatio(this,'9:16')">9:16</button>
                     <button class="gi-ratio-btn" onclick="giSetRatio(this,'16:9')">16:9</button>
                     <button class="gi-ratio-btn" onclick="giSetRatio(this,'21:9')">21:9</button>
-                    <button class="gi-ratio-btn gi-ratio-active" onclick="giSetRatio(this,'auto')">auto</button>
+                </div>
+            </div>
+
+            <!-- Сила влияния референса -->
+            <div style="margin-bottom:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <div style="font-size:13px;color:#aaa;">Влияние референса</div>
+                    <div id="gi-strength-val" style="font-size:13px;color:#a78bfa;font-weight:700;">15%</div>
+                </div>
+                <input type="range" id="gi-strength" min="5" max="60" value="15" step="5"
+                    oninput="giUpdateStrength(this.value)"
+                    style="width:100%;accent-color:#7b2ff7;cursor:pointer;">
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:#555;margin-top:4px;">
+                    <span>меньше (свободнее)</span>
+                    <span>больше (ближе к фото)</span>
                 </div>
             </div>
 
@@ -404,6 +418,6 @@
     </div>
 
     <script src="js/templates.js?v=202605160204"></script>
-    <script src="js/app.js?v=202605170004"></script>
+    <script src="js/app.js?v=202605170005"></script>
 </body>
 </html>

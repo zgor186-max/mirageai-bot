@@ -572,12 +572,18 @@ function selectTool(tool) {
 
 // ── ФОТО ПО ПРОМТУ ────────────────────────────────────────────────────
 let giPhotoBase64 = null;
-let giAspectRatio = "auto";
+let giAspectRatio = "1:1";
+let giStrength = 0.15;
 
 function giSetRatio(btn, ratio) {
     document.querySelectorAll(".gi-ratio-btn").forEach(b => b.classList.remove("gi-ratio-active"));
     btn.classList.add("gi-ratio-active");
     giAspectRatio = ratio;
+}
+
+function giUpdateStrength(val) {
+    giStrength = parseInt(val) / 100;
+    document.getElementById("gi-strength-val").textContent = val + "%";
 }
 
 function showImagePrompt() {
@@ -642,7 +648,8 @@ async function giGenerate() {
             body: JSON.stringify({
                 image: giPhotoBase64,
                 prompt: prompt,
-                aspect_ratio: giAspectRatio
+                aspect_ratio: giAspectRatio,
+                strength: giStrength
             })
         });
         const data = await resp.json();
