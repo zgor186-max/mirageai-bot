@@ -647,11 +647,9 @@ async function rbGenerate() {
 
     finishProgress();
     await new Promise(r => setTimeout(r, 400));
-    switchScreen("remove-bg");
 
-    document.getElementById("rb-result-img").src = resultData;
-    document.getElementById("rb-result").style.display = "block";
-    document.getElementById("rb-result").scrollIntoView({ behavior: "smooth" });
+    document.getElementById("result-image").src = resultData;
+    switchScreen("result");
 }
 
 function rbDownload() {
