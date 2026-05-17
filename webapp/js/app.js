@@ -1540,18 +1540,18 @@ async function generate() {
         let resultUrl;
 
         if (selectedTemplate.easel) {
-            // ── Easel advanced-face-swap ───────────────────────
-            console.log("Step 2: calling Easel faceswap API...");
+            // ── Multi-face swap (face-swap-with-indexes) ───────
+            console.log("Step 2: calling multi-face faceswap API...");
             const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 180000);
+            const timeout = setTimeout(() => controller.abort(), 300000);
             const resp = await fetch(`${API_SERVER}/faceswap-easel`, {
                 signal: controller.signal,
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     template: templateBase64,
-                    user_photo: selectedPhotoBase64,
-                    hair_source: "target"
+                    user_photos: [selectedPhotoBase64],
+                    face_indexes: [0]
                 })
             });
             clearTimeout(timeout);

@@ -10,6 +10,7 @@ REPLICATE_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 REPLICATE_MODEL = "black-forest-labs/flux-kontext-pro"
 REPLICATE_TEXT2IMG = "black-forest-labs/flux-dev"
 FACESWAP_VERSION = "278a81e7ebb22db98bcba54de985d22cc1abeead2754eb1f2af717247be69b34"
+FACESWAP_INDEXED_VERSION = "518f2116425c40acb5c234031c55daf843c1357eff784370fe9489e57b65c150"
 
 # Temp image hosting (fallback when Replicate Files API is unavailable)
 TEMP_DIR = "/tmp/mirageai_imgs"
@@ -593,120 +594,135 @@ async def faceswap_handler(request):
 
 
 async def faceswap_easel_handler(request):
-    """Easel advanced-face-swap: одиночный и парный свап."""
+    """Multi-face swap через mertguvencli/face-swap-with-indexes.
+    Принимает: template, user_photos (список base64), face_indexes (опционально).
+    Для каждого фото запускает отдельный swap с нужным destination_face_index.
+    """
     if request.method == "OPTIONS":
         return web.Response(status=200, headers=CORS_HEADERS)
 
     try:
         data = await request.json()
         template_b64 = data.get("template", "")
-        user_photo_b64 = data.get("user_photo", "")
-        user_photo_b_b64 = data.get("user_photo_b", "")  # второй человек (опционально)
-        hair_source = data.get("hair_source", "target")  # "target" или "swap"
+        # Поддерживаем и старый формат (user_photo) и новый (user_photos:[])
+        user_photos_raw = data.get("user_photos") or (
+            [data.get("user_photo")] if data.get("user_photo") else []
+        )
+        # Индексы лиц в шаблоне для замены (0=первое лицо, 1=второе...)
+        face_indexes = data.get("face_indexes") or list(range(len(user_photos_raw)))
 
-        if not template_b64 or not user_photo_b64:
+        if not template_b64 or not user_photos_raw:
             return web.json_response(
-                {"error": "template and user_photo are required"},
-                status=400,
-                headers=CORS_HEADERS,
+                {"error": "template and user_photos required"},
+                status=400, headers=CORS_HEADERS,
             )
 
-        if template_b64.startswith("data:"):
-            template_b64 = template_b64.split(",", 1)[1]
-        if user_photo_b64.startswith("data:"):
-            user_photo_b64 = user_photo_b64.split(",", 1)[1]
-        if user_photo_b_b64 and user_photo_b_b64.startswith("data:"):
-            user_photo_b_b64 = user_photo_b_b64.split(",", 1)[1]
+        def strip(b64):
+            return b64.split(",", 1)[1] if b64 and b64.startswith("data:") else b64
 
-        mode = "парный" if user_photo_b_b64 else "одиночный"
-        print(f"[FaceSwap-Easel] режим={mode}, hair_source={hair_source}")
+        template_b64 = strip(template_b64)
+        user_photos = [strip(p) for p in user_photos_raw if p]
 
-        result_url = await call_faceswap_easel(
-            template_b64, user_photo_b64,
-            user_photo_b_b64 or None,
-            hair_source
-        )
+        print(f"[FaceSwap-Multi] лиц={len(user_photos)}, indexes={face_indexes}")
+
+        result_url = await call_faceswap_indexed(template_b64, user_photos, face_indexes)
 
         if not result_url:
             return web.json_response(
-                {"error": "Easel face swap failed"},
-                status=500,
-                headers=CORS_HEADERS,
+                {"error": "Face swap failed"},
+                status=500, headers=CORS_HEADERS,
             )
 
         image_b64 = await download_image_as_base64(result_url)
         if image_b64:
             return web.json_response({"url": image_b64}, headers=CORS_HEADERS)
-
         return web.json_response({"url": result_url}, headers=CORS_HEADERS)
 
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        import traceback; traceback.print_exc()
         return web.json_response({"error": str(e)}, status=500, headers=CORS_HEADERS)
 
 
-async def call_faceswap_easel(
+async def call_faceswap_indexed(
     template_b64: str,
-    user_photo_b64: str,
-    user_photo_b_b64: str | None = None,
-    hair_source: str = "target"
+    user_photos: list,
+    face_indexes: list,
 ) -> str | None:
+    """Последовательно заменяет каждое лицо в шаблоне через face-swap-with-indexes."""
     api_headers = {
         "Authorization": f"Token {REPLICATE_TOKEN}",
         "Content-Type": "application/json",
         "Prefer": "wait",
     }
-
-    timeout = aiohttp.ClientTimeout(total=180)
+    timeout = aiohttp.ClientTimeout(total=300)
 
     async with aiohttp.ClientSession(timeout=timeout) as session:
-        # Загружаем изображения в Replicate
-        template_url = await upload_image_to_replicate(session, template_b64)
-        user_photo_url = await upload_image_to_replicate(session, user_photo_b64)
-
-        if not template_url or not user_photo_url:
-            print("[FaceSwap-Easel] Failed to upload images")
+        # Загружаем шаблон
+        current_template_b64 = template_b64
+        current_template_url = await upload_image_to_replicate(session, current_template_b64)
+        if not current_template_url:
+            print("[FaceSwap-Multi] Failed to upload template")
             return None
 
-        input_data = {
-            "target_image": template_url,
-            "swap_image": user_photo_url,
-            "hair_source": hair_source,
-        }
+        for i, (photo_b64, dest_idx) in enumerate(zip(user_photos, face_indexes)):
+            # Загружаем фото пользователя
+            user_url = await upload_image_to_replicate(session, photo_b64)
+            if not user_url:
+                print(f"[FaceSwap-Multi] Failed to upload user photo {i}")
+                continue
 
-        # Парный режим
-        if user_photo_b_b64:
-            user_photo_b_url = await upload_image_to_replicate(session, user_photo_b_b64)
-            if user_photo_b_url:
-                input_data["swap_image_b"] = user_photo_b_url
-                print(f"[FaceSwap-Easel] Парный режим: swap_image_b загружен")
+            payload = {
+                "version": FACESWAP_INDEXED_VERSION,
+                "input": {
+                    "execution_type": "face_swap",
+                    "destination_image": current_template_url,
+                    "source_face_image": user_url,
+                    "source_face_index": 0,
+                    "destination_face_index": dest_idx,
+                }
+            }
 
-        payload = {"input": input_data}
+            print(f"[FaceSwap-Multi] свап {i+1}/{len(user_photos)}, dest_face={dest_idx}")
 
-        print(f"[FaceSwap-Easel] payload keys: {list(input_data.keys())}")
+            async with session.post(
+                "https://api.replicate.com/v1/predictions",
+                headers=api_headers,
+                json=payload,
+            ) as resp:
+                raw = await resp.text()
+                print(f"[FaceSwap-Multi] HTTP={resp.status} raw={raw[:300]}")
+                try:
+                    result = await resp.json(content_type=None)
+                except Exception:
+                    result = _json.loads(raw)
 
-        async with session.post(
-            "https://api.replicate.com/v1/models/easel/advanced-face-swap/predictions",
-            headers=api_headers,
-            json=payload,
-        ) as resp:
-            raw = await resp.text()
-            print(f"[FaceSwap-Easel] HTTP={resp.status} raw={raw[:400]}")
-            try:
-                result = await resp.json(content_type=None)
-            except Exception:
-                import json as _json
-                result = _json.loads(raw)
+                status = result.get("status")
+                pred_id = result.get("id")
 
-            status = result.get("status")
-            pred_id = result.get("id")
-            print(f"[FaceSwap-Easel] status={status} id={pred_id}")
+                if status == "succeeded":
+                    output_url = _extract_output(result)
+                elif status in ("starting", "processing"):
+                    output_url = await _poll(session, pred_id, api_headers)
+                else:
+                    print(f"[FaceSwap-Multi] FAILED step {i}: {result.get('error')}")
+                    return None
 
-            if status == "succeeded":
-                return _extract_output(result)
-            if status in ("starting", "processing"):
-                return await _poll(session, pred_id, api_headers)
+                if not output_url:
+                    print(f"[FaceSwap-Multi] No output at step {i}")
+                    return None
+
+                # Результат становится шаблоном для следующего свапа
+                if i < len(user_photos) - 1:
+                    dl = await download_image_as_base64(output_url)
+                    if dl:
+                        next_b64 = dl.split(",", 1)[1] if dl.startswith("data:") else dl
+                        current_template_url = await upload_image_to_replicate(session, next_b64)
+                    else:
+                        current_template_url = output_url
+                else:
+                    return output_url
+
+        return None
             if status == "failed":
                 print(f"[FaceSwap-Easel] FAILED: {result.get('error')}")
                 return None
