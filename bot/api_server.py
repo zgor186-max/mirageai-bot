@@ -723,10 +723,6 @@ async def call_faceswap_indexed(
                     return output_url
 
         return None
-            if status == "failed":
-                print(f"[FaceSwap-Easel] FAILED: {result.get('error')}")
-                return None
-            return None
 
 
 async def call_faceswap(template_b64: str, user_photo_b64: str) -> str | None:
