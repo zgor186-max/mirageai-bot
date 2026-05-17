@@ -331,17 +331,23 @@ function selectTemplate(id) {
     document.getElementById("photo-input").value = "";
     document.getElementById("generate-btn").disabled = true;
 
-    // Второй блок — только для шаблонов с двумя лицами
+    // Одиночный vs парный шаблон
     const isTwoPeople = selectedTemplate.faces === 2;
-    const lbl1 = document.getElementById("upload-label-1");
-    const wrap2 = document.getElementById("upload-area-2-wrap");
-    const ua2 = document.getElementById("upload-area-2");
-    const pc2 = document.getElementById("preview-container-2");
+    // Одиночный: показываем обычный upload-area
+    document.getElementById("upload-area").style.display = isTwoPeople ? "none" : "flex";
+    document.getElementById("preview-container").style.display = "none";
+    // Парный: показываем два поля рядом
+    const coupleRow = document.getElementById("upload-couple-row");
+    if (coupleRow) coupleRow.style.display = isTwoPeople ? "flex" : "none";
+    const p1 = document.getElementById("upload-area-p1");
+    const pp1 = document.getElementById("preview-p1");
+    const p2 = document.getElementById("upload-area-p2");
+    const pp2 = document.getElementById("preview-p2");
     const pi2 = document.getElementById("photo-input-2");
-    if (lbl1) lbl1.style.display = isTwoPeople ? "block" : "none";
-    if (wrap2) wrap2.style.display = isTwoPeople ? "block" : "none";
-    if (ua2) ua2.style.display = "flex";
-    if (pc2) pc2.style.display = "none";
+    if (p1) p1.style.display = "flex";
+    if (pp1) pp1.style.display = "none";
+    if (p2) p2.style.display = "flex";
+    if (pp2) pp2.style.display = "none";
     if (pi2) pi2.value = "";
 
     showUpload();
@@ -1516,28 +1522,43 @@ function setupUpload() {
         const reader = new FileReader();
         reader.onload = async (ev) => {
             selectedPhotoBase64 = await resizeImageToBase64(e.target.files[0], 800);
-            document.getElementById("photo-preview").src = ev.target.result;
-            document.getElementById("upload-area").style.display = "none";
-            document.getElementById("preview-container").style.display = "block";
+            const isTwoPeople = selectedTemplate && selectedTemplate.faces === 2;
+            if (isTwoPeople) {
+                // Парный режим — показываем мини-превью
+                document.getElementById("photo-preview-p1").src = ev.target.result;
+                document.getElementById("upload-area-p1").style.display = "none";
+                document.getElementById("preview-p1").style.display = "block";
+            } else {
+                // Одиночный режим
+                document.getElementById("photo-preview").src = ev.target.result;
+                document.getElementById("upload-area").style.display = "none";
+                document.getElementById("preview-container").style.display = "block";
+            }
             checkGenerateReady();
         };
         reader.readAsDataURL(file);
     });
 
-    // Фото 2
-    const area2 = document.getElementById("upload-area-2");
+    // Пара — Человек 1 (мини-блок)
+    const areaP1 = document.getElementById("upload-area-p1");
+    if (areaP1) {
+        areaP1.addEventListener("click", () => document.getElementById("photo-input").click());
+    }
+
+    // Пара — Человек 2 (мини-блок)
+    const areaP2 = document.getElementById("upload-area-p2");
     const input2 = document.getElementById("photo-input-2");
-    if (area2 && input2) {
-        area2.addEventListener("click", () => input2.click());
+    if (areaP2 && input2) {
+        areaP2.addEventListener("click", () => input2.click());
         input2.addEventListener("change", (e) => {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = async (ev) => {
                 selectedPhoto2Base64 = await resizeImageToBase64(e.target.files[0], 800);
-                document.getElementById("photo-preview-2").src = ev.target.result;
-                document.getElementById("upload-area-2").style.display = "none";
-                document.getElementById("preview-container-2").style.display = "block";
+                document.getElementById("photo-preview-p2").src = ev.target.result;
+                document.getElementById("upload-area-p2").style.display = "none";
+                document.getElementById("preview-p2").style.display = "block";
                 checkGenerateReady();
             };
             reader.readAsDataURL(file);
@@ -1546,6 +1567,16 @@ function setupUpload() {
 }
 
 function changePhoto() {
+    selectedPhotoBase64 = null;
+    const isTwoPeople = selectedTemplate && selectedTemplate.faces === 2;
+    if (isTwoPeople) {
+        document.getElementById("upload-area-p1").style.display = "flex";
+        document.getElementById("preview-p1").style.display = "none";
+    } else {
+        document.getElementById("upload-area").style.display = "flex";
+        document.getElementById("preview-container").style.display = "none";
+    }
+    document.getElementById("photo-input").value = "";
     document.getElementById("photo-input").click();
 }
 
