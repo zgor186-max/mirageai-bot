@@ -333,11 +333,16 @@ function selectTemplate(id) {
 
     // Второй блок — только для шаблонов с двумя лицами
     const isTwoPeople = selectedTemplate.faces === 2;
-    document.getElementById("upload-label-1").style.display = isTwoPeople ? "block" : "none";
-    document.getElementById("upload-area-2-wrap").style.display = isTwoPeople ? "block" : "none";
-    document.getElementById("upload-area-2").style.display = "flex";
-    document.getElementById("preview-container-2").style.display = "none";
-    document.getElementById("photo-input-2").value = "";
+    const lbl1 = document.getElementById("upload-label-1");
+    const wrap2 = document.getElementById("upload-area-2-wrap");
+    const ua2 = document.getElementById("upload-area-2");
+    const pc2 = document.getElementById("preview-container-2");
+    const pi2 = document.getElementById("photo-input-2");
+    if (lbl1) lbl1.style.display = isTwoPeople ? "block" : "none";
+    if (wrap2) wrap2.style.display = isTwoPeople ? "block" : "none";
+    if (ua2) ua2.style.display = "flex";
+    if (pc2) pc2.style.display = "none";
+    if (pi2) pi2.value = "";
 
     showUpload();
 }
@@ -1522,20 +1527,22 @@ function setupUpload() {
     // Фото 2
     const area2 = document.getElementById("upload-area-2");
     const input2 = document.getElementById("photo-input-2");
-    area2.addEventListener("click", () => input2.click());
-    input2.addEventListener("change", (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
-            selectedPhoto2Base64 = await resizeImageToBase64(e.target.files[0], 800);
-            document.getElementById("photo-preview-2").src = ev.target.result;
-            document.getElementById("upload-area-2").style.display = "none";
-            document.getElementById("preview-container-2").style.display = "block";
-            checkGenerateReady();
-        };
-        reader.readAsDataURL(file);
-    });
+    if (area2 && input2) {
+        area2.addEventListener("click", () => input2.click());
+        input2.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                selectedPhoto2Base64 = await resizeImageToBase64(e.target.files[0], 800);
+                document.getElementById("photo-preview-2").src = ev.target.result;
+                document.getElementById("upload-area-2").style.display = "none";
+                document.getElementById("preview-container-2").style.display = "block";
+                checkGenerateReady();
+            };
+            reader.readAsDataURL(file);
+        });
+    }
 }
 
 function changePhoto() {
