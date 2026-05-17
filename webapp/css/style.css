@@ -1232,3 +1232,53 @@ body {
     color: #7b2ff7;
     background: rgba(123,47,247,0.1);
 }
+
+/* === GI MODE CARDS === */
+.gi-mode-card {
+    background: var(--bg2);
+    border: 2px solid rgba(124,90,247,0.2);
+    border-radius: 18px;
+    padding: 22px 20px;
+    cursor: pointer;
+    transition: border-color .2s, transform .1s;
+    text-align: center;
+}
+.gi-mode-card:active {
+    transform: scale(0.97);
+    border-color: #7b2ff7;
+}
+
+/* === GI MODEL CARDS === */
+.gi-model-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: var(--bg2);
+    border: 2px solid rgba(124,90,247,0.15);
+    border-radius: 16px;
+    padding: 16px;
+    cursor: pointer;
+    margin-bottom: 12px;
+    transition: border-color .2s, transform .1s;
+}
+.gi-model-card:active {
+    transform: scale(0.97);
+    border-color: #7b2ff7;
+}
+.gi-model-icon {
+    font-size: 28px;
+    min-width: 36px;
+    text-align: center;
+    padding-top: 2px;
+}
+.gi-model-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 5px;
+}
+.gi-model-desc {
+    font-size: 12px;
+    color: #888;
+    line-height: 1.6;
+}

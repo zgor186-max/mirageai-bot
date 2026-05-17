@@ -885,9 +885,74 @@ function giUpdateStrength(val) {
     else              hint.textContent = "📌 Сильное влияние — модель держится максимально близко к исходнику";
 }
 
+// === ГЕНЕРАЦИЯ ПО ПРОМТУ — состояние ===
+let giCurrentStep = 1;
+let giSelectedMode = null;   // 'prompt' | 'photo'
+let giSelectedModel = null;  // 'nano-banana' | 'flux-pro' | 'flux-kontext' | 'recraft'
+
 function showImagePrompt() {
+    giCurrentStep = 1;
+    giSelectedMode = null;
+    giSelectedModel = null;
+    giPhotoBase64 = null;
+    giShowStep(1);
     switchScreen("image-prompt");
     setActiveNav("");
+}
+
+function giShowStep(n) {
+    [1, 2, 3].forEach(i => {
+        const el = document.getElementById("gi-step-" + i);
+        if (el) el.style.display = i === n ? "block" : "none";
+    });
+    giCurrentStep = n;
+}
+
+function giGoBack() {
+    if (giCurrentStep === 1) {
+        showHome();
+    } else {
+        giShowStep(giCurrentStep - 1);
+    }
+}
+
+function giSelectMode(mode) {
+    giSelectedMode = mode;
+    // Flux Kontext Pro только для режима с фото
+    const kontext = document.getElementById("gi-model-kontext");
+    if (kontext) kontext.style.display = mode === 'photo' ? "flex" : "none";
+    giShowStep(2);
+}
+
+function giSelectModel(modelId, icon, name) {
+    giSelectedModel = modelId;
+    document.getElementById("gi-badge-icon").textContent = icon;
+    document.getElementById("gi-badge-name").textContent = name;
+
+    // Показываем/скрываем секцию фото и силу влияния
+    const photoSection = document.getElementById("gi-photo-section");
+    const strengthSection = document.getElementById("gi-strength-section");
+    if (giSelectedMode === 'photo') {
+        if (photoSection) photoSection.style.display = "block";
+        if (strengthSection) strengthSection.style.display = "block";
+    } else {
+        if (photoSection) photoSection.style.display = "none";
+        if (strengthSection) strengthSection.style.display = "none";
+    }
+
+    // Сбрасываем фото и промт
+    giPhotoBase64 = null;
+    const photoInput = document.getElementById("gi-photo-input");
+    if (photoInput) photoInput.value = "";
+    const previewWrap = document.getElementById("gi-preview-wrap");
+    if (previewWrap) previewWrap.style.display = "none";
+    const uploadArea = document.getElementById("gi-upload-area");
+    if (uploadArea) uploadArea.style.display = "flex";
+    const promptEl = document.getElementById("gi-prompt");
+    if (promptEl) promptEl.value = "";
+
+    giCheckReady();
+    giShowStep(3);
 }
 
 function giHandlePhoto(input) {
@@ -899,7 +964,6 @@ function giHandlePhoto(input) {
         document.getElementById("gi-preview").src = giPhotoBase64;
         document.getElementById("gi-preview-wrap").style.display = "block";
         document.getElementById("gi-upload-area").style.display = "none";
-        document.getElementById("gi-result").style.display = "none";
         giCheckReady();
     };
     reader.readAsDataURL(file);
@@ -914,42 +978,50 @@ function giClearPhoto() {
 }
 
 function giCheckReady() {
-    const hasPhoto  = !!giPhotoBase64;
-    const hasPrompt = document.getElementById("gi-prompt").value.trim().length > 3;
+    const hasPrompt = (document.getElementById("gi-prompt")?.value.trim().length > 3) || false;
+    const needsPhoto = giSelectedMode === 'photo';
+    const hasPhoto = !!giPhotoBase64;
+    const ready = hasPrompt && (!needsPhoto || hasPhoto);
     const btn = document.getElementById("gi-generate-btn");
-    btn.disabled = !(hasPhoto && hasPrompt);
-    btn.style.opacity = (hasPhoto && hasPrompt) ? "1" : "0.4";
+    if (btn) {
+        btn.disabled = !ready;
+        btn.style.opacity = ready ? "1" : "0.4";
+    }
 }
 
 async function giGenerate() {
     const prompt = document.getElementById("gi-prompt").value.trim();
-    if (!giPhotoBase64 || !prompt) return;
+    if (!prompt) return;
+    if (giSelectedMode === 'photo' && !giPhotoBase64) return;
 
-    // Настраиваем тексты загрузочного экрана под контекст
     const titleEl = document.querySelector("#screen-loading .loading-title");
     const s1 = document.getElementById("step-1");
     const s2 = document.getElementById("step-2");
     const s3 = document.getElementById("step-3");
     if (titleEl) titleEl.textContent = "Генерирую изображение...";
-    if (s1) s1.textContent = "🖼️ Загружаю фото";
-    if (s2) s2.textContent = "🤖 Применяю промт";
+    if (s1) s1.textContent = "🖼️ Загружаю данные";
+    if (s2) s2.textContent = "🤖 Нейросеть работает";
     if (s3) s3.textContent = "✨ Финальная обработка";
 
-    // Показываем экран загрузки с глазом
     switchScreen("loading");
     animateSteps();
 
     let resultData = null;
     try {
+        const body = {
+            prompt: prompt,
+            model: giSelectedModel,
+            aspect_ratio: giAspectRatio,
+            strength: giStrength,
+        };
+        if (giSelectedMode === 'photo' && giPhotoBase64) {
+            body.image = giPhotoBase64;
+        }
+
         const resp = await fetch(API_SERVER + "/generate-image", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                image: giPhotoBase64,
-                prompt: prompt,
-                aspect_ratio: giAspectRatio,
-                strength: giStrength
-            })
+            body: JSON.stringify(body)
         });
         const data = await resp.json();
         if (data.image) {
@@ -967,10 +1039,8 @@ async function giGenerate() {
         return;
     }
 
-    // Успех — показываем на screen-result как карточки WB/OZON
     finishProgress();
     await new Promise(r => setTimeout(r, 400));
-
     currentResultUrl = resultData;
     document.getElementById("result-image").src = resultData;
     switchScreen("result");

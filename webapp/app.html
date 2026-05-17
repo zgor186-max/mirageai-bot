@@ -150,71 +150,133 @@
         </div>
     </div>
 
-    <!-- Фото по промту -->
+    <!-- Генерация по промту — многошаговый флоу -->
     <div id="screen-image-prompt" class="screen">
-        <button class="back-btn" onclick="showHome()">← Назад</button>
-        <div style="padding:0 16px;">
-            <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;">Генерация изображения по промту</div>
-            <div style="font-size:13px;color:#aaa;margin-bottom:20px;">Загрузи фото-референс и опиши что хочешь сгенерировать</div>
+        <button class="back-btn" id="gi-back-btn" onclick="giGoBack()">← Назад</button>
+        <div style="padding:0 16px 24px;">
 
-            <!-- Upload -->
-            <div class="upload-area" id="gi-upload-area" onclick="document.getElementById('gi-photo-input').click()" style="margin-bottom:14px;min-height:140px;">
-                <div class="upload-icon">📷</div>
-                <div class="upload-text">Нажми чтобы загрузить фото</div>
-                <input type="file" id="gi-photo-input" accept="image/*" style="display:none" onchange="giHandlePhoto(this)">
-            </div>
-            <div id="gi-preview-wrap" style="display:none;margin-bottom:14px;position:relative;">
-                <img id="gi-preview" style="width:100%;border-radius:14px;max-height:280px;object-fit:cover;" alt="preview">
-                <button onclick="giClearPhoto()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:none;color:#fff;border-radius:50%;width:28px;height:28px;font-size:14px;cursor:pointer;">✕</button>
-            </div>
+            <!-- ШАГ 1: Выбор режима -->
+            <div id="gi-step-1">
+                <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;">Генерация изображения</div>
+                <div style="font-size:13px;color:#aaa;margin-bottom:24px;">Выберите режим генерации</div>
 
-            <!-- Prompt -->
-            <textarea id="gi-prompt" placeholder="Опиши что хочешь получить... например: сделай фон белым, добавь закат за окном, измени цвет платья на красный" style="width:100%;box-sizing:border-box;background:#1e1e2e;border:1px solid #333;border-radius:14px;color:#fff;font-size:14px;padding:14px;min-height:100px;resize:none;font-family:inherit;outline:none;margin-bottom:14px;" oninput="giCheckReady()"></textarea>
+                <div class="gi-mode-card" onclick="giSelectMode('prompt')">
+                    <div style="font-size:36px;margin-bottom:12px;">✍️</div>
+                    <div style="font-size:17px;font-weight:700;color:#fff;margin-bottom:6px;">Только промт</div>
+                    <div style="font-size:13px;color:#aaa;line-height:1.5;">Опиши что хочешь — нейросеть создаст изображение с нуля</div>
+                </div>
 
-            <!-- Соотношение сторон -->
-            <div style="margin-bottom:16px;">
-                <div style="font-size:13px;color:#aaa;margin-bottom:10px;">Соотношение сторон</div>
-                <div style="display:flex;flex-wrap:wrap;gap:8px;" id="gi-ratio-group">
-                    <button class="gi-ratio-btn gi-ratio-active" onclick="giSetRatio(this,'1:1')">1:1</button>
-                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'2:3')">2:3</button>
-                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'3:2')">3:2</button>
-                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'3:4')">3:4</button>
-                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'4:3')">4:3</button>
-                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'4:5')">4:5</button>
-                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'5:4')">5:4</button>
-                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'9:16')">9:16</button>
-                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'16:9')">16:9</button>
-                    <button class="gi-ratio-btn" onclick="giSetRatio(this,'21:9')">21:9</button>
+                <div class="gi-mode-card" onclick="giSelectMode('photo')" style="margin-top:12px;">
+                    <div style="font-size:36px;margin-bottom:12px;">🖼️</div>
+                    <div style="font-size:17px;font-weight:700;color:#fff;margin-bottom:6px;">Промт + фото</div>
+                    <div style="font-size:13px;color:#aaa;line-height:1.5;">Загрузи своё фото и опиши что изменить или как стилизовать</div>
                 </div>
             </div>
 
-            <!-- Сила влияния референса -->
-            <div style="margin-bottom:16px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                    <div style="font-size:13px;color:#aaa;">Влияние референса</div>
-                    <div id="gi-strength-val" style="font-size:13px;color:#a78bfa;font-weight:700;">15%</div>
+            <!-- ШАГ 2: Выбор модели -->
+            <div id="gi-step-2" style="display:none;">
+                <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;">Выбери нейросеть</div>
+                <div style="font-size:13px;color:#aaa;margin-bottom:20px;">Каждая модель имеет свой стиль и особенности</div>
+
+                <div class="gi-model-card" onclick="giSelectModel('nano-banana','⚡','Nano Banana 2')">
+                    <div class="gi-model-icon">⚡</div>
+                    <div>
+                        <div class="gi-model-name">Nano Banana 2</div>
+                        <div class="gi-model-desc">Быстрая генерация на базе Google Gemini. Подходит для всего — портреты, пейзажи, арт. Лучший выбор если не знаешь что выбрать.</div>
+                    </div>
                 </div>
-                <input type="range" id="gi-strength" min="5" max="60" value="15" step="5"
-                    oninput="giUpdateStrength(this.value)"
-                    style="width:100%;accent-color:#7b2ff7;cursor:pointer;">
-                <div id="gi-strength-hint" style="font-size:12px;color:#777;margin-top:6px;line-height:1.4;">
-                    🎨 Модель свободно интерпретирует фото — результат может сильно отличаться
+
+                <div class="gi-model-card" onclick="giSelectModel('flux-pro','💎','Flux 1.1 Pro')">
+                    <div class="gi-model-icon">💎</div>
+                    <div>
+                        <div class="gi-model-name">Flux 1.1 Pro</div>
+                        <div class="gi-model-desc">Максимальное качество деталей. Идеально для реалистичных портретов и сложных сцен.</div>
+                    </div>
+                </div>
+
+                <div class="gi-model-card" id="gi-model-kontext" onclick="giSelectModel('flux-kontext','✏️','Flux Kontext Pro')">
+                    <div class="gi-model-icon">✏️</div>
+                    <div>
+                        <div class="gi-model-name">Flux Kontext Pro</div>
+                        <div class="gi-model-desc">Лучшая модель для редактирования твоего фото. Меняет стиль, фон, одежду — сохраняя твоё лицо.</div>
+                    </div>
+                </div>
+
+                <div class="gi-model-card" onclick="giSelectModel('recraft','🎨','Recraft V3')">
+                    <div class="gi-model-icon">🎨</div>
+                    <div>
+                        <div class="gi-model-name">Recraft V3</div>
+                        <div class="gi-model-desc">Чистый дизайнерский стиль. Отлично для постеров, обложек и иллюстраций.</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Button -->
-            <button id="gi-generate-btn" onclick="giGenerate()" disabled style="width:100%;padding:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#7b2ff7,#0055ff);color:#fff;font-size:16px;font-weight:700;cursor:pointer;opacity:0.4;transition:opacity .2s;">
-                ⚡ Генерировать
-            </button>
+            <!-- ШАГ 3: Промт + фото + настройки -->
+            <div id="gi-step-3" style="display:none;">
 
-            <!-- Result -->
-            <div id="gi-result" style="display:none;margin-top:20px;">
-                <div style="font-size:14px;color:#aaa;margin-bottom:8px;">Результат:</div>
-                <img id="gi-result-img" style="width:100%;border-radius:14px;" alt="result">
-                <button onclick="giDownload()" style="width:100%;margin-top:10px;padding:13px;border:1px solid #7b2ff7;border-radius:14px;background:transparent;color:#a78bfa;font-size:14px;font-weight:600;cursor:pointer;">
-                    ⬇ Сохранить изображение
+                <!-- Бейдж выбранной модели -->
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:12px 14px;background:#1e1e2e;border-radius:14px;border:1px solid #333;">
+                    <span id="gi-badge-icon" style="font-size:22px;"></span>
+                    <div style="flex:1;">
+                        <div id="gi-badge-name" style="font-size:14px;font-weight:700;color:#fff;"></div>
+                        <div style="font-size:11px;color:#666;">выбранная модель</div>
+                    </div>
+                    <button onclick="giGoBack()" style="background:transparent;border:1px solid #444;border-radius:8px;color:#aaa;font-size:12px;padding:5px 12px;cursor:pointer;">Сменить</button>
+                </div>
+
+                <!-- Загрузка фото (только для режима photo) -->
+                <div id="gi-photo-section">
+                    <div class="upload-area" id="gi-upload-area" onclick="document.getElementById('gi-photo-input').click()" style="margin-bottom:14px;min-height:130px;">
+                        <div class="upload-icon">📷</div>
+                        <div class="upload-text">Нажми чтобы загрузить фото</div>
+                        <input type="file" id="gi-photo-input" accept="image/*" style="display:none" onchange="giHandlePhoto(this)">
+                    </div>
+                    <div id="gi-preview-wrap" style="display:none;margin-bottom:14px;position:relative;">
+                        <img id="gi-preview" style="width:100%;border-radius:14px;max-height:260px;object-fit:cover;" alt="preview">
+                        <button onclick="giClearPhoto()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:none;color:#fff;border-radius:50%;width:28px;height:28px;font-size:14px;cursor:pointer;">✕</button>
+                    </div>
+                </div>
+
+                <!-- Промт -->
+                <textarea id="gi-prompt" placeholder="Опиши что хочешь получить..." style="width:100%;box-sizing:border-box;background:#1e1e2e;border:1px solid #333;border-radius:14px;color:#fff;font-size:14px;padding:14px;min-height:100px;resize:none;font-family:inherit;outline:none;margin-bottom:14px;" oninput="giCheckReady()"></textarea>
+
+                <!-- Соотношение сторон -->
+                <div style="margin-bottom:16px;">
+                    <div style="font-size:13px;color:#aaa;margin-bottom:10px;">Соотношение сторон</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;" id="gi-ratio-group">
+                        <button class="gi-ratio-btn gi-ratio-active" onclick="giSetRatio(this,'1:1')">1:1</button>
+                        <button class="gi-ratio-btn" onclick="giSetRatio(this,'2:3')">2:3</button>
+                        <button class="gi-ratio-btn" onclick="giSetRatio(this,'3:2')">3:2</button>
+                        <button class="gi-ratio-btn" onclick="giSetRatio(this,'3:4')">3:4</button>
+                        <button class="gi-ratio-btn" onclick="giSetRatio(this,'4:3')">4:3</button>
+                        <button class="gi-ratio-btn" onclick="giSetRatio(this,'4:5')">4:5</button>
+                        <button class="gi-ratio-btn" onclick="giSetRatio(this,'5:4')">5:4</button>
+                        <button class="gi-ratio-btn" onclick="giSetRatio(this,'9:16')">9:16</button>
+                        <button class="gi-ratio-btn" onclick="giSetRatio(this,'16:9')">16:9</button>
+                        <button class="gi-ratio-btn" onclick="giSetRatio(this,'21:9')">21:9</button>
+                    </div>
+                </div>
+
+                <!-- Сила влияния (только для режима photo) -->
+                <div id="gi-strength-section" style="margin-bottom:16px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <div style="font-size:13px;color:#aaa;">Влияние референса</div>
+                        <div id="gi-strength-val" style="font-size:13px;color:#a78bfa;font-weight:700;">15%</div>
+                    </div>
+                    <input type="range" id="gi-strength" min="5" max="60" value="15" step="5"
+                        oninput="giUpdateStrength(this.value)"
+                        style="width:100%;accent-color:#7b2ff7;cursor:pointer;">
+                    <div id="gi-strength-hint" style="font-size:12px;color:#777;margin-top:6px;line-height:1.4;">
+                        🎨 Модель свободно интерпретирует фото — результат может сильно отличаться
+                    </div>
+                </div>
+
+                <!-- Кнопка генерации -->
+                <button id="gi-generate-btn" onclick="giGenerate()" disabled style="width:100%;padding:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#7b2ff7,#0055ff);color:#fff;font-size:16px;font-weight:700;cursor:pointer;opacity:0.4;transition:opacity .2s;">
+                    ⚡ Генерировать
                 </button>
             </div>
+
         </div>
     </div>
 
