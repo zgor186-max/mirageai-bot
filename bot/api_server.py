@@ -589,6 +589,127 @@ async def faceswap_handler(request):
         return web.json_response({"error": str(e)}, status=500, headers=CORS_HEADERS)
 
 
+async def faceswap_easel_handler(request):
+    """Easel advanced-face-swap: одиночный и парный свап."""
+    if request.method == "OPTIONS":
+        return web.Response(status=200, headers=CORS_HEADERS)
+
+    try:
+        data = await request.json()
+        template_b64 = data.get("template", "")
+        user_photo_b64 = data.get("user_photo", "")
+        user_photo_b_b64 = data.get("user_photo_b", "")  # второй человек (опционально)
+        hair_source = data.get("hair_source", "target")  # "target" или "swap"
+
+        if not template_b64 or not user_photo_b64:
+            return web.json_response(
+                {"error": "template and user_photo are required"},
+                status=400,
+                headers=CORS_HEADERS,
+            )
+
+        if template_b64.startswith("data:"):
+            template_b64 = template_b64.split(",", 1)[1]
+        if user_photo_b64.startswith("data:"):
+            user_photo_b64 = user_photo_b64.split(",", 1)[1]
+        if user_photo_b_b64 and user_photo_b_b64.startswith("data:"):
+            user_photo_b_b64 = user_photo_b_b64.split(",", 1)[1]
+
+        mode = "парный" if user_photo_b_b64 else "одиночный"
+        print(f"[FaceSwap-Easel] режим={mode}, hair_source={hair_source}")
+
+        result_url = await call_faceswap_easel(
+            template_b64, user_photo_b64,
+            user_photo_b_b64 or None,
+            hair_source
+        )
+
+        if not result_url:
+            return web.json_response(
+                {"error": "Easel face swap failed"},
+                status=500,
+                headers=CORS_HEADERS,
+            )
+
+        image_b64 = await download_image_as_base64(result_url)
+        if image_b64:
+            return web.json_response({"url": image_b64}, headers=CORS_HEADERS)
+
+        return web.json_response({"url": result_url}, headers=CORS_HEADERS)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return web.json_response({"error": str(e)}, status=500, headers=CORS_HEADERS)
+
+
+async def call_faceswap_easel(
+    template_b64: str,
+    user_photo_b64: str,
+    user_photo_b_b64: str | None = None,
+    hair_source: str = "target"
+) -> str | None:
+    api_headers = {
+        "Authorization": f"Token {REPLICATE_TOKEN}",
+        "Content-Type": "application/json",
+        "Prefer": "wait",
+    }
+
+    timeout = aiohttp.ClientTimeout(total=180)
+
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        # Загружаем изображения в Replicate
+        template_url = await upload_image_to_replicate(session, template_b64)
+        user_photo_url = await upload_image_to_replicate(session, user_photo_b64)
+
+        if not template_url or not user_photo_url:
+            print("[FaceSwap-Easel] Failed to upload images")
+            return None
+
+        input_data = {
+            "target_image": template_url,
+            "swap_image": user_photo_url,
+            "hair_source": hair_source,
+        }
+
+        # Парный режим
+        if user_photo_b_b64:
+            user_photo_b_url = await upload_image_to_replicate(session, user_photo_b_b64)
+            if user_photo_b_url:
+                input_data["swap_image_b"] = user_photo_b_url
+                print(f"[FaceSwap-Easel] Парный режим: swap_image_b загружен")
+
+        payload = {"input": input_data}
+
+        print(f"[FaceSwap-Easel] payload keys: {list(input_data.keys())}")
+
+        async with session.post(
+            "https://api.replicate.com/v1/models/easel/advanced-face-swap/predictions",
+            headers=api_headers,
+            json=payload,
+        ) as resp:
+            raw = await resp.text()
+            print(f"[FaceSwap-Easel] HTTP={resp.status} raw={raw[:400]}")
+            try:
+                result = await resp.json(content_type=None)
+            except Exception:
+                import json as _json
+                result = _json.loads(raw)
+
+            status = result.get("status")
+            pred_id = result.get("id")
+            print(f"[FaceSwap-Easel] status={status} id={pred_id}")
+
+            if status == "succeeded":
+                return _extract_output(result)
+            if status in ("starting", "processing"):
+                return await _poll(session, pred_id, api_headers)
+            if status == "failed":
+                print(f"[FaceSwap-Easel] FAILED: {result.get('error')}")
+                return None
+            return None
+
+
 async def call_faceswap(template_b64: str, user_photo_b64: str) -> str | None:
     api_headers = {
         "Authorization": f"Token {REPLICATE_TOKEN}",
@@ -1132,6 +1253,8 @@ def create_app() -> web.Application:
     app.router.add_route("OPTIONS", "/generate-card", generate_card_handler)
     app.router.add_post("/faceswap", faceswap_handler)
     app.router.add_route("OPTIONS", "/faceswap", faceswap_handler)
+    app.router.add_post("/faceswap-easel", faceswap_easel_handler)
+    app.router.add_route("OPTIONS", "/faceswap-easel", faceswap_easel_handler)
     return app
 
 

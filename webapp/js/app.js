@@ -1539,21 +1539,43 @@ async function generate() {
 
         let resultUrl;
 
-        // ── Replicate faceswap ─────────────────────────────────
-        console.log("Step 2: calling Replicate faceswap API...");
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 180000);
-        const resp = await fetch(`${API_SERVER}/faceswap`, {
-            signal: controller.signal,
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ template: templateBase64, user_photo: selectedPhotoBase64 })
-        });
-        clearTimeout(timeout);
-        const data = await resp.json();
-        if (!data?.url) throw new Error(data?.error || "No image in response");
-        resultUrl = data.url;
-        console.log("Step 2 done");
+        if (selectedTemplate.easel) {
+            // ── Easel advanced-face-swap ───────────────────────
+            console.log("Step 2: calling Easel faceswap API...");
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 180000);
+            const resp = await fetch(`${API_SERVER}/faceswap-easel`, {
+                signal: controller.signal,
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    template: templateBase64,
+                    user_photo: selectedPhotoBase64,
+                    hair_source: "target"
+                })
+            });
+            clearTimeout(timeout);
+            const data = await resp.json();
+            if (!data?.url) throw new Error(data?.error || "No image in response");
+            resultUrl = data.url;
+            console.log("Step 2 done (easel)");
+        } else {
+            // ── Replicate codeplug faceswap ────────────────────
+            console.log("Step 2: calling Replicate faceswap API...");
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 180000);
+            const resp = await fetch(`${API_SERVER}/faceswap`, {
+                signal: controller.signal,
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ template: templateBase64, user_photo: selectedPhotoBase64 })
+            });
+            clearTimeout(timeout);
+            const data = await resp.json();
+            if (!data?.url) throw new Error(data?.error || "No image in response");
+            resultUrl = data.url;
+            console.log("Step 2 done");
+        }
 
         // Сохраняем в галерею
         const history = JSON.parse(localStorage.getItem("gallery") || "[]");
