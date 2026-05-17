@@ -16,6 +16,9 @@ TEMP_DIR = "/tmp/mirageai_imgs"
 os.makedirs(TEMP_DIR, exist_ok=True)
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://mirageai.duckdns.org")
 
+# Папка со статическими файлами webapp
+WEBAPP_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "webapp")
+
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -807,12 +810,43 @@ async def _delete_after(filepath: str, delay: int):
 
 async def serve_temp_image(request):
     filename = request.match_info["filename"]
-    if "/" in filename or ".." in filename or not filename.endswith(".jpg"):
+    if "/" in filename or ".." in filename:
         return web.Response(status=404)
+    # Сначала temp-папка (сгенерированные)
     filepath = os.path.join(TEMP_DIR, filename)
-    if not os.path.exists(filepath):
+    if os.path.exists(filepath):
+        return web.FileResponse(filepath, headers={"Content-Type": "image/jpeg",
+                                                    "Access-Control-Allow-Origin": "*"})
+    # Затем webapp/img (шаблоны и статика)
+    webapp_img = os.path.join(WEBAPP_DIR, "img", filename)
+    if os.path.exists(webapp_img):
+        ct = "image/png" if filename.endswith(".png") else "image/webp" if filename.endswith(".webp") else "image/jpeg"
+        return web.FileResponse(webapp_img, headers={"Content-Type": ct,
+                                                      "Access-Control-Allow-Origin": "*"})
+    return web.Response(status=404)
+
+
+async def webapp_app_handler(request):
+    """Отдаёт app.html по маршруту /app"""
+    html_path = os.path.join(WEBAPP_DIR, "app.html")
+    if not os.path.exists(html_path):
+        return web.Response(status=404, text="webapp not found")
+    return web.FileResponse(html_path)
+
+
+async def serve_webapp_static(request):
+    """Раздаёт /js/* и /css/* из папки webapp"""
+    subfolder = request.match_info.get("subfolder", "")
+    path = request.match_info.get("path", "")
+    if ".." in path or ".." in subfolder:
+        return web.Response(status=403)
+    filepath = os.path.join(WEBAPP_DIR, subfolder, path)
+    if not os.path.exists(filepath) or not os.path.isfile(filepath):
         return web.Response(status=404)
-    return web.FileResponse(filepath, headers={"Content-Type": "image/jpeg",
+    ct = "application/javascript" if path.endswith(".js") else \
+         "text/css" if path.endswith(".css") else \
+         "text/html" if path.endswith(".html") else "application/octet-stream"
+    return web.FileResponse(filepath, headers={"Content-Type": ct,
                                                 "Access-Control-Allow-Origin": "*"})
 
 
@@ -1245,6 +1279,10 @@ async def health_handler(request):
 
 def create_app() -> web.Application:
     app = web.Application(client_max_size=10 * 1024 * 1024)
+    # ── Webapp статика ──────────────────────────────────────────
+    app.router.add_get("/app", webapp_app_handler)
+    app.router.add_get("/{subfolder:js|css}/{path:.+}", serve_webapp_static)
+    # ── API ────────────────────────────────────────────────────
     app.router.add_get("/health", health_handler)
     app.router.add_get("/img/{filename}", serve_temp_image)
     app.router.add_post("/generate", generate_handler)
