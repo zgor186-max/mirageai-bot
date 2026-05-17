@@ -9,6 +9,6 @@ const TEMPLATES = [
       photo: "img/template_12.jpg" },
     { id: 14, name: "Easel Тест", emoji: "🧪", price: 20, tag: "Тест",
       photo: "img/template_11.jpg", easel: true },
-    { id: 15, name: "Пара", emoji: "👫", price: 30, tag: "Новинка",
-      photo: "img/template_15.jpg", easel: true, faces: 2 },
+    { id: 13, name: "Пара", emoji: "👫", price: 30, tag: "Новинка",
+      photo: "img/template_13.jpg", easel: true, faces: 2 },
 ];
