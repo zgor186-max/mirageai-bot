@@ -7,4 +7,6 @@ const TEMPLATES = [
       photo: "img/template_11.jpg" },
     { id: 12, name: "Париж", emoji: "🗼", price: 20, tag: "Новинка",
       photo: "img/template_12.jpg" },
+    { id: 13, name: "Для девушек v2", emoji: "✨", price: 20, tag: "Тест",
+      photo: "img/template_11.jpg", local: true },
 ];
