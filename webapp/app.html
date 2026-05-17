@@ -265,19 +265,6 @@
                     </div>
                 </div>
 
-                <!-- Сила влияния (только для режима photo) -->
-                <div id="gi-strength-section" style="margin-bottom:16px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                        <div style="font-size:13px;color:#aaa;">Влияние референса</div>
-                        <div id="gi-strength-val" style="font-size:13px;color:#a78bfa;font-weight:700;">15%</div>
-                    </div>
-                    <input type="range" id="gi-strength" min="5" max="60" value="15" step="5"
-                        oninput="giUpdateStrength(this.value)"
-                        style="width:100%;accent-color:#7b2ff7;cursor:pointer;">
-                    <div id="gi-strength-hint" style="font-size:12px;color:#777;margin-top:6px;line-height:1.4;">
-                        🎨 Модель свободно интерпретирует фото — результат может сильно отличаться
-                    </div>
-                </div>
 
                 <!-- Кнопка генерации -->
                 <button id="gi-generate-btn" onclick="giGenerate()" disabled style="width:100%;padding:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#7b2ff7,#0055ff);color:#fff;font-size:16px;font-weight:700;cursor:pointer;opacity:0.4;transition:opacity .2s;">

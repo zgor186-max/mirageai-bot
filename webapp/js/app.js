@@ -865,7 +865,7 @@ async function smGenerate() {
 // ── ГЕНЕРАЦИЯ ПО ПРОМТУ ───────────────────────────────────────────
 let giPhotoBase64 = null;
 let giAspectRatio = "1:1";
-let giStrength = 0.15;
+let giStrength = 0.60;
 
 function giSetRatio(btn, ratio) {
     document.querySelectorAll(".gi-ratio-btn").forEach(b => b.classList.remove("gi-ratio-active"));
