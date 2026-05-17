@@ -1715,8 +1715,8 @@ function animateSteps() {
     if (progressInterval) clearInterval(progressInterval);
 
     progressInterval = setInterval(() => {
-        const step = progress < 40 ? 2 : progress < 70 ? 1 : 0.4;
-        progress = Math.min(progress + step, 90);
+        const step = progress < 40 ? 2 : progress < 70 ? 1 : progress < 90 ? 0.4 : 0.05;
+        progress = Math.min(progress + step, 99);
 
         if (percent) percent.textContent = Math.round(progress) + "%";
         if (bar) bar.style.width = progress + "%";
