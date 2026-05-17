@@ -1233,6 +1233,30 @@ body {
     background: rgba(123,47,247,0.1);
 }
 
+/* === CATEGORY GRID === */
+.category-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 16px 16px;
+}
+.category-tile {
+    background: var(--bg2);
+    border: 2px solid rgba(124,90,247,0.15);
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .2s, transform .1s, background .2s;
+}
+.category-tile:active { transform: scale(0.96); }
+.category-tile.active {
+    border-color: #7b2ff7;
+    background: rgba(123,47,247,0.12);
+}
+.category-tile-icon { font-size: 26px; margin-bottom: 6px; }
+.category-tile-name { font-size: 13px; font-weight: 700; color: #fff; }
+
 /* === GI MODE CARDS === */
 .gi-mode-card {
     background: var(--bg2);

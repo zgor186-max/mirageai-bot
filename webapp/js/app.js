@@ -291,13 +291,32 @@ function updateCoinsDisplay() {
 }
 
 // ── ШАБЛОНЫ ──
+let currentCategory = "girls";
+
+function selectCategory(cat) {
+    currentCategory = cat;
+    // Обновляем активную плитку
+    ["girls","guys","family","kids"].forEach(c => {
+        const el = document.getElementById("cat-" + c);
+        if (el) el.classList.toggle("active", c === cat);
+    });
+    renderTemplates();
+}
+
 function renderTemplates() {
     const grid = document.getElementById("templates-grid");
-    grid.innerHTML = TEMPLATES.map(t => {
+    const filtered = TEMPLATES.filter(t => t.category === currentCategory);
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:#555;font-size:14px;">Шаблоны скоро появятся 🔜</div>`;
+        return;
+    }
+
+    grid.innerHTML = filtered.map(t => {
         let tagHtml = "";
-        if (t.tag === "Тренд")     tagHtml = `<div class="template-tag tag-trend">Тренд</div>`;
-        else if (t.tag === "Новинка") tagHtml = `<div class="template-tag tag-new">Новинка</div>`;
-        else if (t.tag === "Топ")  tagHtml = `<div class="template-tag tag-top">Топ</div>`;
+        if (t.tag === "Тренд")      tagHtml = `<div class="template-tag tag-trend">Тренд</div>`;
+        else if (t.tag === "Новинка")  tagHtml = `<div class="template-tag tag-new">Новинка</div>`;
+        else if (t.tag === "Топ")   tagHtml = `<div class="template-tag tag-top">Топ</div>`;
         else if (t.tag === "Популярно") tagHtml = `<div class="template-tag tag-hot">Популярно</div>`;
 
         return `
