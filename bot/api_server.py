@@ -1273,6 +1273,127 @@ async def render_card_cairo(image_b64: str, card: dict) -> str | None:
 
 
 
+async def save_temp_handler(request):
+    """Сохраняет base64 изображение во временный файл и возвращает публичный URL."""
+    if request.method == "OPTIONS":
+        return web.Response(status=200, headers=CORS_HEADERS)
+    try:
+        data = await request.json()
+        image_b64 = data.get("image", "")
+        if not image_b64:
+            return web.json_response({"error": "image required"}, status=400, headers=CORS_HEADERS)
+        url = await _save_image_locally(image_b64)
+        if not url:
+            return web.json_response({"error": "save failed"}, status=500, headers=CORS_HEADERS)
+        return web.json_response({"url": url}, headers=CORS_HEADERS)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500, headers=CORS_HEADERS)
+
+
+async def remove_bg_handler(request):
+    """Удаляет фон с изображения через rembg."""
+    if request.method == "OPTIONS":
+        return web.Response(status=200, headers=CORS_HEADERS)
+    try:
+        data = await request.json()
+        photo_b64 = data.get("image", "")
+        if not photo_b64:
+            return web.json_response({"error": "image required"}, status=400, headers=CORS_HEADERS)
+        if photo_b64.startswith("data:"):
+            photo_b64 = photo_b64.split(",", 1)[1]
+
+        loop = asyncio.get_event_loop()
+        result_b64 = await loop.run_in_executor(None, _remove_bg, photo_b64)
+
+        if not result_b64:
+            return web.json_response({"error": "rembg failed"}, status=500, headers=CORS_HEADERS)
+
+        return web.json_response(
+            {"image": f"data:image/png;base64,{result_b64}"},
+            headers=CORS_HEADERS
+        )
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return web.json_response({"error": str(e)}, status=500, headers=CORS_HEADERS)
+
+
+async def smooth_clothing_handler(request):
+    """Разглаживание одежды через flux-kontext-pro (guidance=7.5)."""
+    if request.method == "OPTIONS":
+        return web.Response(status=200, headers=CORS_HEADERS)
+    try:
+        data = await request.json()
+        photo_b64 = data.get("image", "")
+        if not photo_b64:
+            return web.json_response({"error": "image required"}, status=400, headers=CORS_HEADERS)
+        if photo_b64.startswith("data:"):
+            photo_b64 = photo_b64.split(",", 1)[1]
+
+        api_headers = {
+            "Authorization": f"Token {REPLICATE_TOKEN}",
+            "Content-Type": "application/json",
+            "Prefer": "wait",
+        }
+        timeout = aiohttp.ClientTimeout(total=180)
+
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            image_url = await upload_image_to_replicate(session, photo_b64)
+            if not image_url:
+                return web.json_response({"error": "upload failed"}, status=500, headers=CORS_HEADERS)
+
+            prompt = (
+                "Remove all wrinkles and creases from the clothing. "
+                "Make the fabric perfectly smooth and neat. "
+                "Keep the person, pose, background, colors and style exactly the same. "
+                "Only smooth out the fabric texture."
+            )
+            payload = {
+                "input": {
+                    "model": "dev",
+                    "prompt": prompt,
+                    "input_image": image_url,
+                    "guidance": 7.5,
+                    "output_format": "jpg",
+                }
+            }
+
+            async with session.post(
+                "https://api.replicate.com/v1/models/black-forest-labs/flux-kontext-pro/predictions",
+                headers=api_headers,
+                json=payload,
+            ) as resp:
+                raw = await resp.text()
+                print(f"[SmoothClothing] HTTP={resp.status} raw={raw[:300]}")
+                try:
+                    result = await resp.json(content_type=None)
+                except Exception:
+                    result = _json.loads(raw)
+
+                status = result.get("status")
+                pred_id = result.get("id")
+
+                if status == "succeeded":
+                    output_url = _extract_output(result)
+                elif status in ("starting", "processing"):
+                    output_url = await _poll(session, pred_id, api_headers)
+                else:
+                    print(f"[SmoothClothing] FAILED: {result.get('error')}")
+                    return web.json_response({"error": "generation failed"}, status=500, headers=CORS_HEADERS)
+
+                if not output_url:
+                    return web.json_response({"error": "no output"}, status=500, headers=CORS_HEADERS)
+
+                image_b64 = await download_image_as_base64(output_url)
+                return web.json_response(
+                    {"image": image_b64 or output_url},
+                    headers=CORS_HEADERS
+                )
+
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return web.json_response({"error": str(e)}, status=500, headers=CORS_HEADERS)
+
+
 async def health_handler(request):
     return web.Response(text="OK", headers=CORS_HEADERS)
 
@@ -1293,6 +1414,12 @@ def create_app() -> web.Application:
     app.router.add_route("OPTIONS", "/faceswap", faceswap_handler)
     app.router.add_post("/faceswap-easel", faceswap_easel_handler)
     app.router.add_route("OPTIONS", "/faceswap-easel", faceswap_easel_handler)
+    app.router.add_post("/save-temp", save_temp_handler)
+    app.router.add_route("OPTIONS", "/save-temp", save_temp_handler)
+    app.router.add_post("/remove-bg", remove_bg_handler)
+    app.router.add_route("OPTIONS", "/remove-bg", remove_bg_handler)
+    app.router.add_post("/smooth-clothing", smooth_clothing_handler)
+    app.router.add_route("OPTIONS", "/smooth-clothing", smooth_clothing_handler)
     return app
 
 
