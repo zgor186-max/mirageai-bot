@@ -1639,7 +1639,7 @@ async function generate() {
                 body: JSON.stringify({
                     template: templateBase64,
                     user_photos: needs2 ? [selectedPhotoBase64, selectedPhoto2Base64] : [selectedPhotoBase64],
-                    face_indexes: needs2 ? [1, 0] : [0]
+                    face_indexes: needs2 ? [0, 1] : [0]
                 })
             });
             clearTimeout(timeout);
