@@ -652,9 +652,8 @@ async def call_faceswap_indexed(
     api_headers = {
         "Authorization": f"Token {REPLICATE_TOKEN}",
         "Content-Type": "application/json",
-        "Prefer": "wait",
     }
-    timeout = aiohttp.ClientTimeout(total=300)
+    timeout = aiohttp.ClientTimeout(total=420)
 
     async with aiohttp.ClientSession(timeout=timeout) as session:
         # Загружаем шаблон
@@ -871,6 +870,7 @@ async def upload_image_to_replicate(session: aiohttp.ClientSession, photo_b64: s
         headers = {
             "Authorization": f"Token {REPLICATE_TOKEN}",
             "Content-Type": "image/jpeg",
+            "Content-Length": str(len(img_bytes)),
         }
         async with session.post(
             "https://api.replicate.com/v1/files",
@@ -965,7 +965,7 @@ async def call_replicate(photo_b64: str, prompt: str) -> str | None:
 
 
 async def _poll(session, prediction_id: str, headers: dict) -> str | None:
-    for i in range(40):
+    for i in range(100):
         await asyncio.sleep(3)
         async with session.get(
             f"https://api.replicate.com/v1/predictions/{prediction_id}",
