@@ -243,6 +243,7 @@ function findAdvantages(productName) {
 
 let selectedTemplate = null;
 let selectedPhotoBase64 = null;
+let selectedPhoto2Base64 = null;
 let userCoins = 0;
 let currentResultUrl = null;
 let currentLang = "ru";
@@ -321,6 +322,23 @@ function selectTemplate(id) {
 
     document.querySelectorAll(".template-card").forEach(c => c.classList.remove("selected"));
     document.getElementById(`card-${id}`).classList.add("selected");
+
+    // Сброс состояния фото
+    selectedPhotoBase64 = null;
+    selectedPhoto2Base64 = null;
+    document.getElementById("upload-area").style.display = "flex";
+    document.getElementById("preview-container").style.display = "none";
+    document.getElementById("photo-input").value = "";
+    document.getElementById("generate-btn").disabled = true;
+
+    // Второй блок — только для шаблонов с двумя лицами
+    const isTwoPeople = selectedTemplate.faces === 2;
+    document.getElementById("upload-label-1").style.display = isTwoPeople ? "block" : "none";
+    document.getElementById("upload-area-2-wrap").style.display = isTwoPeople ? "block" : "none";
+    document.getElementById("upload-area-2").style.display = "flex";
+    document.getElementById("preview-container-2").style.display = "none";
+    document.getElementById("photo-input-2").value = "";
+
     showUpload();
 }
 
@@ -1474,7 +1492,16 @@ function setActiveNav(id) {
 }
 
 // ── ЗАГРУЗКА ФОТО ──
+function checkGenerateReady() {
+    const needs2 = selectedTemplate && selectedTemplate.faces === 2;
+    const ready = needs2
+        ? (!!selectedPhotoBase64 && !!selectedPhoto2Base64)
+        : !!selectedPhotoBase64;
+    document.getElementById("generate-btn").disabled = !ready;
+}
+
 function setupUpload() {
+    // Фото 1
     const area = document.getElementById("upload-area");
     const input = document.getElementById("photo-input");
     area.addEventListener("click", () => input.click());
@@ -1483,12 +1510,29 @@ function setupUpload() {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = async (ev) => {
-            const blob = file;
-            selectedPhotoBase64 = await resizeImageToBase64(blob, 800);
+            selectedPhotoBase64 = await resizeImageToBase64(e.target.files[0], 800);
             document.getElementById("photo-preview").src = ev.target.result;
             document.getElementById("upload-area").style.display = "none";
             document.getElementById("preview-container").style.display = "block";
-            document.getElementById("generate-btn").disabled = false;
+            checkGenerateReady();
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Фото 2
+    const area2 = document.getElementById("upload-area-2");
+    const input2 = document.getElementById("photo-input-2");
+    area2.addEventListener("click", () => input2.click());
+    input2.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            selectedPhoto2Base64 = await resizeImageToBase64(e.target.files[0], 800);
+            document.getElementById("photo-preview-2").src = ev.target.result;
+            document.getElementById("upload-area-2").style.display = "none";
+            document.getElementById("preview-container-2").style.display = "block";
+            checkGenerateReady();
         };
         reader.readAsDataURL(file);
     });
@@ -1496,6 +1540,10 @@ function setupUpload() {
 
 function changePhoto() {
     document.getElementById("photo-input").click();
+}
+
+function changePhoto2() {
+    document.getElementById("photo-input-2").click();
 }
 
 // ── ГЕНЕРАЦИЯ ──
@@ -1527,7 +1575,9 @@ async function fetchImageAsBase64(url) {
 }
 
 async function generate() {
+    const needs2 = selectedTemplate && selectedTemplate.faces === 2;
     if (!selectedTemplate || !selectedPhotoBase64) return;
+    if (needs2 && !selectedPhoto2Base64) return;
 
     switchScreen("loading");
     animateSteps();
@@ -1550,8 +1600,8 @@ async function generate() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     template: templateBase64,
-                    user_photos: [selectedPhotoBase64],
-                    face_indexes: [0]
+                    user_photos: needs2 ? [selectedPhotoBase64, selectedPhoto2Base64] : [selectedPhotoBase64],
+                    face_indexes: needs2 ? [0, 1] : [0]
                 })
             });
             clearTimeout(timeout);

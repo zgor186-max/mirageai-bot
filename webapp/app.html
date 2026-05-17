@@ -223,6 +223,11 @@
     <div id="screen-upload" class="screen">
         <button class="back-btn" onclick="showHome()">← Назад</button>
         <div class="selected-template" id="selected-template-info"></div>
+
+        <!-- Метка для первого фото (только при faces:2) -->
+        <div id="upload-label-1" style="display:none;font-size:13px;color:#aaa;margin:0 16px 6px;font-weight:600;">👤 Первый человек</div>
+
+        <!-- Фото 1 -->
         <div class="upload-area" id="upload-area">
             <div class="upload-icon">📷</div>
             <div class="upload-text">Нажми чтобы загрузить фото</div>
@@ -233,6 +238,22 @@
             <img id="photo-preview" class="photo-preview" alt="Preview">
             <button class="change-photo-btn" onclick="changePhoto()">Изменить фото</button>
         </div>
+
+        <!-- Фото 2 (только при faces:2) -->
+        <div id="upload-area-2-wrap" style="display:none">
+            <div style="font-size:13px;color:#aaa;margin:12px 16px 6px;font-weight:600;">👤 Второй человек</div>
+            <div class="upload-area" id="upload-area-2">
+                <div class="upload-icon">📷</div>
+                <div class="upload-text">Нажми чтобы загрузить фото</div>
+                <div class="upload-hint">Лучше фото лица анфас</div>
+                <input type="file" id="photo-input-2" accept="image/*" style="display:none">
+            </div>
+            <div id="preview-container-2" style="display:none">
+                <img id="photo-preview-2" class="photo-preview" alt="Preview">
+                <button class="change-photo-btn" onclick="changePhoto2()">Изменить фото</button>
+            </div>
+        </div>
+
         <button class="generate-btn" id="generate-btn" onclick="generate()" disabled>
             ⚡ Создать образ
             <span class="generate-price" id="generate-price"></span>
@@ -485,6 +506,6 @@
     </div>
 
     <script src="js/templates.js?v=202605171140"></script>
-    <script src="js/app.js?v=202605170023"></script>
+    <script src="js/app.js?v=202605171230"></script>
 </body>
 </html>
